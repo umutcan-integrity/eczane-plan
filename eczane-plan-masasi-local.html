@@ -1,0 +1,2065 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Eczane Plan Masası</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+img{max-width:100%}[hidden]{display:none!important}
+
+:root{
+  --bg:#F1F3EF; --surface:#FFFFFF; --surface-2:#F6F8F4; --paper:#FAFBF7;
+  --line:#D8DDD6; --line-strong:#B4BCB4; --ink:#1B2321; --muted:#5D6864; --faint:#8A948F;
+  --accent:#1F7A5A; --accent-ink:#FFFFFF; --accent-soft:#DDF0E7; --accent-line:#8FCBB1;
+  --warn:#A8690F; --warn-soft:#FBF0DB; --danger:#C2412D; --danger-soft:#FBE3DE; --ok:#1F7A5A;
+  --grid-minor:#E9EDE7; --grid-major:#D5DBD3; --grid-meter:#C0C8BF; --wall:#2B3431; --wall-hatch:#8A948F;
+  --shadow:0 1px 2px rgba(20,30,26,.08),0 10px 28px rgba(20,30,26,.10);
+  --radius:10px; --radius-sm:7px;
+  --font-ui:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-display:'Bricolage Grotesque','Archivo',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --panel-w:340px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#141817; --surface:#1D2321; --surface-2:#232A27; --paper:#191E1C;
+    --line:#2C3431; --line-strong:#48524C; --ink:#E7ECE8; --muted:#9BA69F; --faint:#6C776F;
+    --accent:#3FBF8F; --accent-ink:#0E1B15; --accent-soft:#1C3A2E; --accent-line:#2E7D5F;
+    --warn:#E2A94C; --warn-soft:#3A2D14; --danger:#E7705B; --danger-soft:#3F211B; --ok:#3FBF8F;
+    --grid-minor:#1F2523; --grid-major:#29312D; --grid-meter:#3A453F; --wall:#DDE4DF; --wall-hatch:#6C776F;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141817; --surface:#1D2321; --surface-2:#232A27; --paper:#191E1C;
+  --line:#2C3431; --line-strong:#48524C; --ink:#E7ECE8; --muted:#9BA69F; --faint:#6C776F;
+  --accent:#3FBF8F; --accent-ink:#0E1B15; --accent-soft:#1C3A2E; --accent-line:#2E7D5F;
+  --warn:#E2A94C; --warn-soft:#3A2D14; --danger:#E7705B; --danger-soft:#3F211B; --ok:#3FBF8F;
+  --grid-minor:#1F2523; --grid-major:#29312D; --grid-meter:#3A453F; --wall:#DDE4DF; --wall-hatch:#6C776F;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 var(--font-ui);overflow:hidden;-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{display:grid;grid-template-rows:auto 1fr;grid-template-columns:1fr var(--panel-w);height:100dvh;min-height:100vh}
+/* ---------- top bar ---------- */
+.topbar{grid-column:1/3;display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--line);flex-wrap:wrap;min-height:52px}
+.brand{display:flex;align-items:baseline;gap:8px;margin-right:6px}
+.brand h1{font:700 18px/1 var(--font-display);margin:0;letter-spacing:-.01em}
+.brand small{color:var(--muted);font-family:var(--font-mono);font-size:12px}
+.tools{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius);padding:3px}
+.tbtn{display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;background:transparent;border-radius:var(--radius-sm);padding:6px 10px;color:var(--ink);font-weight:500;white-space:nowrap;min-height:34px}
+.tbtn:hover{background:var(--surface)}
+.tbtn.active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tbtn svg{width:16px;height:16px;flex:none}
+.tbtn kbd{font:600 10px/1 var(--font-mono);opacity:.6;padding:2px 4px;border:1px solid currentColor;border-radius:4px}
+.tbtn.active kbd{opacity:.8}
+.sep{width:1px;height:26px;background:var(--line);margin:0 2px}
+.actions{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.ibtn{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:6px 10px;min-height:34px;display:inline-flex;align-items:center;gap:6px;color:var(--ink);white-space:nowrap}
+.ibtn:hover{background:var(--surface-2)}
+.ibtn:disabled{opacity:.4;cursor:default}
+.ibtn.on{background:var(--accent-soft);border-color:var(--accent-line)}
+.ibtn svg{width:16px;height:16px}
+.ibtn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+/* ---------- canvas ---------- */
+.stage{position:relative;overflow:hidden;background:var(--paper)}
+canvas.plan{display:block;width:100%;height:100%;touch-action:none;cursor:default;user-select:none;-webkit-user-select:none}
+canvas.plan.tool-pan{cursor:grab}
+canvas.plan.tool-room,canvas.plan.tool-ruler{cursor:crosshair}
+canvas.plan.dragging{cursor:grabbing}
+.statusbar{position:absolute;left:10px;bottom:10px;display:flex;gap:8px;align-items:center;font:500 12px/1 var(--font-mono);color:var(--muted);background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);border-radius:999px;padding:6px 10px;pointer-events:none;backdrop-filter:blur(6px)}
+.statusbar b{color:var(--ink);font-weight:600}
+.statusbar .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.statusbar .dot.pending{background:var(--warn)}
+.zoomctl{position:absolute;right:10px;bottom:10px;display:flex;gap:4px}
+.zoomctl .ibtn{padding:6px 9px;min-width:34px;justify-content:center}
+.toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:999px;font-weight:500;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;box-shadow:var(--shadow);max-width:90%;text-align:center}
+.toast.show{opacity:1}
+.hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:var(--surface);border:1px solid var(--line);color:var(--muted);padding:6px 12px;border-radius:999px;font-size:12px;pointer-events:none;white-space:nowrap;max-width:92%;overflow:hidden;text-overflow:ellipsis}
+/* ---------- panel ---------- */
+.panel{display:flex;flex-direction:column;background:var(--surface);border-left:1px solid var(--line);min-height:0}
+.tabs{display:flex;border-bottom:1px solid var(--line);padding:6px 6px 0;gap:2px}
+.tab{flex:1;border:0;background:transparent;padding:8px 6px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;color:var(--muted);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:var(--ink);border-bottom-color:var(--accent);background:var(--surface-2)}
+.panel-body{overflow:auto;padding:12px;display:flex;flex-direction:column;gap:14px;min-height:0;overscroll-behavior:contain}
+.card{border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;background:var(--surface);display:flex;flex-direction:column;gap:8px}
+.card.sel{border-color:var(--accent-line);background:color-mix(in srgb,var(--accent-soft) 40%,var(--surface))}
+.card h3{margin:0;font:600 12px/1 var(--font-ui);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:flex;align-items:center;gap:8px}
+.card h3 .sp{flex:1}
+.card h2{margin:0;font:700 16px/1.2 var(--font-display)}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.field{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.field label{font-size:11px;color:var(--muted);letter-spacing:.02em}
+.field input,.field select{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:6px 8px;min-height:32px;font-family:var(--font-mono);font-size:13px;font-variant-numeric:tabular-nums}
+.field input[type=text]{font-family:var(--font-ui)}
+.field input:focus{border-color:var(--accent);outline:none}
+.field.grow{flex:2}
+.mini{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:4px 8px;min-height:30px;font-size:12px;display:inline-flex;align-items:center;gap:5px;color:var(--ink)}
+.mini:hover{background:var(--surface-2)}
+.mini.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,var(--line))}
+.mini.on{background:var(--accent-soft);border-color:var(--accent-line)}
+.mini svg{width:14px;height:14px}
+.stat{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-variant-numeric:tabular-nums}
+.stat .k{color:var(--muted)}
+.stat .v{font-family:var(--font-mono);font-weight:600;text-align:right;white-space:nowrap;min-width:0}
+.stat{min-width:0;overflow:hidden}
+.stat .v.big{font-size:18px}
+.bar{height:8px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.roomlist{display:flex;flex-direction:column;gap:6px}
+.room-item{display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:center;padding:7px 8px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer}
+.room-item:hover{background:var(--surface-2)}
+.room-item.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.room-item .sw{width:14px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.15)}
+.room-item .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.room-item .dm{font:500 11px/1.3 var(--font-mono);color:var(--muted)}
+.room-item .ar{font:600 13px/1 var(--font-mono);white-space:nowrap}
+.room-item .warn{color:var(--danger)}
+.hints{display:flex;flex-direction:column;gap:5px;font-size:12.5px}
+.hints div{display:flex;gap:7px;align-items:flex-start}
+.hints .ic{flex:none;width:16px;text-align:center;font-weight:700}
+.hints .ok{color:var(--ok)}.hints .no{color:var(--danger)}.hints .so{color:var(--warn)}
+.cmp{display:flex;flex-wrap:wrap;gap:5px}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-size:12px;background:var(--surface-2);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.chip b{font-family:var(--font-mono)}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chips .chip{cursor:pointer}
+.chips .chip.on{background:var(--accent-soft);border-color:var(--accent-line);color:var(--ink)}
+.lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
+.lib button{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:6px 4px 5px;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:76px}
+.lib button:hover{border-color:var(--accent-line);background:var(--accent-soft)}
+.lib canvas{width:64px;height:36px}
+.lib .n{font-size:11.5px;font-weight:500;line-height:1.15;text-align:center}
+.lib .d{font:500 10px/1 var(--font-mono);color:var(--muted)}
+.search{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:7px 10px;min-height:34px}
+.swatches{display:flex;gap:5px;flex-wrap:wrap}
+.swatches button{width:22px;height:22px;border-radius:6px;border:2px solid transparent;padding:0}
+.swatches button.on{border-color:var(--ink)}
+.rotwrap{display:flex;gap:4px;align-items:center}
+.rotwrap input{width:64px}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.tbl th{text-align:left;font-weight:600;color:var(--muted);font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:4px 4px;border-bottom:1px solid var(--line)}
+.tbl td{padding:5px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl td.num{font-family:var(--font-mono);text-align:right;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:0}
+.note{font-size:12px;color:var(--muted)}
+.kbd{font:600 10.5px/1 var(--font-mono);border:1px solid var(--line);border-radius:4px;padding:2px 5px;color:var(--muted)}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:12.5px}
+.check .m{flex:none;width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.check .m.ok{background:var(--accent-soft);color:var(--ok)}
+.check .m.no{background:var(--danger-soft);color:var(--danger)}
+.check .m.so{background:var(--warn-soft);color:var(--warn)}
+textarea.json{width:100%;min-height:120px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2);font:12px/1.4 var(--font-mono);padding:8px;resize:vertical}
+.panel-toggle{display:none}
+dialog{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:var(--ink);box-shadow:var(--shadow);max-width:min(560px,92vw);padding:16px}
+dialog::backdrop{background:rgba(0,0,0,.35)}
+dialog h2{margin:0 0 8px;font:700 18px/1.2 var(--font-display)}
+/* ---------- mobile ---------- */
+@media (max-width:900px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto 1fr auto}
+  .topbar{grid-column:1}
+  .brand small{display:none}
+  .tbtn span.lbl{display:none}
+  .tbtn kbd{display:none}
+  .panel{border-left:0;border-top:1px solid var(--line);height:44dvh;transition:height .2s}
+  .panel.collapsed{height:44px}
+  .panel.collapsed .panel-body{display:none}
+  .panel-toggle{display:flex;justify-content:center;align-items:center;height:auto}
+  .tabs{padding:4px 4px 0}
+  .zoomctl{bottom:10px}
+  .actions .lbl{display:none}
+  .hint{display:none}
+}
+@media print{
+  .topbar,.panel,.zoomctl,.statusbar,.hint,.toast{display:none!important}
+  .app{display:block;height:auto}
+  .stage{height:100vh}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="app" id="app">
+  <header class="topbar">
+    <div class="brand"><h1>Eczane Plan Masası</h1><small id="shopDims">13,65 × 6,95 m</small></div>
+    <div class="tools" role="toolbar" aria-label="Araçlar">
+      <button class="tbtn active" data-tool="select" title="Seç / Taşı (V)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 2l10 6-4.5 1.2L6 13z"/></svg><span class="lbl">Seç</span><kbd>V</kbd></button>
+      <button class="tbtn" data-tool="room" title="Oda çiz (O)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="12" height="10"/><path d="M8 3v10M2 8h6"/></svg><span class="lbl">Oda çiz</span><kbd>O</kbd></button>
+      <button class="tbtn" data-tool="ruler" title="Cetvel (C)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 11l9-9 3 3-9 9z"/><path d="M5 8l1.5 1.5M7.5 5.5L9 7M4 10l1 1"/></svg><span class="lbl">Cetvel</span><kbd>C</kbd></button>
+      <button class="tbtn" data-tool="pan" title="Kaydır (H)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 8V3.5a1 1 0 012 0V7m0-1V2.5a1 1 0 012 0V7m0-1.5a1 1 0 012 0V8m0-.5a1 1 0 012 0V10c0 3-2 5-5 5s-4-1.5-6-5c-.5-1 .5-2 1.5-1.2L5 10"/></svg><span class="lbl">Kaydır</span><kbd>H</kbd></button>
+    </div>
+    <div class="actions">
+      <button class="ibtn" id="btnUndo" title="Geri al (Ctrl+Z)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 4L2 8l4 4"/><path d="M2 8h7a4 4 0 010 8"/></svg></button>
+      <button class="ibtn" id="btnRedo" title="Yinele (Ctrl+Y)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 4l4 4-4 4"/><path d="M14 8H7a4 4 0 000 8"/></svg></button>
+      <span class="sep"></span>
+      <button class="ibtn on" id="btnSnap" title="Mıknatıs / ızgaraya yapış (S)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 2v6a4 4 0 008 0V2"/><path d="M4 2h3M9 2h3M4 6h3M9 6h3"/></svg><span class="lbl">Yapış</span></button>
+      <button class="ibtn on" id="btnGrid" title="Izgara (G)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 6h12M2 10h12M6 2v12M10 2v12"/></svg><span class="lbl">Izgara</span></button>
+      <button class="ibtn on" id="btnHuman" title="İnsan ölçeği rozeti"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="3.5" r="1.8"/><path d="M4 8c1-1.5 7-1.5 8 0M8 7v5m0 0l-2.5 3M8 12l2.5 3"/></svg><span class="lbl">İnsan</span></button>
+      <span class="sep"></span>
+      <button class="ibtn" id="btnExport" title="Dışa aktar / Yedekle"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2v8m0 0l-3-3m3 3l3-3"/><path d="M2 11v3h12v-3"/></svg><span class="lbl">Dışa aktar</span></button>
+      <button class="ibtn" id="btnReset" title="Varsayılan yerleşime dön"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 8a6 6 0 1011-3.5"/><path d="M2 3v4h4"/></svg><span class="lbl">Sıfırla</span></button>
+    </div>
+  </header>
+
+  <main class="stage" id="stage">
+    <canvas class="plan" id="plan"></canvas>
+    <div class="hint" id="hint">Bir odaya veya eşyaya tıkla · sürükleyerek taşı · köşelerden boyutlandır</div>
+    <div class="toast" id="toast"></div>
+    <div class="statusbar" id="status"><span class="dot" id="saveDot"></span><span id="saveText">Kaydedildi</span><span>·</span><span id="zoomText">100%</span><span>·</span><span id="cursorText">—</span></div>
+    <div class="zoomctl">
+      <button class="ibtn" id="zoomOut" title="Uzaklaştır (−)">−</button>
+      <button class="ibtn" id="zoomFit" title="Sığdır (F)">Sığdır</button>
+      <button class="ibtn" id="zoomIn" title="Yakınlaştır (+)">+</button>
+    </div>
+  </main>
+
+  <aside class="panel" id="panel">
+    <button class="panel-toggle ibtn" id="panelToggle" aria-label="Paneli aç/kapat">▾ Panel</button>
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="rooms">Odalar</button>
+      <button class="tab" data-tab="lib">Eşya</button>
+      <button class="tab" data-tab="summary">Özet</button>
+    </div>
+    <div class="panel-body" id="panelBody"></div>
+  </aside>
+</div>
+
+<dialog id="dlgExport">
+  <h2>Dışa aktar</h2>
+  <div class="row" style="gap:6px;margin-bottom:10px">
+    <button class="ibtn primary" id="expPng">PNG resim</button>
+    <button class="ibtn" id="expJson">JSON yedek</button>
+    <button class="ibtn" id="expPrint">Yazdır</button>
+    <label class="ibtn" for="impFile" style="cursor:pointer">JSON yükle<input type="file" id="impFile" accept="application/json,.json" hidden></label>
+  </div>
+  <p class="note" style="margin:0 0 6px">Plan verisi (kopyalayıp bir yere kaydedebilirsin; geri yüklemek için buraya yapıştırıp “Yapıştırılanı yükle”ye bas):</p>
+  <textarea class="json" id="jsonBox" spellcheck="false"></textarea>
+  <div class="row" style="justify-content:flex-end;margin-top:8px">
+    <button class="ibtn" id="expCopy">Panoya kopyala</button>
+    <button class="ibtn" id="impPaste">Yapıştırılanı yükle</button>
+    <button class="ibtn" id="dlgClose">Kapat</button>
+  </div>
+</dialog>
+
+<script>
+
+/* =====================================================================
+   Eczane Plan Masası — tek dosya 2D yerleşim planlayıcısı
+   Koordinatlar metre, orijin dükkânın sol üst iç köşesi, y aşağı.
+   Eşya: x,y sol üst (rot=0), w yatay, h dikey, rot merkez etrafında (°).
+   Şekillerde "ön yüz" = yerel +y (rot=0'da alt kenar). rot 90 → ön yüz sola,
+   rot 180 → ön yüz yukarı, rot 270 → ön yüz sağa.
+   ===================================================================== */
+'use strict';
+
+const GRID = 0.05;            // yapışma ızgarası (m)
+const MIN_ROOM = 0.6;         // en küçük oda kenarı (m)
+const MIN_ITEM = 0.05;        // en küçük eşya kenarı (m)
+const STORAGE_KEY = 'eczanePlanMasasi.v1';
+
+const CATS = [
+  ['satis','Satış'], ['ofis_stok','Ofis / Stok / Lab'], ['mutfak','Mutfak'], ['bakim','Bakım odası'],
+  ['wc','WC'], ['yapi','Kapı & Yapı'], ['insan','İnsan ölçeği'],
+];
+
+/* Eşya kütüphanesi — w: yatay (m), h: dikey (m), hm: yükseklik (m), s: çizim şekli */
+const LIB = [
+  // ---- Satış
+  {key:'banko_modul',   n:'Banko modülü',              c:'satis', w:1.20,h:0.70,hm:1.05, s:'counter', note:'Yan yana dizilir; müşteri yüzü 1,05 m, çalışma yüzü 0,90 m'},
+  {key:'banko_duz',     n:'Düz banko',                 c:'satis', w:3.80,h:0.70,hm:1.05, s:'counter', note:'Önünde ≥1,50 m müşteri alanı, arkasında ≥0,90 m personel koridoru'},
+  {key:'banko_engelli', n:'Engelli banko bölümü',      c:'satis', w:0.90,h:0.70,hm:0.80, s:'counter', note:'Yükseklik 0,75–0,85 m; altında 0,70 yüksek × 0,60 derin boşluk (doğrula)'},
+  {key:'kasa_pos',      n:'Kasa / POS',                c:'satis', w:0.45,h:0.40,hm:0.35, s:'pos', note:'Bankonun üstüne konur'},
+  {key:'duvar_rafi',    n:'Duvar rafı (açık teşhir)',  c:'satis', w:1.00,h:0.40,hm:2.20, s:'shelf', note:'Duvara yasla; önünde ≥0,90 m geçiş. Raf yüzü metrajına sayılır'},
+  {key:'cekmeceli_ilac_dolabi',n:'Çekmeceli ilaç dolabı',c:'satis',w:1.00,h:0.45,hm:2.20,s:'drawer', note:'Banko arkası; açık çekmece 0,50 m ileri çıkar → önünde ≥1,00 m'},
+  {key:'gondol_cift',   n:'Orta gondol (çift yüzlü)',  c:'satis', w:1.20,h:0.80,hm:1.50, s:'gondola', note:'Gondollar arası 1,20–1,50 m; 1,50 m üstü bankodan görüşü keser'},
+  {key:'gondol_tek',    n:'Gondol (tek yüzlü)',        c:'satis', w:1.20,h:0.45,hm:1.50, s:'gondola1', note:'Duvar önü'},
+  {key:'gondol_baslik', n:'Gondol başlığı (end-cap)',  c:'satis', w:0.80,h:0.45,hm:1.50, s:'gondola1', note:'Gondol ucuna eklenir'},
+  {key:'vitrin_dolabi', n:'Vitrin dolabı (cam)',       c:'satis', w:1.00,h:0.45,hm:1.90, s:'showcase', note:'Önünde ≥0,90 m'},
+  {key:'dermokozmetik_unite',n:'Dermokozmetik ünitesi',c:'satis', w:1.00,h:0.45,hm:2.20, s:'shelf', note:'Aydınlatmalı duvar ünitesi'},
+  {key:'ilac_buzdolabi',n:'İlaç buzdolabı',            c:'satis', w:0.60,h:0.65,hm:1.80, s:'fridge', note:'Termometreli; arka/yanlarda 0,10 m havalandırma; gıda buzdolabından ayrı'},
+  {key:'bekleme_koltuk',n:'Bekleme koltuğu',           c:'satis', w:0.60,h:0.60,hm:0.85, s:'chair'},
+  {key:'bekleme_bank_2',n:'Bekleme bankı (2’li)',      c:'satis', w:1.20,h:0.60,hm:0.85, s:'bench', note:'3’lü için 1,80 m'},
+  {key:'tansiyon_masasi',n:'Tansiyon ölçüm masası',    c:'satis', w:0.70,h:0.50,hm:0.75, s:'table', note:'Sandalye ile birlikte iz 0,90 × 1,50 m'},
+  {key:'sandalye',      n:'Sandalye',                  c:'satis', w:0.45,h:0.45,hm:0.85, s:'chair'},
+  {key:'danisma_masasi',n:'Danışma masası',            c:'satis', w:1.20,h:0.60,hm:0.75, s:'table', note:'Hasta bilgilendirme'},
+  {key:'sepet_standi',  n:'Sepet standı',              c:'satis', w:0.50,h:0.50,hm:0.90, s:'basket', note:'Giriş yanı'},
+  {key:'personel_kapagi',n:'Personel geçiş kapağı',    c:'satis', w:0.70,h:0.05,hm:0.90, s:'door', note:'Banko arkası koridorun ucunu kapatır'},
+  // ---- Ofis / Stok / Lab
+  {key:'lab_tezgahi',   n:'Laboratuvar tezgâhı (evyeli)',c:'ofis_stok',w:1.20,h:0.60,hm:0.90,s:'lab', note:'Yönetmelik Md. 21: müşteri erişimi olmayan bölümde; önünde ≥0,90 m'},
+  {key:'eczaci_masasi', n:'Eczacı masası',             c:'ofis_stok', w:1.40,h:0.70,hm:0.75, s:'table', note:'Arkasında 0,90 m sandalye payı'},
+  {key:'ofis_sandalyesi',n:'Ofis sandalyesi',          c:'ofis_stok', w:0.60,h:0.60,hm:1.00, s:'chair'},
+  {key:'ofis_dolabi',   n:'Ofis / dosya dolabı',       c:'ofis_stok', w:0.90,h:0.45,hm:2.00, s:'cabinet'},
+  {key:'stok_rafi',     n:'Stok rafı (metal)',         c:'ofis_stok', w:1.00,h:0.40,hm:2.00, s:'rack', note:'5 kat, duvara sabitlenir; raf arası ≥0,90 m'},
+  {key:'stok_rafi_agir',n:'Stok rafı (ağır tip)',      c:'ofis_stok', w:1.20,h:0.50,hm:2.00, s:'rack'},
+  {key:'narkotik_kasa', n:'Narkotik çelik kasa',       c:'ofis_stok', w:0.45,h:0.45,hm:0.60, s:'safe', note:'Kırmızı/yeşil reçete ilaçları; müşteri erişimi olmayan odada'},
+  {key:'para_kasasi',   n:'Para kasası',               c:'ofis_stok', w:0.45,h:0.45,hm:0.60, s:'safe'},
+  {key:'bilgisayar_masasi',n:'Bilgisayar / yazıcı masası',c:'ofis_stok',w:0.80,h:0.60,hm:0.75,s:'table'},
+  {key:'koli_alani',    n:'Koli / palet alanı',        c:'ofis_stok', w:0.80,h:1.20,hm:0.15, s:'zone'},
+  // ---- Mutfak
+  {key:'mutfak_tezgahi',n:'Mutfak tezgâhı + alt dolap',c:'mutfak', w:2.00,h:0.60,hm:0.90, s:'counter', note:'1,20 / 1,60 / 2,00 m modüller'},
+  {key:'mutfak_evye',   n:'Evye',                      c:'mutfak', w:0.50,h:0.50,hm:0.90, s:'sink', note:'Tezgâh içine oturur'},
+  {key:'mini_buzdolabi',n:'Mini buzdolabı',            c:'mutfak', w:0.55,h:0.60,hm:0.85, s:'fridge', note:'Gıda; ilaç buzdolabıyla ortak kullanılmaz'},
+  {key:'buzdolabi',     n:'Buzdolabı',                 c:'mutfak', w:0.60,h:0.65,hm:1.85, s:'fridge'},
+  {key:'mikrodalga',    n:'Mikrodalga / ocak',         c:'mutfak', w:0.50,h:0.40,hm:0.30, s:'appliance', note:'Tezgâh üstü'},
+  {key:'personel_masasi',n:'Personel masası',          c:'mutfak', w:0.80,h:0.60,hm:0.75, s:'table'},
+  {key:'mutfak_dolabi', n:'Dik dolap',                 c:'mutfak', w:0.60,h:0.60,hm:2.00, s:'cabinet'},
+  // ---- Bakım odası
+  {key:'sedye',         n:'Sedye / muayene masası',    c:'bakim', w:1.90,h:0.65,hm:0.75, s:'stretcher', note:'Bir uzun kenarda ≥0,90 m, baş ucunda ≥0,60 m boşluk'},
+  {key:'lavabo',        n:'Lavabo',                    c:'bakim', w:0.50,h:0.40,hm:0.85, s:'sink', note:'Duvara yaslanır'},
+  {key:'paravan',       n:'Paravan (3 kanat)',         c:'bakim', w:1.80,h:0.05,hm:1.70, s:'screen'},
+  {key:'tibbi_dolap',   n:'Tıbbi malzeme dolabı',      c:'bakim', w:0.60,h:0.40,hm:1.80, s:'cabinet'},
+  {key:'tibbi_araba',   n:'Tıbbi araba / sehpa',       c:'bakim', w:0.60,h:0.45,hm:0.85, s:'cart'},
+  {key:'tabure',        n:'Döner tabure',              c:'bakim', w:0.40,h:0.40,hm:0.55, s:'stool'},
+  {key:'hasta_sandalyesi',n:'Hasta / refakatçi sandalyesi',c:'bakim',w:0.45,h:0.45,hm:0.85,s:'chair'},
+  {key:'tibbi_atik',    n:'Tıbbi atık kutusu',         c:'bakim', w:0.30,h:0.30,hm:0.60, s:'bin'},
+  // ---- WC
+  {key:'klozet',        n:'Klozet',                    c:'wc', w:0.40,h:0.70,hm:0.80, s:'toilet', note:'Ekseni yan duvara ≥0,40 m; önünde ≥0,60 m'},
+  {key:'wc_lavabo',     n:'WC lavabosu',               c:'wc', w:0.45,h:0.35,hm:0.85, s:'sink'},
+  {key:'temizlik_dolabi',n:'Temizlik dolabı',          c:'wc', w:0.40,h:0.40,hm:1.80, s:'cabinet'},
+  // ---- Kapı & Yapı
+  {key:'giris_kapisi_cift',n:'Giriş kapısı (çift kanat)',c:'yapi',w:1.60,h:0.10,hm:2.20,s:'door2', note:'Dışa açılır; net ≥0,90 m. R ile döndür, panelden menteşe yönü'},
+  {key:'giris_kapisi_tek',n:'Giriş kapısı (tek kanat)',c:'yapi', w:1.00,h:0.10,hm:2.20, s:'door', note:'Net ≥0,90 m'},
+  {key:'ic_kapi',       n:'İç kapı (90 cm)',           c:'yapi', w:0.90,h:0.10,hm:2.10, s:'door', note:'Duvar çizgisine yerleştir; yay yarıçapı = kapı genişliği'},
+  {key:'wc_kapisi',     n:'WC kapısı (80 cm)',         c:'yapi', w:0.80,h:0.10,hm:2.10, s:'door'},
+  {key:'surgu_kapi',    n:'Sürgülü kapı',              c:'yapi', w:0.90,h:0.10,hm:2.10, s:'slider'},
+  {key:'bolme_duvar',   n:'İç bölme duvar',            c:'yapi', w:2.00,h:0.10,hm:2.80, s:'wall', note:'Alçıpan 0,10 m; oda içini bölmek için'},
+  {key:'vitrin_cami',   n:'Vitrin camı',               c:'yapi', w:2.00,h:0.05,hm:2.20, s:'window', note:'Önüne raf konmaz'},
+  {key:'pencere',       n:'Pencere',                   c:'yapi', w:1.20,h:0.10,hm:1.20, s:'window'},
+  {key:'kolon',         n:'Kolon',                     c:'yapi', w:0.40,h:0.40,hm:2.80, s:'column'},
+  // ---- İnsan ölçeği
+  {key:'insan_ayakta',  n:'Ayakta insan (1,75 m)',     c:'insan', w:0.60,h:0.40,hm:1.75, s:'human', note:'Omuz 0,60 m, gövde 0,40 m'},
+  {key:'insan_yuruyen', n:'Yürüyen insan (şerit)',     c:'insan', w:0.60,h:0.75,hm:1.75, s:'human_walk', note:'Yürüme şeridi 0,75 m'},
+  {key:'iki_kisi_yanyana',n:'İki kişi yan yana',       c:'insan', w:1.20,h:0.40,hm:1.75, s:'human2', note:'Koridor referansı 1,20 m'},
+  {key:'tekerlekli_sandalye',n:'Tekerlekli sandalye',  c:'insan', w:1.20,h:0.70,hm:1.30, s:'wheelchair', note:'Geçiş ≥0,90 m; dönüş Ø1,50 m'},
+  {key:'sedyede_hasta', n:'Sedyede yatan hasta',       c:'insan', w:1.95,h:0.65,hm:0.75, s:'human_lying', note:'Sedye üstüne bindir'},
+  {key:'bebek_arabasi', n:'Bebek arabası',             c:'insan', w:0.60,h:1.00,hm:1.00, s:'stroller', note:'Kapı / koridor kontrolü'},
+  {key:'donus',         n:'Dönüş dairesi Ø1,50 m',     c:'insan', w:1.50,h:1.50,hm:0, s:'circle', note:'Tekerlekli sandalye 180° döner mi?'},
+  {key:'gecis',         n:'Geçiş şeridi 0,90 m',       c:'insan', w:0.90,h:2.00,hm:0, s:'strip', note:'Koridora koy; sığıyorsa geçiş yeterli'},
+  {key:'gecis_rahat',   n:'Rahat geçiş 1,20 m',        c:'insan', w:1.20,h:2.00,hm:0, s:'strip'},
+];
+const LIB_BY_KEY = Object.fromEntries(LIB.map(x => [x.key, x]));
+const SHELF_KEYS = {duvar_rafi: 1, dermokozmetik_unite: 1, vitrin_dolabi: 1, gondol_tek: 1, gondol_baslik: 1, gondol_cift: 2, cekmeceli_ilac_dolabi: 0};
+const DOOR_SHAPES = new Set(['door', 'door2', 'slider']);
+
+/* Ergonomi eşikleri (m) */
+const ERGO = {
+  passMin: 0.90, passComfort: 1.20, wheelTurn: 1.50, doorAccess: 0.90, counterFront: 1.50, behindCounter: 0.90,
+  m2Comfort: 1.0, m2Spacious: 1.5, m2CustomerComfort: 4, m2CustomerBusy: 2,
+  stretcherL: 1.90, stretcherW: 0.65, stretcherSide: 0.90, stretcherHead: 0.60,
+};
+
+/* Karşılaştırma nesneleri */
+const COMPARE = [
+  {key:'park',    n:'araba park yeri',          w:2.50, h:5.00},
+  {key:'oto',     n:'binek otomobil',           w:1.80, h:4.50},
+  {key:'pingpong',n:'masa tenisi masası',       w:1.525,h:2.74},
+  {key:'yatak2',  n:'çift kişilik yatak',       w:1.60, h:2.00},
+  {key:'yatak1',  n:'tek kişilik yatak',        w:0.90, h:1.90},
+  {key:'asansor', n:'asansör kabini (8 kişilik)',w:1.10,h:1.40},
+  {key:'dus',     n:'duş kabini',               w:0.90, h:0.90},
+];
+
+const ROOM_COLORS = ['#7C93B8','#D9A441','#9B9B9B','#9B7BB8','#5FA37A','#D97A6A','#5FA8A0','#C98BB0','#B58A5C'];
+const ROOM_TEMPLATES = [
+  {name:'WC', w:1.60, h:1.80, color:ROOM_COLORS[0]},
+  {name:'Mutfak', w:2.00, h:1.80, color:ROOM_COLORS[1]},
+  {name:'Eczacı Odası + Stok', w:3.60, h:2.15, color:ROOM_COLORS[3]},
+  {name:'Bakım Odası', w:3.60, h:2.05, color:ROOM_COLORS[4]},
+  {name:'Hol', w:3.60, h:0.95, color:ROOM_COLORS[2]},
+  {name:'Laboratuvar', w:2.00, h:1.60, color:ROOM_COLORS[6]},
+  {name:'Depo', w:2.00, h:2.00, color:ROOM_COLORS[8]},
+  {name:'Serbest Oda', w:3.00, h:3.00, color:ROOM_COLORS[5]},
+];
+
+/* Cetvel yorumu: [eşik, renk sınıfı, metin] */
+function rulerComment(d) {
+  if (d < 0.60) return {t: 'Geçilemez — bir kişi bile sıkışır', c: 'no'};
+  if (d < 0.80) return {t: 'Tek kişi dar geçiş', c: 'no'};
+  if (d < 0.90) return {t: 'Tek kişi rahat; tekerlekli sandalye için yetersiz', c: 'so'};
+  if (d < 1.20) return {t: 'Tekerlekli sandalye geçer / standart kapı; iki kişi zor', c: 'so'};
+  if (d < 1.50) return {t: 'İki kişi yan yana rahat', c: 'ok'};
+  return {t: 'Tekerlekli sandalye dönebilir / geniş koridor', c: 'ok'};
+}
+
+/* ---------- Varsayılan yerleşim (13,65 × 6,95) ---------- */
+function defaultState(variant = 'default') {
+  const W = 13.65, H = 6.95;
+  const rooms = [];
+  const room = (name, x, y, w, h, color, pin = '') => rooms.push({id: 'r' + (rooms.length + 1), name, x, y, w, h, color, pin, locked: false});
+  room('WC', 12.05, 0, 1.60, 1.80, ROOM_COLORS[0]);
+  if (variant !== 'empty') {
+    room('Mutfak', 10.05, 0, 2.00, 1.80, ROOM_COLORS[1]);
+    room('Arka Hol', 10.05, 1.80, 3.60, 0.95, ROOM_COLORS[2]);
+    room('Eczacı Odası + Stok', 10.05, 2.75, 3.60, 2.15, ROOM_COLORS[3]);
+    room('Bakım Odası', 10.05, 4.90, 3.60, 2.05, ROOM_COLORS[4]);
+  }
+  let n = 1;
+  const items = [];
+  // cx, cy: merkez; rot: 0 ön yüz aşağı, 90 sola, 180 yukarı, 270 sağa
+  const put = (key, cx, cy, rot = 0, extra = {}) => {
+    const d = LIB_BY_KEY[key];
+    const w = extra.w || d.w, h = extra.h || d.h;
+    items.push({id: 'i' + (n++), key, name: d.n, x: r3(cx - w / 2), y: r3(cy - h / 2), w, h, rot, flip: !!extra.flip, locked: false});
+  };
+  if (variant === 'empty') {
+    put('giris_kapisi_cift', 0.05, 3.45, 270);
+    put('klozet', 13.15, 0.45); put('wc_lavabo', 12.375, 0.275); put('wc_kapisi', 12.75, 1.80, 0);
+  } else {
+    // Sol kısa duvar: giriş + vitrin camları
+    put('giris_kapisi_cift', 0.05, 3.45, 270);
+    put('vitrin_cami', 0.025, 1.30, 90); put('vitrin_cami', 0.025, 5.60, 90);
+    // Satış alanı
+    put('dermokozmetik_unite', 2.10, 0.225, 0, {w: 3.00});
+    put('duvar_rafi', 5.50, 0.20, 0, {w: 3.80});
+    put('duvar_rafi', 3.00, 6.75, 180, {w: 4.80});
+    put('gondol_cift', 3.20, 1.95); put('gondol_cift', 5.60, 1.95); put('gondol_cift', 3.20, 5.00); put('gondol_cift', 5.60, 5.00);
+    put('banko_duz', 8.25, 3.15, 90);
+    put('kasa_pos', 8.175, 1.80, 90); put('kasa_pos', 8.175, 4.50, 90);
+    put('cekmeceli_ilac_dolabi', 8.75, 0.225, 0, {w: 1.70});
+    put('cekmeceli_ilac_dolabi', 9.825, 0.875, 90, {w: 1.75});
+    put('cekmeceli_ilac_dolabi', 9.825, 3.875, 90, {w: 2.05});
+    put('ilac_buzdolabi', 9.25, 0.825, 0);
+    put('personel_kapagi', 7.925, 0.85, 90, {w: 0.80});
+    put('personel_kapagi', 9.10, 5.075, 0, {w: 1.00});
+    put('bekleme_bank_2', 6.60, 6.65, 180); put('tansiyon_masasi', 7.75, 6.65, 0); put('sandalye', 7.725, 6.075, 0);
+    put('sepet_standi', 0.75, 2.65);
+    put('tekerlekli_sandalye', 1.80, 3.20, 0); put('insan_ayakta', 7.30, 3.30, 90);
+    // Mutfak (10,05–12,05 × 0–1,80)
+    put('mutfak_tezgahi', 11.05, 0.30, 0); put('mutfak_evye', 10.50, 0.30, 0); put('mini_buzdolabi', 11.725, 1.50, 180);
+    put('ic_kapi', 10.80, 1.80, 0);
+    // WC (12,05–13,65 × 0–1,80)
+    put('wc_lavabo', 12.375, 0.275, 0); put('klozet', 13.15, 0.45, 0); put('wc_kapisi', 12.75, 1.80, 0);
+    // Arka hol kapıları
+    put('ic_kapi', 10.05, 2.30, 90); put('ic_kapi', 10.80, 2.75, 180);
+    // Eczacı odası + stok (10,05–13,65 × 2,75–4,90)
+    put('lab_tezgahi', 10.75, 4.60, 180); put('ofis_dolabi', 11.80, 3.075, 0); put('eczaci_masasi', 12.95, 3.20, 0, {w: 1.30});
+    put('ofis_sandalyesi', 12.75, 3.90, 180); put('narkotik_kasa', 13.375, 3.825, 0);
+    put('stok_rafi', 11.95, 4.65, 180); put('stok_rafi', 13.05, 4.65, 180);
+    // Bakım odası (10,05–13,65 × 4,90–6,95)
+    put('ic_kapi', 10.05, 5.90, 90);
+    put('sedye', 12.50, 6.525, 0); put('lavabo', 10.40, 5.15, 0); put('paravan', 11.075, 5.75, 90, {w: 1.50});
+    put('tibbi_dolap', 13.35, 5.15, 0); put('hasta_sandalyesi', 12.225, 5.225, 0); put('tabure', 11.05, 6.60); put('tibbi_atik', 13.45, 5.65);
+  }
+  return {v: 1, rev: 0, shop: {w: W, h: H, wall: 0.10, name: 'Eczanem'}, rooms, items, nextId: n + 10};
+}
+function r3(v) { return Math.round(v * 1000) / 1000; }
+
+/* =====================================================================
+   DURUM, GEÇMİŞ, KAYIT
+   ===================================================================== */
+let state = defaultState();
+const settings = {snap: true, grid: true, humanBadge: true, wheelMode: 'zoom'};
+const history = {past: [], future: []};
+let sel = null;                 // {type:'room'|'item', id}
+let tool = 'select';
+let clientId = Math.random().toString(36).slice(2, 10);
+let remoteDoc = null, remoteReady = false, downloadsApi = null;
+let saveTimer = null, savePending = false;
+
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const r2 = v => Math.round(v * 100) / 100;
+const snapG = v => Math.round(v / GRID) * GRID;
+const fmtM = v => (Math.round(v * 100) / 100).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const fmtA = v => (Math.round(v * 100) / 100).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' m²';
+const fmt1 = v => (Math.round(v * 10) / 10).toLocaleString('tr-TR', {maximumFractionDigits: 1});
+const deg2rad = d => d * Math.PI / 180;
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function snapshot() { return JSON.stringify({shop: state.shop, rooms: state.rooms, items: state.items, nextId: state.nextId}); }
+function restore(json) {
+  const d = JSON.parse(json);
+  state.shop = d.shop; state.rooms = d.rooms; state.items = d.items; state.nextId = d.nextId;
+  if (sel && !findSel()) sel = null;
+}
+let lastCommitted = snapshot();
+function commit(label) {
+  const now = snapshot();
+  if (now === lastCommitted) return;
+  history.past.push(lastCommitted);
+  if (history.past.length > 120) history.past.shift();
+  history.future.length = 0;
+  lastCommitted = now;
+  state.rev = (state.rev || 0) + 1;
+  scheduleSave();
+  updateUndoButtons();
+  renderPanel(false);
+  requestDraw();
+}
+function undo() {
+  if (!history.past.length) return;
+  history.future.push(lastCommitted);
+  lastCommitted = history.past.pop();
+  restore(lastCommitted); state.rev++; scheduleSave(); updateUndoButtons(); renderPanel(true); requestDraw(); toast('Geri alındı');
+}
+function redo() {
+  if (!history.future.length) return;
+  history.past.push(lastCommitted);
+  lastCommitted = history.future.pop();
+  restore(lastCommitted); state.rev++; scheduleSave(); updateUndoButtons(); renderPanel(true); requestDraw(); toast('Yinelendi');
+}
+function updateUndoButtons() { $('#btnUndo').disabled = !history.past.length; $('#btnRedo').disabled = !history.future.length; }
+
+function validState(d) {
+  if (!d || typeof d !== 'object' || !d.shop || !Array.isArray(d.rooms) || !Array.isArray(d.items)) return false;
+  const num = v => typeof v === 'number' && isFinite(v);
+  if (!num(d.shop.w) || !num(d.shop.h) || d.shop.w < 1 || d.shop.h < 1 || d.shop.w > 200 || d.shop.h > 200) return false;
+  for (const r of d.rooms) if (!num(r.x) || !num(r.y) || !num(r.w) || !num(r.h) || r.w <= 0 || r.h <= 0) return false;
+  for (const it of d.items) if (!num(it.x) || !num(it.y) || !num(it.w) || !num(it.h) || it.w <= 0 || it.h <= 0) return false;
+  return true;
+}
+function sanitize(d) {
+  const s = {v: 1, rev: +d.rev || 0, shop: {w: r2(d.shop.w), h: r2(d.shop.h), wall: num0(d.shop.wall, 0.1), name: String(d.shop.name || 'Eczanem').slice(0, 60)}, rooms: [], items: [], nextId: +d.nextId || 1};
+  let maxId = 0;
+  for (const r of d.rooms) s.rooms.push({id: String(r.id || 'r' + (++maxId)), name: String(r.name || 'Oda').slice(0, 60), x: r3(r.x), y: r3(r.y), w: r3(r.w), h: r3(r.h), color: /^#[0-9a-fA-F]{6}$/.test(r.color) ? r.color : ROOM_COLORS[0], pin: ['tl','tr','bl','br'].includes(r.pin) ? r.pin : '', locked: !!r.locked});
+  for (const it of d.items) s.items.push({id: String(it.id || 'i' + (++maxId)), key: LIB_BY_KEY[it.key] ? it.key : 'kolon', name: String(it.name || (LIB_BY_KEY[it.key] || {}).n || 'Eşya').slice(0, 60), x: r3(it.x), y: r3(it.y), w: r3(it.w), h: r3(it.h), rot: ((+it.rot || 0) % 360 + 360) % 360, flip: !!it.flip, locked: !!it.locked});
+  const ids = new Set(); // id çakışmalarını temizle
+  for (const o of [...s.rooms, ...s.items]) { while (ids.has(o.id)) o.id = o.id + '_'; ids.add(o.id); }
+  const n = Math.max(s.nextId, s.rooms.length + s.items.length + 1);
+  s.nextId = n;
+  return s;
+}
+function num0(v, d) { return (typeof v === 'number' && isFinite(v) && v >= 0 && v < 1) ? v : d; }
+
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    if (!validState(d)) return false;
+    state = sanitize(d);
+    for (const r of state.rooms) {
+      if (/\bwc\b|tuvalet|lavabo/i.test(r.name) && r.pin === 'tr') {
+        r.pin = '';
+      }
+    }
+    return true;
+  } catch (e) { return false; }
+}
+function scheduleSave() {
+  savePending = true; setSaveStatus('pending');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(doSave, 450);
+}
+async function doSave() {
+  savePending = false;
+  const payload = {v: 1, rev: state.rev, shop: state.shop, rooms: state.rooms, items: state.items, nextId: state.nextId};
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); } catch (e) {}
+  if (remoteDoc) {
+    try { await remoteDoc.set({rev: state.rev, clientId, updatedAt: new Date().toISOString(), state: payload}); setSaveStatus('cloud'); return; }
+    catch (e) { setSaveStatus('local'); return; }
+  }
+  setSaveStatus('local');
+}
+function setSaveStatus(kind) {
+  const dot = $('#saveDot'), t = $('#saveText');
+  dot.classList.toggle('pending', kind === 'pending');
+  t.textContent = kind === 'pending' ? 'Kaydediliyor…' : kind === 'cloud' ? 'Kaydedildi (bulut)' : 'Kaydedildi (bu tarayıcı)';
+}
+async function initRemote() {
+  if (!window.claude || typeof window.claude.use !== 'function') return;
+  try {
+    const db = await window.claude.use('db');
+    if (db) {
+      remoteDoc = db.doc('plan/current');
+      remoteDoc.onSnapshot(snap => {
+        remoteReady = true;
+        if (!snap.exists) return;
+        const d = snap.data();
+        if (!d || d.clientId === clientId) return;
+        if (!(d.rev > (state.rev || 0))) return;
+        if (!validState(d.state)) return;
+        state = sanitize(d.state); state.rev = d.rev;
+        lastCommitted = snapshot(); history.past.length = 0; history.future.length = 0;
+        if (sel && !findSel()) sel = null;
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d.state)); } catch (e) {}
+        updateUndoButtons(); renderPanel(true); requestDraw(); toast('Başka bir cihazdan gelen plan yüklendi');
+      }, () => {});
+    }
+  } catch (e) {}
+  try { downloadsApi = await window.claude.use('downloads'); } catch (e) {}
+}
+
+/* =====================================================================
+   GÖRÜNÜM (metre → piksel)
+   ===================================================================== */
+const canvas = $('#plan'); let ctx = canvas.getContext('2d');
+const stage = $('#stage');
+let view = {s: 60, ox: 40, oy: 40};
+let cw = 0, ch = 0, dpr = 1;
+const w2sx = x => x * view.s + view.ox, w2sy = y => y * view.s + view.oy;
+const s2wx = px => (px - view.ox) / view.s, s2wy = py => (py - view.oy) / view.s;
+
+let autoFit = true;
+function resize() {
+  const r = stage.getBoundingClientRect();
+  const ocw = cw, och = ch;
+  cw = Math.max(50, r.width); ch = Math.max(50, r.height);
+  dpr = Math.min(3, window.devicePixelRatio || 1);
+  canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr);
+  if (autoFit) fit();
+  else if (ocw && och) { view.ox += (cw - ocw) / 2; view.oy += (ch - och) / 2; } // merkez sabit kalsın
+  requestDraw();
+}
+function fit() {
+  autoFit = true;
+  const pad = 46;
+  const s = Math.min((cw - pad * 2) / state.shop.w, (ch - pad * 2 - 20) / state.shop.h);
+  view.s = clamp(s, 5, 800);
+  view.ox = (cw - state.shop.w * view.s) / 2;
+  view.oy = (ch - state.shop.h * view.s) / 2 + 8;
+  requestDraw();
+}
+function zoomAt(factor, px, py) {
+  autoFit = false;
+  const ns = clamp(view.s * factor, 5, 800);
+  const wx = s2wx(px), wy = s2wy(py);
+  view.s = ns;
+  view.ox = px - wx * ns; view.oy = py - wy * ns;
+  requestDraw();
+}
+function canvasPos(e) { const r = canvas.getBoundingClientRect(); return {x: e.clientX - r.left, y: e.clientY - r.top}; }
+
+/* =====================================================================
+   GEOMETRİ
+   ===================================================================== */
+const findSel = () => sel ? (sel.type === 'room' ? state.rooms.find(r => r.id === sel.id) : state.items.find(i => i.id === sel.id)) : null;
+const roomById = id => state.rooms.find(r => r.id === id);
+const itemCenter = it => ({x: it.x + it.w / 2, y: it.y + it.h / 2});
+function toLocal(it, wx, wy) {
+  const c = itemCenter(it), t = deg2rad(it.rot || 0), dx = wx - c.x, dy = wy - c.y;
+  return {x: dx * Math.cos(t) + dy * Math.sin(t), y: -dx * Math.sin(t) + dy * Math.cos(t)};
+}
+function toWorld(it, lx, ly) {
+  const c = itemCenter(it), t = deg2rad(it.rot || 0);
+  return {x: c.x + lx * Math.cos(t) - ly * Math.sin(t), y: c.y + lx * Math.sin(t) + ly * Math.cos(t)};
+}
+function itemAABB(it) {
+  const c = itemCenter(it), t = deg2rad(it.rot || 0);
+  const hx = Math.abs(it.w / 2 * Math.cos(t)) + Math.abs(it.h / 2 * Math.sin(t));
+  const hy = Math.abs(it.w / 2 * Math.sin(t)) + Math.abs(it.h / 2 * Math.cos(t));
+  return {x: c.x - hx, y: c.y - hy, w: hx * 2, h: hy * 2};
+}
+function pointInItem(it, wx, wy, padM = 0) {
+  const l = toLocal(it, wx, wy);
+  return Math.abs(l.x) <= it.w / 2 + padM && Math.abs(l.y) <= it.h / 2 + padM;
+}
+const pointInRect = (r, x, y) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+const overlap = (a, b, eps = 0.001) => a.x + eps < b.x + b.w && b.x + eps < a.x + a.w && a.y + eps < b.y + b.h && b.y + eps < a.y + a.h;
+const area = r => r.w * r.h;
+function roomOverlaps(r) { return state.rooms.some(o => o !== r && overlap(o, r)); }
+function roomContaining(wx, wy) { return state.rooms.find(r => pointInRect(r, wx, wy)) || null; }
+function itemAt(wx, wy, padM) {
+  // küçük eşya üstte: alanı küçük olanı önce dene
+  const sorted = [...state.items].sort((a, b) => area(a) - area(b));
+  for (const it of sorted) if (pointInItem(it, wx, wy, padM)) return it;
+  return null;
+}
+function itemsInRoom(r) { return state.items.filter(it => { const c = itemCenter(it); return pointInRect(r, c.x, c.y); }); }
+
+/* Tutamaçlar: hx,hy ∈ {-1,0,1} */
+const HANDLES = [[-1,-1],[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0]];
+function handlePositions(obj, type) {
+  // ekran koordinatları
+  const out = [];
+  if (type === 'room') {
+    for (const [hx, hy] of HANDLES) {
+      if (!roomHandleAllowed(obj, hx, hy)) continue;
+      out.push({hx, hy, px: w2sx(obj.x + (hx + 1) / 2 * obj.w), py: w2sy(obj.y + (hy + 1) / 2 * obj.h)});
+    }
+  } else {
+    for (const [hx, hy] of HANDLES) {
+      const p = toWorld(obj, hx * obj.w / 2, hy * obj.h / 2);
+      out.push({hx, hy, px: w2sx(p.x), py: w2sy(p.y)});
+    }
+    const rp = toWorld(obj, 0, -obj.h / 2 - 26 / view.s);
+    out.push({rot: true, px: w2sx(rp.x), py: w2sy(rp.y)});
+  }
+  return out;
+}
+function roomHandleAllowed(r, hx, hy) {
+  if (r.locked) return false;
+  if (r.pin === 'tr') return hx === -1 || hy === 1 || (hx === 0 && hy === 1) || (hx === -1 && hy === 0);
+  if (r.pin === 'tl') return hx === 1 || hy === 1;
+  if (r.pin === 'br') return hx === -1 || hy === -1;
+  if (r.pin === 'bl') return hx === 1 || hy === -1;
+  return true;
+}
+function handleAt(px, py, radius) {
+  const o = findSel(); if (!o || o.locked) return null;
+  let best = null, bd = radius; // en yakın tutamaç (düşük zoom'da üst üste binerler)
+  for (const h of handlePositions(o, sel.type)) { const d = Math.hypot(h.px - px, h.py - py); if (d <= bd) { bd = d; best = h; } }
+  return best;
+}
+function applyPin(r) {
+  if (r.pin === 'tr') { r.x = state.shop.w - r.w; r.y = 0; }
+  else if (r.pin === 'tl') { r.x = 0; r.y = 0; }
+  else if (r.pin === 'br') { r.x = state.shop.w - r.w; r.y = state.shop.h - r.h; }
+  else if (r.pin === 'bl') { r.x = 0; r.y = state.shop.h - r.h; }
+}
+function clampRoom(r) {
+  r.w = clamp(r.w, MIN_ROOM, state.shop.w); r.h = clamp(r.h, MIN_ROOM, state.shop.h);
+  r.x = clamp(r.x, 0, state.shop.w - r.w); r.y = clamp(r.y, 0, state.shop.h - r.h);
+  applyPin(r);
+  r.x = r3(r.x); r.y = r3(r.y); r.w = r3(r.w); r.h = r3(r.h);
+}
+function clampItem(it) {
+  const bb = itemAABB(it);
+  let dx = 0, dy = 0;
+  if (bb.w <= state.shop.w) { if (bb.x < 0) dx = -bb.x; else if (bb.x + bb.w > state.shop.w) dx = state.shop.w - bb.x - bb.w; }
+  if (bb.h <= state.shop.h) { if (bb.y < 0) dy = -bb.y; else if (bb.y + bb.h > state.shop.h) dy = state.shop.h - bb.y - bb.h; }
+  it.x = r3(it.x + dx); it.y = r3(it.y + dy);
+}
+
+/* =====================================================================
+   YAPIŞMA (SNAP)
+   ===================================================================== */
+let guides = [];
+function snapTargets(exclude) {
+  const xs = [0, state.shop.w], ys = [0, state.shop.h];
+  for (const r of state.rooms) { if (r === exclude) continue; xs.push(r.x, r.x + r.w); ys.push(r.y, r.y + r.h); }
+  return {xs, ys};
+}
+function bestSnap(edges, targets, thr) {
+  // edges: [{v, off}] — v mevcut kenar değeri, off: hedef − v uygulanınca x değişimi
+  let best = null;
+  for (const e of edges) for (const t of targets) {
+    const d = t - e.v;
+    if (Math.abs(d) <= thr && (!best || Math.abs(d) < Math.abs(best.d))) best = {d, t};
+  }
+  return best;
+}
+function snapMoveRect(rect, exclude, allowGrid = true) {
+  guides = [];
+  if (!settings.snap) return rect;
+  const thr = Math.max(0.02, 8 / view.s);
+  const {xs, ys} = snapTargets(exclude);
+  let x = rect.x, y = rect.y;
+  const bx = bestSnap([{v: rect.x}, {v: rect.x + rect.w}], xs, thr);
+  const by = bestSnap([{v: rect.y}, {v: rect.y + rect.h}], ys, thr);
+  if (bx) { x = rect.x + bx.d; guides.push({axis: 'x', v: bx.t}); } else if (allowGrid) x = snapG(rect.x);
+  if (by) { y = rect.y + by.d; guides.push({axis: 'y', v: by.t}); } else if (allowGrid) y = snapG(rect.y);
+  return {x, y};
+}
+function snapValue(v, targets, allowGrid = true) {
+  if (!settings.snap) return v;
+  const thr = Math.max(0.02, 8 / view.s);
+  const b = bestSnap([{v}], targets, thr);
+  if (b) return b.t;
+  return allowGrid ? snapG(v) : v;
+}
+
+/* =====================================================================
+   ÇİZİM
+   ===================================================================== */
+let drawQueued = false;
+function requestDraw() { if (drawQueued) return; drawQueued = true; requestAnimationFrame(() => { drawQueued = false; draw(); }); }
+let TK = {};
+function readTokens() {
+  const cs = getComputedStyle(document.documentElement);
+  const g = n => cs.getPropertyValue(n).trim();
+  TK = {paper: g('--paper'), ink: g('--ink'), muted: g('--muted'), faint: g('--faint'), accent: g('--accent'), accentSoft: g('--accent-soft'), line: g('--line'), lineStrong: g('--line-strong'), gridMinor: g('--grid-minor'), gridMajor: g('--grid-major'), gridMeter: g('--grid-meter'), wall: g('--wall'), wallHatch: g('--wall-hatch'), danger: g('--danger'), warn: g('--warn'), surface: g('--surface')};
+  if (typeof exporting !== 'undefined' && exporting) Object.assign(TK, LIGHT_TK);
+  TK.dark = isDark();
+  TK.furnFill = TK.dark ? '#2B322F' : '#FBFAF4';
+  TK.furnStroke = TK.dark ? '#C4CEC7' : '#3E4744';
+  TK.glass = TK.dark ? 'rgba(120,180,220,.25)' : 'rgba(120,170,220,.25)';
+}
+function isDark() {
+  const t = document.documentElement.getAttribute('data-theme');
+  if (t === 'dark') return true; if (t === 'light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function hexA(hex, a) {
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex); if (!m) return hex;
+  return `rgba(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)},${a})`;
+}
+const FONT = (w, px, mono) => `${w} ${px}px ${mono ? "'IBM Plex Mono',ui-monospace,Menlo,monospace" : "'Archivo',system-ui,sans-serif"}`;
+
+let drag = null, rulerLine = null, pointerWorld = null, hoverId = null;
+
+function draw() {
+  readTokens();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cw, ch);
+  ctx.fillStyle = TK.paper; ctx.fillRect(0, 0, cw, ch);
+  const S = state.shop, s = view.s;
+  const X0 = w2sx(0), Y0 = w2sy(0), X1 = w2sx(S.w), Y1 = w2sy(S.h);
+
+  // --- ızgara (dükkân içi)
+  if (settings.grid) {
+    ctx.save(); ctx.beginPath(); ctx.rect(X0, Y0, X1 - X0, Y1 - Y0); ctx.clip();
+    const step = s >= 34 ? 0.1 : s >= 14 ? 0.5 : 1;
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= S.w + 1e-9; x = r3(x + step)) {
+      const px = Math.round(w2sx(x)) + 0.5;
+      const isM = Math.abs(x - Math.round(x)) < 1e-6, isH = Math.abs(x * 2 - Math.round(x * 2)) < 1e-6;
+      ctx.strokeStyle = isM ? TK.gridMeter : isH ? TK.gridMajor : TK.gridMinor;
+      ctx.beginPath(); ctx.moveTo(px, Y0); ctx.lineTo(px, Y1); ctx.stroke();
+    }
+    for (let y = 0; y <= S.h + 1e-9; y = r3(y + step)) {
+      const py = Math.round(w2sy(y)) + 0.5;
+      const isM = Math.abs(y - Math.round(y)) < 1e-6, isH = Math.abs(y * 2 - Math.round(y * 2)) < 1e-6;
+      ctx.strokeStyle = isM ? TK.gridMeter : isH ? TK.gridMajor : TK.gridMinor;
+      ctx.beginPath(); ctx.moveTo(X0, py); ctx.lineTo(X1, py); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // --- odalar
+  const overlapping = new Set();
+  for (let i = 0; i < state.rooms.length; i++) for (let j = i + 1; j < state.rooms.length; j++)
+    if (overlap(state.rooms[i], state.rooms[j])) { overlapping.add(state.rooms[i].id); overlapping.add(state.rooms[j].id); }
+  for (const r of state.rooms) drawRoom(r, overlapping.has(r.id));
+
+  // --- dış duvar
+  const T = 0.25 * s; // dış duvar kalınlığı (çizim)
+  ctx.save();
+  ctx.fillStyle = TK.wall;
+  ctx.beginPath(); ctx.rect(X0 - T, Y0 - T, (X1 - X0) + 2 * T, (Y1 - Y0) + 2 * T); ctx.rect(X0, Y0, X1 - X0, Y1 - Y0); ctx.fill('evenodd');
+  ctx.restore();
+
+  // --- eşyalar (büyükten küçüğe → küçükler üstte)
+  const items = [...state.items].sort((a, b) => area(b) - area(a));
+  for (const it of items) drawItem(it);
+
+  // --- oda etiketleri (eşyaların üstünde okunur kalsın)
+  for (const r of state.rooms) drawRoomLabel(r, overlapping.has(r.id));
+
+  // --- metre cetvelleri
+  drawRulers(X0, Y0, X1, Y1);
+
+  // --- kılavuzlar
+  if (guides.length) {
+    ctx.save(); ctx.strokeStyle = TK.accent; ctx.setLineDash([6, 4]); ctx.lineWidth = 1;
+    for (const g of guides) {
+      ctx.beginPath();
+      if (g.axis === 'x') { const px = Math.round(w2sx(g.v)) + 0.5; ctx.moveTo(px, Y0 - T); ctx.lineTo(px, Y1 + T); }
+      else { const py = Math.round(w2sy(g.v)) + 0.5; ctx.moveTo(X0 - T, py); ctx.lineTo(X1 + T, py); }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // --- oda çizme önizleme
+  if (drag && drag.kind === 'draw-room' && drag.rect) {
+    const r = drag.rect;
+    ctx.save(); ctx.fillStyle = hexA(TK.accent, .15); ctx.strokeStyle = TK.accent; ctx.lineWidth = 1.5; ctx.setLineDash([5, 3]);
+    ctx.fillRect(w2sx(r.x), w2sy(r.y), r.w * s, r.h * s); ctx.strokeRect(w2sx(r.x), w2sy(r.y), r.w * s, r.h * s); ctx.restore();
+    drawBadge(w2sx(r.x + r.w) + 12, w2sy(r.y + r.h) + 12, `${fmtM(r.w)} × ${fmtM(r.h)} m · ${fmtA(r.w * r.h)}`);
+  }
+
+  // --- seçim
+  const so = findSel();
+  if (so) drawSelection(so);
+
+  // --- cetvel
+  if (rulerLine) drawRulerLine(rulerLine);
+
+  // --- sürükleme rozeti
+  if (drag && drag.badge) drawBadge(drag.badge.px, drag.badge.py, drag.badge.text, drag.badge.sub);
+
+  drawScaleBar();
+  updateStatus();
+}
+
+function drawRoom(r, bad) {
+  const s = view.s, px = w2sx(r.x), py = w2sy(r.y), pw = r.w * s, ph = r.h * s;
+  ctx.save();
+  ctx.fillStyle = hexA(r.color, TK.dark ? .22 : .18);
+  ctx.fillRect(px, py, pw, ph);
+  // bölme duvarı: sınır çizgisi üzerine ortalanmış kalınlık
+  const t = Math.max(2, state.shop.wall * s);
+  ctx.strokeStyle = bad ? TK.danger : TK.wall; ctx.lineWidth = t;
+  ctx.strokeRect(px, py, pw, ph);
+  if (bad) {
+    ctx.beginPath(); ctx.rect(px, py, pw, ph); ctx.clip();
+    ctx.strokeStyle = hexA(TK.danger.startsWith('#') ? TK.danger : '#C2412D', .35); ctx.lineWidth = 1;
+    for (let d = -ph; d < pw; d += 10) { ctx.beginPath(); ctx.moveTo(px + d, py); ctx.lineTo(px + d + ph, py + ph); ctx.stroke(); }
+  }
+  ctx.restore();
+}
+function drawRoomLabel(r, bad) {
+  const s = view.s, pw = r.w * s, ph = r.h * s, cx = w2sx(r.x + r.w / 2), cy = w2sy(r.y + r.h / 2);
+  if (pw < 28 || ph < 16) return;
+  ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  let nameSize = 13; ctx.font = FONT(700, nameSize);
+  while (ctx.measureText(r.name).width > pw - 10 && nameSize > 9) { nameSize--; ctx.font = FONT(700, nameSize); }
+  const lines = [{t: r.name, f: FONT(700, nameSize), c: TK.ink}];
+  if (ph > 46 && pw > 70) lines.push({t: `${fmtM(r.w)} × ${fmtM(r.h)} m`, f: FONT(500, 11, true), c: TK.muted});
+  if (ph > 34 && pw > 56) lines.push({t: fmtA(r.w * r.h), f: FONT(600, 12, true), c: bad ? TK.danger : TK.ink});
+  const lh = 15, total = lines.length * lh;
+  // arka plan plakası
+  let maxW = 0; for (const l of lines) { ctx.font = l.f; maxW = Math.max(maxW, ctx.measureText(l.t).width); }
+  ctx.fillStyle = hexA(TK.dark ? '#141817' : '#FFFFFF', .72);
+  roundRect(cx - maxW / 2 - 6, cy - total / 2 - 3, maxW + 12, total + 6, 5); ctx.fill();
+  lines.forEach((l, i) => { ctx.font = l.f; ctx.fillStyle = l.c; ctx.fillText(l.t, cx, cy - total / 2 + lh * i + lh / 2); });
+  ctx.restore();
+}
+function roundRect(x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function drawItem(it) {
+  const s = view.s, c = itemCenter(it), d = LIB_BY_KEY[it.key] || {s: 'rect'};
+  ctx.save();
+  ctx.translate(w2sx(c.x), w2sy(c.y)); ctx.rotate(deg2rad(it.rot || 0));
+  if (it.flip) ctx.scale(-1, 1);
+  drawShape(ctx, d.s, it.w * s, it.h * s, {tk: TK, w: it.w, h: it.h, sel: sel && sel.type === 'item' && sel.id === it.id});
+  ctx.restore();
+  if (DOOR_SHAPES.has(d.s) || d.s === 'window') { // dış duvara oturan kapı/cam: dış duvarı kes
+    const bb = itemAABB(it), T = 0.25, S = state.shop, e = 0.02, isWin = d.s === 'window';
+    const cut = (x, y, w, h) => { ctx.save(); ctx.fillStyle = TK.paper; ctx.fillRect(w2sx(x), w2sy(y), w * s, h * s); if (isWin) { ctx.fillStyle = TK.glass; ctx.fillRect(w2sx(x), w2sy(y), w * s, h * s); ctx.strokeStyle = TK.furnStroke; ctx.lineWidth = 1; ctx.strokeRect(w2sx(x), w2sy(y), w * s, h * s); } ctx.restore(); };
+    if (bb.x < e) cut(-T, bb.y, T, bb.h); if (bb.x + bb.w > S.w - e) cut(S.w, bb.y, T, bb.h);
+    if (bb.y < e) cut(bb.x, -T, bb.w, T); if (bb.y + bb.h > S.h - e) cut(bb.x, S.h, bb.w, T);
+  }
+  // etiket (ekran uzayında, düz)
+  const bb = itemAABB(it), bw = bb.w * s, bh = bb.h * s;
+  if (d.s === 'strip' || d.s === 'circle') {
+    ctx.save(); ctx.font = FONT(600, 11, true); ctx.fillStyle = TK.accent; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const t = d.s === 'circle' ? 'Ø ' + fmtM(it.w) + ' m' : fmtM(Math.min(it.w, it.h)) + ' m';
+    if (bw > 40) ctx.fillText(t, w2sx(c.x), w2sy(c.y)); ctx.restore();
+    return;
+  }
+  if (bw < 34 || bh < 14 || ['door', 'door2', 'slider', 'window', 'wall', 'column', 'human', 'human_walk', 'human2', 'pos', 'screen'].includes(d.s)) return;
+  ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  let size = 11; ctx.font = FONT(500, size);
+  let t = it.name;
+  if (ctx.measureText(t).width > bw - 6) { size = 10; ctx.font = FONT(500, size); }
+  if (ctx.measureText(t).width > bw - 6) { t = shortName(it.name); }
+  while (ctx.measureText(t).width > bw - 4 && t.length > 3) t = t.slice(0, -2) + '…';
+  if (t.length <= 3 && ctx.measureText(t).width > bw - 4) { ctx.restore(); return; }
+  ctx.fillStyle = TK.ink; ctx.globalAlpha = .9;
+  ctx.fillText(t, w2sx(c.x), w2sy(c.y));
+  ctx.restore();
+}
+function shortName(n) { return n.replace(/\s*\(.*?\)\s*/g, '').split(/[\/,]/)[0].trim(); }
+
+/* Şekil çizimi: piksel uzayında, merkez orijinde, W×H */
+function drawShape(g, shape, W, H, o) {
+  const tk = o.tk, fill = tk.furnFill, stroke = tk.furnStroke;
+  const x = -W / 2, y = -H / 2;
+  g.lineWidth = 1.2; g.lineJoin = 'round';
+  const rect = (rx = x, ry = y, rw = W, rh = H, rad = 0) => { if (rad) { rr(g, rx, ry, rw, rh, rad); } else { g.beginPath(); g.rect(rx, ry, rw, rh); } };
+  const fs = () => { g.fillStyle = fill; g.fill(); g.strokeStyle = stroke; g.stroke(); };
+  const line = (x1, y1, x2, y2) => { g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); };
+  switch (shape) {
+    case 'counter': { rect(); fs(); g.strokeStyle = stroke; line(x + 3, y + H * .78, x + W - 3, y + H * .78); g.setLineDash([3, 3]); line(x, y + H + 4, x + W, y + H + 4); g.setLineDash([]); break; }
+    case 'pos': { rect(x, y, W, H, 3); fs(); g.fillStyle = stroke; g.fillRect(x + W * .15, y + H * .2, W * .7, H * .35); break; }
+    case 'shelf': { rect(); fs(); g.strokeStyle = stroke; const n = Math.max(1, Math.round(o.w / 0.25)); for (let i = 1; i < n; i++) line(x + W * i / n, y, x + W * i / n, y + H); g.lineWidth = 2; line(x, y + H * .72, x + W, y + H * .72); g.lineWidth = 1.2; break; }
+    case 'drawer': { rect(); fs(); const cols = Math.max(1, Math.round(o.w / 0.33)), rows = 2; for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) { g.beginPath(); g.rect(x + 2 + i * (W - 4) / cols, y + 2 + j * (H - 4) / rows, (W - 4) / cols - 1.5, (H - 4) / rows - 1.5); g.strokeStyle = stroke; g.globalAlpha = .6; g.stroke(); g.globalAlpha = 1; } break; }
+    case 'gondola': { rect(); fs(); line(x, 0, x + W, 0); const n = Math.max(1, Math.round(o.w / 0.6)); for (let i = 1; i < n; i++) line(x + W * i / n, y, x + W * i / n, y + H); break; }
+    case 'gondola1': { rect(); fs(); line(x, y + H * .35, x + W, y + H * .35); const n = Math.max(1, Math.round(o.w / 0.6)); for (let i = 1; i < n; i++) line(x + W * i / n, y, x + W * i / n, y + H); break; }
+    case 'showcase': { rect(); fs(); g.fillStyle = tk.glass; g.fillRect(x + 2, y + 2, W - 4, H - 4); g.strokeStyle = stroke; g.strokeRect(x + 3, y + 3, W - 6, H - 6); break; }
+    case 'fridge': { rect(x, y, W, H, 2); fs(); line(x + W * .1, y + H * .85, x + W * .9, y + H * .85); g.fillStyle = stroke; g.fillRect(x + W * .12, y + H * .88, W * .18, 2); if (W > 22) { g.font = `${Math.min(12, H * .35)}px system-ui`; g.fillStyle = stroke; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('❄', 0, -H * .1); } break; }
+    case 'bench': { rect(x, y, W, H, 3); fs(); const n = Math.max(1, Math.round(o.w / 0.6)); for (let i = 1; i < n; i++) line(x + W * i / n, y + 2, x + W * i / n, y + H - 2); g.lineWidth = 2.5; line(x + 1, y + H * .18, x + W - 1, y + H * .18); break; }
+    case 'table': { rect(x, y, W, H, Math.min(6, H * .2)); fs(); break; }
+    case 'chair': { rect(x, y + H * .2, W, H * .8, 3); fs(); g.lineWidth = 2.5; line(x + 1, y + H * .12, x + W - 1, y + H * .12); break; }
+    case 'sink': { rect(x, y, W, H, 3); fs(); g.beginPath(); g.ellipse(0, H * .06, W * .34, H * .3, 0, 0, Math.PI * 2); g.strokeStyle = stroke; g.stroke(); g.fillStyle = stroke; g.beginPath(); g.arc(0, y + H * .18, Math.max(1.5, W * .05), 0, Math.PI * 2); g.fill(); break; }
+    case 'safe': { rect(); fs(); g.beginPath(); g.arc(0, 0, Math.min(W, H) * .22, 0, Math.PI * 2); g.stroke(); line(0, 0, 0, -Math.min(W, H) * .22); break; }
+    case 'cabinet': { rect(); fs(); line(0, y, 0, y + H); g.fillStyle = stroke; g.fillRect(-W * .06 - 1.5, H * .1, 1.5, H * .18); g.fillRect(W * .06, H * .1, 1.5, H * .18); break; }
+    case 'rack': { rect(); fs(); g.globalAlpha = .55; line(x, y, x + W, y + H); line(x + W, y, x, y + H); g.globalAlpha = 1; const n = Math.max(1, Math.round(o.w / 0.5)); for (let i = 1; i < n; i++) line(x + W * i / n, y, x + W * i / n, y + H); break; }
+    case 'zone': { g.setLineDash([4, 3]); rect(); g.fillStyle = hexA(tk.warn.startsWith('#') ? tk.warn : '#A8690F', .12); g.fill(); g.strokeStyle = tk.warn; g.stroke(); g.setLineDash([]); break; }
+    case 'appliance': { rect(x, y, W, H, 2); fs(); const r = Math.min(W, H) * .18; for (const [dx, dy] of [[-.25, -.22], [.25, -.22], [-.25, .22], [.25, .22]]) { g.beginPath(); g.arc(W * dx, H * dy, r, 0, Math.PI * 2); g.stroke(); } break; }
+    case 'stretcher': { rect(x, y, W, H, 4); fs(); rr(g, x + 4, y + H * .15, Math.min(W * .16, 22), H * .7, 3); g.strokeStyle = stroke; g.stroke(); g.setLineDash([2, 3]); line(x + W * .3, y + 3, x + W * .3, y + H - 3); g.setLineDash([]); break; }
+    case 'screen': { g.lineWidth = Math.max(2, H); g.strokeStyle = stroke; g.beginPath(); const n = 4; for (let i = 0; i <= n; i++) { const px = x + W * i / n, py = (i % 2 ? -1 : 1) * Math.max(2, H); i ? g.lineTo(px, py) : g.moveTo(px, py); } g.stroke(); break; }
+    case 'bin': { g.beginPath(); g.arc(0, 0, Math.min(W, H) / 2, 0, Math.PI * 2); fs(); g.fillStyle = tk.danger; g.beginPath(); g.arc(0, 0, Math.min(W, H) * .18, 0, Math.PI * 2); g.fill(); break; }
+    case 'toilet': { rect(x, y, W, H * .28, 2); fs(); g.beginPath(); g.ellipse(0, y + H * .28 + H * .36, W * .42, H * .34, 0, 0, Math.PI * 2); fs(); g.beginPath(); g.ellipse(0, y + H * .28 + H * .36, W * .26, H * .22, 0, 0, Math.PI * 2); g.stroke(); break; }
+    case 'door': case 'door2': case 'slider': {
+      // kapı boşluğu
+      g.fillStyle = tk.paper; g.fillRect(x, y - 1, W, H + 2);
+      g.strokeStyle = stroke; g.lineWidth = 1.5;
+      if (shape === 'slider') { g.setLineDash([]); line(x, y + H / 2, x + W, y + H / 2); g.lineWidth = 3; line(x + W * .05, y - H * .4, x + W * .55, y - H * .4); g.lineWidth = 1; g.setLineDash([3, 2]); line(x + W * .5, y - H * .4, x + W * 1.0, y - H * .4); g.setLineDash([]); break; }
+      const leaves = shape === 'door2' ? 2 : 1, L = W / leaves;
+      for (let k = 0; k < leaves; k++) {
+        const hx = k === 0 ? x : x + W, dir = k === 0 ? 1 : -1; // menteşe
+        g.beginPath(); g.moveTo(hx, y); g.arc(hx, y, L, dir === 1 ? -Math.PI / 2 : -Math.PI, dir === 1 ? 0 : -Math.PI / 2, dir === -1); g.closePath();
+        g.fillStyle = hexA(tk.accent.startsWith('#') ? tk.accent : '#1F7A5A', .08); g.fill();
+        g.setLineDash([3, 3]); g.lineWidth = 1; g.beginPath(); g.arc(hx, y, L, dir === 1 ? -Math.PI / 2 : -Math.PI, dir === 1 ? 0 : -Math.PI / 2, dir === -1); g.stroke(); g.setLineDash([]);
+        g.lineWidth = 3; line(hx, y, hx, y - L);
+      }
+      break;
+    }
+    case 'window': { g.fillStyle = tk.paper; g.fillRect(x, y - 1, W, H + 2); g.fillStyle = tk.glass; g.fillRect(x, y + H * .3, W, H * .4); g.strokeStyle = stroke; g.lineWidth = 1; line(x, y + H * .3, x + W, y + H * .3); line(x, y + H * .7, x + W, y + H * .7); break; }
+    case 'column': { rect(); g.fillStyle = tk.wall; g.fill(); break; }
+    case 'wall': { rect(); g.fillStyle = tk.wall; g.fill(); break; }
+    case 'human': { // üstten: omuzlar + kafa
+      g.beginPath(); g.ellipse(0, 0, W / 2, H / 2, 0, 0, Math.PI * 2); g.fillStyle = hexA(tk.accent.startsWith('#') ? tk.accent : '#1F7A5A', .55); g.fill(); g.strokeStyle = tk.accent; g.stroke();
+      g.beginPath(); g.arc(0, 0, Math.min(W, H) * .36, 0, Math.PI * 2); g.fillStyle = tk.accent; g.fill();
+      g.beginPath(); g.moveTo(0, -H / 2 - 1); g.lineTo(-3, -H / 2 - 6); g.lineTo(3, -H / 2 - 6); g.closePath(); g.fillStyle = tk.accent; g.fill(); // bakış yönü
+      break; }
+    case 'human_lying': { rr(g, x + H * .55, y + H * .1, W - H * .55, H * .8, H * .3); g.fillStyle = hexA(tk.accent.startsWith('#') ? tk.accent : '#1F7A5A', .45); g.fill(); g.strokeStyle = tk.accent; g.stroke(); g.beginPath(); g.arc(x + H * .3, 0, H * .28, 0, Math.PI * 2); g.fillStyle = tk.accent; g.fill(); break; }
+    case 'wheelchair': { // W: uzunluk (ileri), H: genişlik
+      rr(g, x + W * .3, y + H * .15, W * .45, H * .7, 3); g.fillStyle = hexA(tk.accent.startsWith('#') ? tk.accent : '#1F7A5A', .35); g.fill(); g.strokeStyle = tk.accent; g.stroke();
+      g.lineWidth = 3; line(x + W * .25, y + 1, x + W * .75, y + 1); line(x + W * .25, y + H - 1, x + W * .75, y + H - 1); g.lineWidth = 1.2;
+      g.beginPath(); g.arc(x + W * .2, y + H * .2, Math.max(2, H * .06), 0, Math.PI * 2); g.arc(x + W * .2, y + H * .8, Math.max(2, H * .06), 0, Math.PI * 2); g.fill();
+      line(x + W * .75, y + H * .5, x + W, y + H * .5); line(x + W * .95, y + H * .3, x + W * .95, y + H * .7); g.lineWidth = 3; line(x + W * .3, y + H * .1, x + W * .3, y + H * .9); g.lineWidth = 1.2;
+      g.beginPath(); g.arc(x + W * .5, 0, Math.min(W, H) * .17, 0, Math.PI * 2); g.fillStyle = tk.accent; g.fill();
+      break; }
+    case 'circle': { g.setLineDash([5, 4]); g.beginPath(); g.arc(0, 0, W / 2, 0, Math.PI * 2); g.fillStyle = hexA(tk.accent.startsWith('#') ? tk.accent : '#1F7A5A', .10); g.fill(); g.strokeStyle = tk.accent; g.lineWidth = 1.5; g.stroke(); g.setLineDash([]); break; }
+    case 'strip': { g.setLineDash([5, 4]); rect(); g.fillStyle = hexA(tk.accent.startsWith('#') ? tk.accent : '#1F7A5A', .12); g.fill(); g.strokeStyle = tk.accent; g.lineWidth = 1.5; g.stroke(); g.setLineDash([]);
+      const short = W <= H; // kısa kenarda ok
+      g.lineWidth = 1.2; if (short) { line(x + 4, 0, x + W - 4, 0); line(x + 4, 0, x + 9, -4); line(x + 4, 0, x + 9, 4); line(x + W - 4, 0, x + W - 9, -4); line(x + W - 4, 0, x + W - 9, 4); }
+      else { line(0, y + 4, 0, y + H - 4); line(0, y + 4, -4, y + 9); line(0, y + 4, 4, y + 9); line(0, y + H - 4, -4, y + H - 9); line(0, y + H - 4, 4, y + H - 9); }
+      break; }
+    case 'basket': { rect(x, y, W, H, 3); fs(); g.beginPath(); g.rect(x + W * .2, y + H * .2, W * .6, H * .6); g.stroke(); line(x + W * .2, y + H * .5, x + W * .8, y + H * .5); break; }
+    case 'lab': { rect(); fs(); g.strokeStyle = stroke; line(x + 3, y + H * .78, x + W - 3, y + H * .78); g.beginPath(); g.ellipse(x + W * .78, y + H * .42, W * .12, H * .26, 0, 0, Math.PI * 2); g.stroke(); g.fillStyle = stroke; g.beginPath(); g.arc(x + W * .78, y + H * .12, 1.8, 0, Math.PI * 2); g.fill(); if (W > 40) { g.font = `600 ${Math.min(11, H * .3)}px system-ui`; g.fillStyle = stroke; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('LAB', x + W * .38, y + H * .4); } break; }
+    case 'cart': { rect(x, y, W, H, 3); fs(); for (const [dx, dy] of [[.3, .3], [-.3, .3], [.3, -.3], [-.3, -.3]]) { g.beginPath(); g.arc(W * dx, H * dy, Math.max(1.5, Math.min(W, H) * .08), 0, Math.PI * 2); g.fillStyle = stroke; g.fill(); } break; }
+    case 'stool': { g.beginPath(); g.arc(0, 0, Math.min(W, H) / 2, 0, Math.PI * 2); fs(); g.beginPath(); g.arc(0, 0, Math.min(W, H) * .18, 0, Math.PI * 2); g.stroke(); break; }
+    case 'human_walk': { g.setLineDash([3, 3]); rect(); g.strokeStyle = tk.accent; g.stroke(); g.setLineDash([]); g.save(); g.translate(0, -H * .1); g.beginPath(); g.ellipse(0, 0, W / 2, Math.min(H * .27, W * .33), 0, 0, Math.PI * 2); g.fillStyle = hexA(tk.accent.startsWith('#') ? tk.accent : '#1F7A5A', .55); g.fill(); g.strokeStyle = tk.accent; g.stroke(); g.beginPath(); g.arc(0, 0, Math.min(W, H) * .2, 0, Math.PI * 2); g.fillStyle = tk.accent; g.fill(); g.restore(); g.fillStyle = tk.accent; g.beginPath(); g.moveTo(0, y + H - 2); g.lineTo(-4, y + H * .78); g.lineTo(4, y + H * .78); g.closePath(); g.fill(); break; }
+    case 'human2': { for (const k of [-1, 1]) { g.beginPath(); g.ellipse(k * W / 4, 0, W / 4 - 1, H / 2, 0, 0, Math.PI * 2); g.fillStyle = hexA(tk.accent.startsWith('#') ? tk.accent : '#1F7A5A', .55); g.fill(); g.strokeStyle = tk.accent; g.stroke(); g.beginPath(); g.arc(k * W / 4, 0, Math.min(W / 4, H) * .36, 0, Math.PI * 2); g.fillStyle = tk.accent; g.fill(); } break; }
+    case 'stroller': { rr(g, x + W * .1, y + H * .1, W * .8, H * .55, 5); g.fillStyle = hexA(tk.accent.startsWith('#') ? tk.accent : '#1F7A5A', .35); g.fill(); g.strokeStyle = tk.accent; g.stroke(); for (const [dx, dy] of [[.28, .3], [-.28, .3], [.28, -.3], [-.28, -.3]]) { g.beginPath(); g.arc(W * dx, H * dy, Math.max(2, W * .07), 0, Math.PI * 2); g.fillStyle = tk.accent; g.fill(); } g.lineWidth = 2; line(x + W * .2, y + H * .9, x + W * .8, y + H * .9); g.lineWidth = 1.2; break; }
+    default: { rect(); fs(); }
+  }
+}
+function rr(g, x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+
+function drawSelection(o) {
+  const s = view.s;
+  ctx.save();
+  ctx.strokeStyle = TK.accent; ctx.lineWidth = 2;
+  if (sel.type === 'room') {
+    ctx.strokeRect(w2sx(o.x), w2sy(o.y), o.w * s, o.h * s);
+  } else {
+    const c = itemCenter(o);
+    ctx.translate(w2sx(c.x), w2sy(c.y)); ctx.rotate(deg2rad(o.rot || 0));
+    ctx.strokeRect(-o.w * s / 2 - 2, -o.h * s / 2 - 2, o.w * s + 4, o.h * s + 4);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  if (!o.locked) {
+    const hs = handlePositions(o, sel.type);
+    for (const h of hs) {
+      ctx.beginPath();
+      if (h.rot) {
+        const c = itemCenter(o), top = toWorld(o, 0, -o.h / 2);
+        ctx.strokeStyle = TK.accent; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+        ctx.moveTo(w2sx(top.x), w2sy(top.y)); ctx.lineTo(h.px, h.py); ctx.stroke(); ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(h.px, h.py, 6, 0, Math.PI * 2);
+        ctx.fillStyle = TK.accent; ctx.fill(); ctx.strokeStyle = TK.surface; ctx.lineWidth = 1.5; ctx.stroke();
+        void c;
+      } else {
+        ctx.rect(h.px - 5, h.py - 5, 10, 10);
+        ctx.fillStyle = TK.surface; ctx.fill(); ctx.strokeStyle = TK.accent; ctx.lineWidth = 1.5; ctx.stroke();
+      }
+    }
+  } else {
+    ctx.font = FONT(600, 10); ctx.fillStyle = TK.accent; ctx.textAlign = 'left';
+    const bb = sel.type === 'room' ? o : itemAABB(o);
+    ctx.fillText('🔒 kilitli', w2sx(bb.x) + 4, w2sy(bb.y) - 6);
+  }
+  // seçili eşyanın ölçüsü
+  if (sel.type === 'item') {
+    const bb = itemAABB(o);
+    drawBadge(w2sx(bb.x + bb.w / 2), w2sy(bb.y + bb.h) + 16, `${fmtM(o.w)} × ${fmtM(o.h)} m` + (LIB_BY_KEY[o.key] && LIB_BY_KEY[o.key].hm ? ` · yük. ${fmtM(LIB_BY_KEY[o.key].hm)} m` : ''), null, true);
+  }
+  ctx.restore();
+}
+function drawBadge(px, py, text, sub, centered) {
+  ctx.save();
+  ctx.font = FONT(600, 12, true);
+  const w1 = ctx.measureText(text).width;
+  let w2 = 0; if (sub) { ctx.font = FONT(500, 11); w2 = ctx.measureText(sub).width; }
+  const W = Math.max(w1, w2) + 16, H = sub ? 38 : 24;
+  let x = centered ? px - W / 2 : px, y = centered ? py - H / 2 : py;
+  x = clamp(x, 4, cw - W - 4); y = clamp(y, 4, ch - H - 4);
+  ctx.fillStyle = TK.ink; roundRect(x, y, W, H, 6); ctx.fill();
+  ctx.fillStyle = TK.paper; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.font = FONT(600, 12, true); ctx.fillText(text, x + 8, y + 12);
+  if (sub) { ctx.font = FONT(500, 11); ctx.globalAlpha = .85; ctx.fillText(sub, x + 8, y + 27); }
+  ctx.restore();
+}
+function drawRulerLine(l) {
+  const d = Math.hypot(l.x2 - l.x1, l.y2 - l.y1);
+  ctx.save();
+  ctx.strokeStyle = TK.warn; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(w2sx(l.x1), w2sy(l.y1)); ctx.lineTo(w2sx(l.x2), w2sy(l.y2)); ctx.stroke();
+  for (const [x, y] of [[l.x1, l.y1], [l.x2, l.y2]]) { ctx.beginPath(); ctx.arc(w2sx(x), w2sy(y), 4, 0, Math.PI * 2); ctx.fillStyle = TK.warn; ctx.fill(); }
+  ctx.restore();
+  if (d > 0.01) {
+    const dx = Math.abs(l.x2 - l.x1), dy = Math.abs(l.y2 - l.y1);
+    const rc = rulerComment(d);
+    const sub = (dx > 0.01 && dy > 0.01) ? `yatay ${fmtM(dx)} · dikey ${fmtM(dy)} — ${rc.t}` : rc.t;
+    drawBadge(w2sx((l.x1 + l.x2) / 2), w2sy((l.y1 + l.y2) / 2) - 30, `${fmtM(d)} m`, sub, true);
+  }
+}
+function drawRulers(X0, Y0, X1, Y1) {
+  const S = state.shop, s = view.s, T = 0.25 * s;
+  ctx.save(); ctx.fillStyle = TK.muted; ctx.strokeStyle = TK.lineStrong; ctx.lineWidth = 1;
+  ctx.font = FONT(500, 10, true); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  const every = s >= 40 ? 1 : s >= 20 ? 2 : 5;
+  for (let m = 0; m <= Math.floor(S.w); m += every) {
+    const px = w2sx(m); ctx.beginPath(); ctx.moveTo(px, Y0 - T - 3); ctx.lineTo(px, Y0 - T - 8); ctx.stroke(); ctx.fillText(m + '', px, Y0 - T - 10);
+  }
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let m = 0; m <= Math.floor(S.h); m += every) {
+    const py = w2sy(m); ctx.beginPath(); ctx.moveTo(X0 - T - 3, py); ctx.lineTo(X0 - T - 8, py); ctx.stroke(); ctx.fillText(m + '', X0 - T - 11, py);
+  }
+  // toplam ölçü yazıları
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.font = FONT(600, 11, true); ctx.fillStyle = TK.ink;
+  ctx.fillText(`${fmtM(S.w)} m`, (X0 + X1) / 2, Y1 + T + 6);
+  ctx.save(); ctx.translate(X1 + T + 8, (Y0 + Y1) / 2); ctx.rotate(Math.PI / 2); ctx.fillText(`${fmtM(S.h)} m`, 0, 0); ctx.restore();
+  ctx.restore();
+}
+function drawScaleBar() {
+  if (exporting) return;
+  const s = view.s, x = 14, y = 16, L = s; // 1 m
+  ctx.save();
+  ctx.strokeStyle = TK.ink; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + L, y); ctx.moveTo(x, y - 4); ctx.lineTo(x, y + 4); ctx.moveTo(x + L, y - 4); ctx.lineTo(x + L, y + 4); ctx.stroke();
+  ctx.font = FONT(600, 10, true); ctx.fillStyle = TK.muted; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText('1 m', x, y + 6);
+  if (settings.humanBadge && s > 30) { // insan referansı: omuz 0,5 m — ölçek çubuğunun altında
+    const hy = y + 24 + s * .15;
+    ctx.translate(x + s * .25, hy); drawShape(ctx, 'human', s * .5, s * .3, {tk: TK, w: .5, h: .3});
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.font = FONT(500, 10); ctx.fillStyle = TK.muted; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText('insan (omuz 50 cm)', x + s * .5 + 8, hy);
+  }
+  ctx.restore();
+}
+function updateStatus() {
+  $('#zoomText').textContent = Math.round(view.s / 60 * 100) + '%';
+  $('#cursorText').textContent = pointerWorld ? `${fmtM(pointerWorld.x)} , ${fmtM(pointerWorld.y)} m` : '—';
+}
+
+/* =====================================================================
+   ETKİLEŞİM: fare / dokunmatik / klavye
+   ===================================================================== */
+const pointers = new Map();
+let pinch = null, altDown = false, spaceDown = false, longPressTimer = null;
+const isTouch = e => e.pointerType === 'touch';
+
+function setTool(t) {
+  tool = t;
+  document.querySelectorAll('.tbtn[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
+  canvas.className = 'plan tool-' + t; canvas.style.cursor = '';
+  if (t !== 'ruler') rulerLine = null;
+  $('#hint').textContent = {
+    select: 'Bir odaya veya eşyaya tıkla · sürükleyerek taşı · köşelerden boyutlandır · boş alanı sürükleyerek kaydır',
+    room: 'Oda çiz: boş alanda sürükleyerek dikdörtgen çiz (ya da Odalar sekmesinden şablon ekle)',
+    ruler: 'Cetvel: iki nokta arasında sürükle · Shift ile düz çizgi · Esc temizler',
+    pan: 'Kaydır: sürükle · tekerlek ile yakınlaştır',
+  }[t];
+  requestDraw();
+}
+
+function selectObj(type, id) {
+  const changed = !sel || sel.type !== type || sel.id !== id;
+  sel = {type, id};
+  if (changed) renderPanel(true);
+  requestDraw();
+}
+function clearSel() { if (sel) { sel = null; renderPanel(true); } requestDraw(); }
+
+function itemsInsideRoom(r) { return state.items.filter(it => { const c = itemCenter(it); return pointInRect(r, c.x, c.y); }); }
+
+function onDown(e) {
+  if (e.button === 2) return;
+  e.preventDefault();
+  try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+  const p = canvasPos(e);
+  pointers.set(e.pointerId, p);
+  if (pointers.size === 2) { // pinch başlat, süren sürüklemeyi geri sar
+    if (drag) rollbackDrag();
+    const [a, b] = [...pointers.values()];
+    pinch = {d0: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), c0: {x: (a.x + b.x) / 2, y: (a.y + b.y) / 2}, s0: view.s, ox0: view.ox, oy0: view.oy};
+    return;
+  }
+  if (pointers.size > 2 || pinch) return;
+  const wx = s2wx(p.x), wy = s2wy(p.y), touch = isTouch(e);
+  const base = {x0: p.x, y0: p.y, moved: false, touch, id: e.pointerId, vox: view.ox, voy: view.oy};
+  canvas.classList.add('dragging');
+  if (tool === 'pan' || e.button === 1 || spaceDown) { drag = {...base, kind: 'pan'}; return; }
+  if (tool === 'ruler') {
+    const x = settings.snap && !altDown ? snapG(wx) : wx, y = settings.snap && !altDown ? snapG(wy) : wy;
+    rulerLine = {x1: x, y1: y, x2: x, y2: y}; drag = {...base, kind: 'ruler'}; return;
+  }
+  if (tool === 'room') { drag = {...base, kind: 'draw-room', sx: snapG(clamp(wx, 0, state.shop.w)), sy: snapG(clamp(wy, 0, state.shop.h)), rect: null}; return; }
+
+  // ---- seç / taşı
+  const h = handleAt(p.x, p.y, touch ? 22 : 12);
+  if (h) {
+    const o = findSel();
+    drag = {...base, kind: h.rot ? 'rotate' : 'resize', handle: h, start: {...o}, startSnap: snapshot()};
+    return;
+  }
+  const it = itemAt(wx, wy, (touch ? 10 : 4) / view.s);
+  const rm = it ? null : roomContaining(wx, wy);
+  const target = it || rm, type = it ? 'item' : 'room';
+  if (!target) { clearSel(); drag = {...base, kind: 'pan'}; return; }
+  const wasSelected = sel && sel.id === target.id;
+  selectObj(type, target.id);
+  const startMove = () => {
+    const d = {...base, kind: 'move', type, obj: target, start: {x: target.x, y: target.y}, wx0: wx, wy0: wy, startSnap: snapshot(), roomItems: []};
+    if (type === 'room') d.roomItems = itemsInsideRoom(target).map(i => ({it: i, x: i.x, y: i.y}));
+    return d;
+  };
+  if (target.locked) { drag = {...base, kind: 'locked', name: target.name}; return; }
+  if (touch && !wasSelected) {
+    // dokunmatik: seçili olmayan nesnede sürükle = kaydır; 400 ms uzun basma = taşı
+    drag = {...base, kind: 'pan-or-hold'};
+    longPressTimer = setTimeout(() => {
+      if (drag && drag.kind === 'pan-or-hold' && !drag.moved) { drag = startMove(); try { navigator.vibrate && navigator.vibrate(10); } catch (err) {} requestDraw(); }
+    }, 400);
+    return;
+  }
+  drag = startMove();
+}
+
+function onMove(e) {
+  const p = canvasPos(e);
+  pointerWorld = {x: s2wx(p.x), y: s2wy(p.y)};
+  if (!pointers.has(e.pointerId)) { updateStatus(); updateCursor(p); return; }
+  pointers.set(e.pointerId, p);
+  if (pinch) {
+    if (pointers.size >= 2) {
+      const [a, b] = [...pointers.values()];
+      const d = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), c = {x: (a.x + b.x) / 2, y: (a.y + b.y) / 2};
+      const ns = clamp(pinch.s0 * d / pinch.d0, 5, 800);
+      autoFit = false; view.s = ns; view.ox = c.x - (pinch.c0.x - pinch.ox0) * ns / pinch.s0; view.oy = c.y - (pinch.c0.y - pinch.oy0) * ns / pinch.s0;
+      requestDraw();
+    }
+    return;
+  }
+  if (!drag || drag.id !== e.pointerId) return;
+  e.preventDefault();
+  const dx = p.x - drag.x0, dy = p.y - drag.y0;
+  if (!drag.moved && Math.hypot(dx, dy) > (drag.touch ? 8 : 4)) drag.moved = true;
+  const wx = s2wx(p.x), wy = s2wy(p.y);
+  const noSnap = altDown || !settings.snap;
+  switch (drag.kind) {
+    case 'pan': autoFit = false; view.ox = drag.vox + dx; view.oy = drag.voy + dy; break;
+    case 'pan-or-hold': if (drag.moved) { clearTimeout(longPressTimer); drag.kind = 'pan'; view.ox = drag.vox + dx; view.oy = drag.voy + dy; } break;
+    case 'locked': if (drag.moved && !drag.warned) { drag.warned = true; toast(`${drag.name} kilitli — açmak için 🔒 simgesine bas`); } break;
+    case 'move': {
+      if (!drag.moved) break;
+      const o = drag.obj;
+      let nx = drag.start.x + (wx - drag.wx0), ny = drag.start.y + (wy - drag.wy0);
+      if (drag.type === 'room') {
+        const sn = noSnap ? {x: nx, y: ny} : snapMoveRect({x: nx, y: ny, w: o.w, h: o.h}, o);
+        o.x = sn.x; o.y = sn.y; clampRoom(o);
+        const ddx = o.x - drag.start.x, ddy = o.y - drag.start.y;
+        for (const ri of drag.roomItems) { ri.it.x = r3(ri.x + ddx); ri.it.y = r3(ri.y + ddy); }
+        drag.badge = {px: p.x + 14, py: p.y - 34, text: `X ${fmtM(o.x)} · Y ${fmtM(o.y)} m`, sub: `${fmtM(o.w)} × ${fmtM(o.h)} m · ${fmtA(o.w * o.h)}` + (roomOverlaps(o) ? ' · ÇAKIŞIYOR' : '')};
+      } else {
+        // eşya: AABB üzerinden yapış
+        const tmp = {...o, x: nx, y: ny}; const bb = itemAABB(tmp);
+        const sn = noSnap ? {x: bb.x, y: bb.y} : snapMoveRect(bb, null);
+        o.x = r3(nx + (sn.x - bb.x)); o.y = r3(ny + (sn.y - bb.y)); clampItem(o);
+        const c = itemCenter(o), room = roomContaining(c.x, c.y);
+        drag.badge = {px: p.x + 14, py: p.y - 34, text: `X ${fmtM(itemAABB(o).x)} · Y ${fmtM(itemAABB(o).y)} m`, sub: room ? `${room.name} içinde` : 'Satış alanında'};
+      }
+      break;
+    }
+    case 'resize': {
+      const o = findSel(), st = drag.start, hh = drag.handle;
+      if (!o) break;
+      if (sel.type === 'room') {
+        const {xs, ys} = snapTargets(o);
+        const sx = noSnap ? wx : snapValue(wx, xs), sy = noSnap ? wy : snapValue(wy, ys);
+        guides = [];
+        if (hh.hx === 1) { const right = clamp(sx, st.x + MIN_ROOM, state.shop.w); o.w = right - st.x; if (!noSnap && xs.some(t => Math.abs(t - right) < 1e-6)) guides.push({axis: 'x', v: right}); }
+        if (hh.hx === -1) { const left = clamp(sx, 0, st.x + st.w - MIN_ROOM); o.x = left; o.w = st.x + st.w - left; if (!noSnap && xs.some(t => Math.abs(t - left) < 1e-6)) guides.push({axis: 'x', v: left}); }
+        if (hh.hy === 1) { const bot = clamp(sy, st.y + MIN_ROOM, state.shop.h); o.h = bot - st.y; if (!noSnap && ys.some(t => Math.abs(t - bot) < 1e-6)) guides.push({axis: 'y', v: bot}); }
+        if (hh.hy === -1) { const top = clamp(sy, 0, st.y + st.h - MIN_ROOM); o.y = top; o.h = st.y + st.h - top; if (!noSnap && ys.some(t => Math.abs(t - top) < 1e-6)) guides.push({axis: 'y', v: top}); }
+        clampRoom(o);
+        drag.badge = {px: p.x + 14, py: p.y - 34, text: `${fmtM(o.w)} × ${fmtM(o.h)} m`, sub: `${fmtA(o.w * o.h)} brüt · ${fmtA(netArea(o))} net`};
+      } else {
+        const l = toLocal(st, wx, wy);
+        let nw = st.w, nh = st.h;
+        if (hh.hx === 1) nw = l.x + st.w / 2; if (hh.hx === -1) nw = st.w / 2 - l.x;
+        if (hh.hy === 1) nh = l.y + st.h / 2; if (hh.hy === -1) nh = st.h / 2 - l.y;
+        if (!noSnap) { nw = snapG(nw); nh = snapG(nh); }
+        nw = Math.max(MIN_ITEM, r3(nw)); nh = Math.max(MIN_ITEM, r3(nh));
+        const shx = hh.hx * (nw - st.w) / 2, shy = hh.hy * (nh - st.h) / 2;
+        const c0 = itemCenter(st), t = deg2rad(st.rot || 0);
+        const cx = c0.x + shx * Math.cos(t) - shy * Math.sin(t), cy = c0.y + shx * Math.sin(t) + shy * Math.cos(t);
+        o.w = nw; o.h = nh; o.x = r3(cx - nw / 2); o.y = r3(cy - nh / 2); clampItem(o);
+        drag.badge = {px: p.x + 14, py: p.y - 34, text: `${fmtM(o.w)} × ${fmtM(o.h)} m`, sub: fmtA(o.w * o.h)};
+      }
+      break;
+    }
+    case 'rotate': {
+      const o = findSel(); if (!o) break;
+      const c = itemCenter(drag.start);
+      let ang = Math.atan2(wy - c.y, wx - c.x) * 180 / Math.PI + 90;
+      if (!e.shiftKey) ang = Math.round(ang / 15) * 15;
+      ang = ((Math.round(ang) % 360) + 360) % 360;
+      o.rot = ang;
+      // merkez sabit kalsın (x,y sol üst; w/h değişmediği için sabit)
+      clampItem(o);
+      drag.badge = {px: p.x + 14, py: p.y - 34, text: `${ang}°`, sub: 'Shift: serbest açı'};
+      break;
+    }
+    case 'draw-room': {
+      const cx = snapG(clamp(wx, 0, state.shop.w)), cy = snapG(clamp(wy, 0, state.shop.h));
+      const x = Math.min(drag.sx, cx), y = Math.min(drag.sy, cy);
+      drag.rect = {x, y, w: r3(Math.abs(cx - drag.sx)), h: r3(Math.abs(cy - drag.sy))};
+      break;
+    }
+    case 'ruler': {
+      let x = noSnap ? wx : snapG(wx), y = noSnap ? wy : snapG(wy);
+      if (e.shiftKey) { if (Math.abs(x - rulerLine.x1) > Math.abs(y - rulerLine.y1)) y = rulerLine.y1; else x = rulerLine.x1; }
+      rulerLine.x2 = x; rulerLine.y2 = y;
+      break;
+    }
+  }
+  requestDraw(); updateLive();
+}
+
+function onUp(e) {
+  const had = pointers.has(e.pointerId);
+  pointers.delete(e.pointerId);
+  if (pinch) { if (pointers.size < 2) { pinch = null; drag = null; canvas.classList.remove('dragging'); } return; }
+  if (!had || !drag || drag.id !== e.pointerId) return;
+  clearTimeout(longPressTimer);
+  const d = drag; drag = null; guides = []; canvas.classList.remove('dragging');
+  switch (d.kind) {
+    case 'move': case 'resize': case 'rotate': if (d.moved) commit(); break;
+    case 'draw-room': {
+      if (d.rect && d.rect.w >= MIN_ROOM && d.rect.h >= MIN_ROOM) {
+        const r = addRoom({name: 'Yeni Oda', ...d.rect, color: ROOM_COLORS[state.rooms.length % ROOM_COLORS.length]});
+        selectObj('room', r.id); commit(); toast(`${r.name} eklendi — adını panelden değiştir`);
+      } else if (d.moved) toast('Oda en az 0,60 × 0,60 m olmalı');
+      setTool('select');
+      break;
+    }
+    case 'ruler': if (!d.moved) rulerLine = null; break;
+  }
+  requestDraw(); renderPanel(false);
+}
+function rollbackDrag() {
+  clearTimeout(longPressTimer);
+  if (drag && drag.startSnap && drag.moved) { restore(drag.startSnap); }
+  drag = null; guides = []; canvas.classList.remove('dragging'); requestDraw();
+}
+function onCancel(e) { pointers.delete(e.pointerId); if (pointers.size < 2) pinch = null; rollbackDrag(); }
+function updateCursor(p) {
+  if (tool !== 'select' || drag) return;
+  const h = handleAt(p.x, p.y, 12);
+  if (h) { canvas.style.cursor = h.rot ? 'grab' : (h.hx * h.hy === 0 ? (h.hx ? 'ew-resize' : 'ns-resize') : (h.hx === h.hy ? 'nwse-resize' : 'nesw-resize')); return; }
+  const it = itemAt(s2wx(p.x), s2wy(p.y), 2 / view.s) || roomContaining(s2wx(p.x), s2wy(p.y));
+  canvas.style.cursor = it ? 'move' : 'default';
+}
+
+canvas.addEventListener('pointerdown', onDown);
+canvas.addEventListener('pointermove', onMove);
+canvas.addEventListener('pointerup', onUp);
+canvas.addEventListener('pointercancel', onCancel);
+canvas.addEventListener('lostpointercapture', e => { if (drag && drag.id === e.pointerId) onCancel(e); });
+canvas.addEventListener('pointerleave', () => { pointerWorld = null; updateStatus(); });
+window.addEventListener('blur', () => { pointers.clear(); pinch = null; rollbackDrag(); altDown = false; spaceDown = false; });
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+canvas.addEventListener('dblclick', e => {
+  const p = canvasPos(e);
+  if (!itemAt(s2wx(p.x), s2wy(p.y), 2 / view.s) && !roomContaining(s2wx(p.x), s2wy(p.y))) fit();
+});
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const p = canvasPos(e);
+  const mult = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? ch : 1;
+  const dy = e.deltaY * mult, dx = e.deltaX * mult;
+  if (e.ctrlKey || e.metaKey || (settings.wheelMode === 'zoom' && Math.abs(dx) < 1)) {
+    zoomAt(clamp(Math.exp(-dy * 0.0018), 0.5, 2), p.x, p.y);
+  } else { autoFit = false; view.ox -= dx; view.oy -= dy; requestDraw(); }
+}, {passive: false});
+for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, e => e.preventDefault(), {passive: false});
+
+window.addEventListener('keydown', e => {
+  const t = e.target, typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+  if (e.key === 'Alt') { altDown = true; if (!typing) e.preventDefault(); }
+  if (typing) { if (e.key === 'Escape') t.blur(); return; }
+  const mod = e.ctrlKey || e.metaKey, o = findSel();
+  if (e.key === ' ') { if (!spaceDown) { spaceDown = true; canvas.style.cursor = 'grab'; } e.preventDefault(); return; }
+  if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
+  if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); duplicateSel(); return; }
+  if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); openExport(); return; }
+  if (mod) return;
+  switch (e.key) {
+    case 'Escape': if (rulerLine) { rulerLine = null; requestDraw(); } else if (tool !== 'select') setTool('select'); else clearSel(); break;
+    case 'Delete': case 'Backspace': e.preventDefault(); deleteSel(); break;
+    case 'v': case 'V': setTool('select'); break;
+    case 'o': case 'O': case 'n': case 'N': setTool('room'); break;
+    case 'c': case 'C': case 'm': case 'M': setTool('ruler'); break;
+    case 'h': case 'H': setTool('pan'); break;
+    case 'f': case 'F': case '0': fit(); break;
+    case 'g': case 'G': toggleGrid(); break;
+    case 's': case 'S': toggleSnap(); break;
+    case 'l': case 'L': toggleLock(); break;
+    case '+': case '=': zoomAt(1.2, cw / 2, ch / 2); break;
+    case '-': case '_': zoomAt(1 / 1.2, cw / 2, ch / 2); break;
+    case 'r': case 'R': rotateSel(e.shiftKey ? -90 : 90); break;
+    case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown': {
+      if (!o || o.locked) break;
+      e.preventDefault();
+      const step = e.shiftKey ? 0.25 : 0.05;
+      const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0, dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+      nudge(o, dx, dy); break;
+    }
+    case '?': toast('Kısayollar Özet sekmesinin altında'); break;
+  }
+});
+window.addEventListener('keyup', e => {
+  if (e.key === 'Alt') altDown = false;
+  if (e.key === ' ') { spaceDown = false; canvas.style.cursor = ''; }
+});
+
+/* ---------- nesne işlemleri ---------- */
+let nudgeTimer = null;
+function nudge(o, dx, dy) {
+  if (sel.type === 'room') {
+    const items = itemsInsideRoom(o);
+    const ox = o.x, oy = o.y; o.x = r3(o.x + dx); o.y = r3(o.y + dy); clampRoom(o);
+    for (const it of items) { it.x = r3(it.x + (o.x - ox)); it.y = r3(it.y + (o.y - oy)); }
+  } else { o.x = r3(o.x + dx); o.y = r3(o.y + dy); clampItem(o); }
+  requestDraw(); updateLive();
+  clearTimeout(nudgeTimer); nudgeTimer = setTimeout(() => commit(), 250);
+}
+function rotateSel(deg) {
+  const o = findSel(); if (!o || sel.type !== 'item' || o.locked) return;
+  o.rot = (((o.rot || 0) + deg) % 360 + 360) % 360; clampItem(o); commit();
+}
+function setRotation(o, deg) { o.rot = ((Math.round(deg) % 360) + 360) % 360; clampItem(o); commit(); }
+function toggleLock() { const o = findSel(); if (!o) return; o.locked = !o.locked; commit(); toast(o.locked ? `${o.name} kilitlendi` : `${o.name} kilidi açıldı`); }
+function deleteSel() {
+  const o = findSel(); if (!o) return;
+  if (o.locked) { toast(`${o.name} kilitli — önce kilidi aç`); return; }
+  if (sel.type === 'room') {
+    const inside = itemsInsideRoom(o);
+    const doIt = (alsoItems) => {
+      state.rooms = state.rooms.filter(r => r !== o);
+      if (alsoItems) state.items = state.items.filter(i => !inside.includes(i));
+      sel = null; commit(); renderPanel(true); toast(`${o.name} silindi`);
+    };
+    if (inside.length) ask(`${o.name} silinsin mi? İçindeki ${inside.length} eşya için:`, ['Eşyaları da sil', 'Eşyalar kalsın', 'Vazgeç']).then(i => { if (i === 0) doIt(true); else if (i === 1) doIt(false); });
+    else doIt(false);
+  } else {
+    state.items = state.items.filter(i => i !== o); sel = null; commit(); renderPanel(true); toast(`${o.name} silindi`);
+  }
+}
+function duplicateSel() {
+  const o = findSel(); if (!o) return;
+  const copy = JSON.parse(JSON.stringify(o)); copy.id = (sel.type === 'room' ? 'r' : 'i') + (state.nextId++); copy.locked = false;
+  if (sel.type === 'room') { copy.pin = ''; copy.x = r3(copy.x + 0.3); copy.y = r3(copy.y + 0.3); state.rooms.push(copy); clampRoom(copy); }
+  else { copy.x = r3(copy.x + 0.3); copy.y = r3(copy.y + 0.3); state.items.push(copy); clampItem(copy); }
+  sel = {type: sel.type, id: copy.id}; commit(); renderPanel(true); toast(`${copy.name} çoğaltıldı`);
+}
+function addRoom(spec) {
+  const r = {id: 'r' + (state.nextId++), name: spec.name, x: r3(spec.x), y: r3(spec.y), w: r3(spec.w), h: r3(spec.h), color: spec.color || ROOM_COLORS[state.rooms.length % ROOM_COLORS.length], pin: spec.pin || '', locked: false};
+  state.rooms.push(r); clampRoom(r); return r;
+}
+function addRoomTemplate(t) {
+  // ilk boş yer: 0,25 m adımla tara
+  let pos = null;
+  outer: for (let y = 0; y + t.h <= state.shop.h + 1e-9; y = r3(y + 0.25)) for (let x = 0; x + t.w <= state.shop.w + 1e-9; x = r3(x + 0.25)) {
+    const cand = {x, y, w: t.w, h: t.h};
+    if (!state.rooms.some(r => overlap(r, cand))) { pos = cand; break outer; }
+  }
+  if (!pos) { pos = {x: 0, y: 0, w: Math.min(t.w, state.shop.w), h: Math.min(t.h, state.shop.h)}; toast('Boş yer bulunamadı — oda sol üste kondu, taşıyabilirsin'); }
+  const r = addRoom({...t, ...pos});
+  selectObj('room', r.id); commit(); toast(`${r.name} eklendi`);
+  return r;
+}
+function addItem(key, opts = {}) {
+  const d = LIB_BY_KEY[key]; if (!d) return;
+  let cx, cy;
+  const so = findSel();
+  if (so && sel.type === 'room') { cx = so.x + so.w / 2; cy = so.y + so.h / 2; }
+  else { cx = clamp(s2wx(cw / 2), 0, state.shop.w); cy = clamp(s2wy(ch / 2), 0, state.shop.h); }
+  const it = {id: 'i' + (state.nextId++), key, name: d.n, x: r3(snapG(cx - d.w / 2)), y: r3(snapG(cy - d.h / 2)), w: d.w, h: d.h, rot: opts.rot || 0, flip: false, locked: false};
+  state.items.push(it); clampItem(it);
+  selectObj('item', it.id); commit(); toast(`${d.n} eklendi — sürükleyerek yerleştir`);
+  return it;
+}
+function addDoorToRoom(r) {
+  const W = state.shop.w, H = state.shop.h;
+  const walls = [];
+  const free = (x, y) => !state.rooms.some(o => o !== r && pointInRect(o, x, y));
+  if (r.y + r.h < H - 1e-6 && free(r.x + r.w / 2, r.y + r.h + 0.05)) walls.push({side: 'b', len: r.w});
+  if (r.x > 1e-6 && free(r.x - 0.05, r.y + r.h / 2)) walls.push({side: 'l', len: r.h});
+  if (r.x + r.w < W - 1e-6 && free(r.x + r.w + 0.05, r.y + r.h / 2)) walls.push({side: 'r', len: r.h});
+  if (r.y > 1e-6 && free(r.x + r.w / 2, r.y - 0.05)) walls.push({side: 't', len: r.w});
+  if (!walls.length) { // satış alanına açılan duvar yoksa herhangi bir iç duvar
+    if (r.y + r.h < H - 1e-6) walls.push({side: 'b', len: r.w}); if (r.x > 1e-6) walls.push({side: 'l', len: r.h});
+    if (r.x + r.w < W - 1e-6) walls.push({side: 'r', len: r.h}); if (r.y > 1e-6) walls.push({side: 't', len: r.w});
+  }
+  if (!walls.length) { toast('Bu odanın iç duvarı yok'); return; }
+  walls.sort((a, b) => b.len - a.len);
+  const wall = walls[0];
+  const key = roomType(r) === 'wc' ? 'wc_kapisi' : 'ic_kapi', d = LIB_BY_KEY[key];
+  if (wall.len < d.w + 0.1) { toast('Duvar kapı için çok kısa'); return; }
+  let cx, cy, rot;
+  if (wall.side === 'b') { cx = r.x + r.w / 2; cy = r.y + r.h; rot = 0; }
+  else if (wall.side === 't') { cx = r.x + r.w / 2; cy = r.y; rot = 180; }
+  else if (wall.side === 'l') { cx = r.x; cy = r.y + r.h / 2; rot = 90; }
+  else { cx = r.x + r.w; cy = r.y + r.h / 2; rot = 270; }
+  const it = {id: 'i' + (state.nextId++), key, name: d.n, x: r3(cx - d.w / 2), y: r3(cy - d.h / 2), w: d.w, h: d.h, rot, flip: false, locked: false};
+  state.items.push(it); clampItem(it); selectObj('item', it.id); commit(); toast('Kapı eklendi — R ile döndür, panelden menteşe yönü');
+}
+function flipPlan(axis) {
+  const W = state.shop.w, H = state.shop.h;
+  for (const r of state.rooms) {
+    if (axis === 'h') { r.x = r3(W - r.x - r.w); r.pin = {tl: 'tr', tr: 'tl', bl: 'br', br: 'bl'}[r.pin] || ''; }
+    else { r.y = r3(H - r.y - r.h); r.pin = {tl: 'bl', bl: 'tl', tr: 'br', br: 'tr'}[r.pin] || ''; }
+  }
+  for (const it of state.items) {
+    const c = itemCenter(it);
+    if (axis === 'h') { it.x = r3(W - c.x - it.w / 2); it.rot = ((360 - (it.rot || 0)) % 360 + 360) % 360; }
+    else { it.y = r3(H - c.y - it.h / 2); it.rot = ((180 - (it.rot || 0)) % 360 + 360) % 360; }
+    it.flip = !it.flip;
+  }
+  commit(); renderPanel(true); toast(axis === 'h' ? 'Plan yatay çevrildi (sağ-sol)' : 'Plan dikey çevrildi (üst-alt)');
+}
+function toggleGrid() { settings.grid = !settings.grid; $('#btnGrid').classList.toggle('on', settings.grid); requestDraw(); }
+function toggleSnap() { settings.snap = !settings.snap; $('#btnSnap').classList.toggle('on', settings.snap); toast(settings.snap ? 'Yapışma açık' : 'Yapışma kapalı (Alt ile de geçici kapatılır)'); }
+
+/* ---------- küçük yardımcılar ---------- */
+let toastTimer = null;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600); }
+function ask(msg, buttons) {
+  return new Promise(res => {
+    let dlg = $('#dlgAsk');
+    if (!dlg) { dlg = document.createElement('dialog'); dlg.id = 'dlgAsk'; document.body.appendChild(dlg); }
+    dlg.innerHTML = `<p style="margin:0 0 12px;font-size:14px">${esc(msg)}</p><div class="row" style="justify-content:flex-end">${buttons.map((b, i) => `<button class="ibtn ${i === 0 ? 'primary' : ''}" data-i="${i}">${esc(b)}</button>`).join('')}</div>`;
+    dlg.querySelectorAll('button').forEach(b => b.onclick = () => { dlg.close(); res(+b.dataset.i); });
+    dlg.oncancel = () => res(-1);
+    try { dlg.showModal(); } catch (e) { res(0); }
+  });
+}
+function parseNum(str, prev) {
+  if (typeof str !== 'string') return prev;
+  let s = str.trim().replace(',', '.');
+  if (!s) return prev;
+  let v = parseFloat(s); if (!isFinite(v)) return prev;
+  if (v > 20) v = v / 100; // cm girildi
+  return v;
+}
+
+/* =====================================================================
+   ANALİZ: alanlar, insan ölçeği, yönetmelik, geçiş kontrolü
+   ===================================================================== */
+function netArea(r) {
+  const t = state.shop.wall / 2, W = state.shop.w, H = state.shop.h;
+  const wx = (r.x > 1e-6 ? t : 0) + (r.x + r.w < W - 1e-6 ? t : 0), wy = (r.y > 1e-6 ? t : 0) + (r.y + r.h < H - 1e-6 ? t : 0);
+  return Math.max(0, (r.w - wx) * (r.h - wy));
+}
+function roomType(r) {
+  const n = (r.name || '').toLocaleLowerCase('tr');
+  if (/\bwc\b|tuvalet|lavabo/.test(n)) return 'wc';
+  if (/mutfak|çay/.test(n)) return 'mutfak';
+  if (/bakım|bakim|muayene|uygulama/.test(n)) return 'bakim';
+  if (/lab/.test(n)) return 'lab';
+  if (/eczacı|eczaci|stok|depo|ofis|büro/.test(n)) return 'ofis';
+  if (/hol|koridor|antre/.test(n)) return 'hol';
+  return 'other';
+}
+const CUSTOMER_FREE = new Set(['ofis', 'lab', 'hol', 'mutfak', 'wc']);
+function unionArea(rects) {
+  if (!rects.length) return 0;
+  const xs = [...new Set(rects.flatMap(r => [r.x, r.x + r.w]))].sort((a, b) => a - b);
+  const ys = [...new Set(rects.flatMap(r => [r.y, r.y + r.h]))].sort((a, b) => a - b);
+  let A = 0;
+  for (let i = 0; i < xs.length - 1; i++) for (let j = 0; j < ys.length - 1; j++) {
+    const cx = (xs[i] + xs[i + 1]) / 2, cy = (ys[j] + ys[j + 1]) / 2;
+    if (rects.some(r => cx > r.x && cx < r.x + r.w && cy > r.y && cy < r.y + r.h)) A += (xs[i + 1] - xs[i]) * (ys[j + 1] - ys[j]);
+  }
+  return A;
+}
+function interArea(a, b) { const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y); return w > 0 && h > 0 ? w * h : 0; }
+function itemRoom(it) { const c = itemCenter(it); return roomContaining(c.x, c.y); }
+function isFurniture(it) { const d = LIB_BY_KEY[it.key]; return d && d.c !== 'insan' && !['door', 'door2', 'slider', 'window', 'wall', 'strip', 'circle', 'zone'].includes(d.s); }
+function roomHasDoor(r) {
+  return state.items.some(it => {
+    const d = LIB_BY_KEY[it.key]; if (!d || !DOOR_SHAPES.has(d.s) || it.key === 'personel_kapagi') return false;
+    const c = itemCenter(it), e = 0.12;
+    const onV = (Math.abs(c.x - r.x) < e || Math.abs(c.x - r.x - r.w) < e) && c.y > r.y - e && c.y < r.y + r.h + e;
+    const onH = (Math.abs(c.y - r.y) < e || Math.abs(c.y - r.y - r.h) < e) && c.x > r.x - e && c.x < r.x + r.w + e;
+    return onV || onH;
+  });
+}
+function analyze() {
+  const S = state.shop, total = S.w * S.h;
+  const clipped = state.rooms.map(r => ({x: clamp(r.x, 0, S.w), y: clamp(r.y, 0, S.h), w: Math.min(r.w, S.w - r.x), h: Math.min(r.h, S.h - r.y)}));
+  const roomsUnion = unionArea(clipped);
+  const sales = Math.max(0, total - roomsUnion);
+  const overlaps = [];
+  for (let i = 0; i < state.rooms.length; i++) for (let j = i + 1; j < state.rooms.length; j++) { const a = interArea(state.rooms[i], state.rooms[j]); if (a > 1e-6) overlaps.push({a: state.rooms[i], b: state.rooms[j], area: a}); }
+  const salesItems = state.items.filter(it => isFurniture(it) && !itemRoom(it));
+  const salesItemArea = salesItems.reduce((s, it) => s + area(itemAABB(it)), 0);
+  const walkable = Math.max(0, sales - salesItemArea);
+  let shelf = 0; for (const it of state.items) { const f = SHELF_KEYS[it.key]; if (f) shelf += f * Math.max(it.w, it.h); }
+  const has = k => state.items.filter(it => it.key === k);
+  const inFree = it => { const r = itemRoom(it); return r && CUSTOMER_FREE.has(roomType(r)); };
+  const labs = has('lab_tezgahi'), nark = has('narkotik_kasa'), fr = has('ilac_buzdolabi');
+  const entr = state.items.filter(it => /^giris_/.test(it.key));
+  const wcRoom = state.rooms.find(r => roomType(r) === 'wc');
+  const noDoor = state.rooms.filter(r => !roomHasDoor(r));
+  const checks = [
+    {t: 'Toplam alan ≥ 35 m² (Yönetmelik Md. 20)', s: total >= 35 ? 'ok' : 'no', d: fmtA(total)},
+    {t: 'Laboratuvar tezgâhı müşteri erişimi olmayan odada', s: !labs.length ? 'no' : labs.every(inFree) ? 'ok' : 'no', d: !labs.length ? 'Lab tezgâhı yok — Eşya sekmesinden ekle' : labs.every(inFree) ? (itemRoom(labs[0]) || {}).name : 'Satış veya bakım alanında olamaz'},
+    {t: 'Narkotik kasa müşteri erişimi olmayan odada', s: !nark.length ? 'so' : nark.every(inFree) ? 'ok' : 'no', d: !nark.length ? 'Kasa yok' : nark.every(inFree) ? (itemRoom(nark[0]) || {}).name : 'Müşteri erişimi olan alanda'},
+    {t: 'İlaç buzdolabı var, mutfakta değil', s: !fr.length ? 'no' : fr.some(it => { const r = itemRoom(it); return r && roomType(r) === 'mutfak'; }) ? 'no' : 'ok', d: !fr.length ? 'Yok' : 'Gıda buzdolabından ayrı olmalı'},
+    {t: 'WC var', s: wcRoom ? 'ok' : 'no', d: wcRoom ? `${wcRoom.name} · ${fmtA(wcRoom.w * wcRoom.h)}` : 'Oda adı “WC” içeren oda yok'},
+    {t: 'Giriş kapısı net ≥ 0,90 m', s: !entr.length ? 'so' : entr.some(it => Math.max(it.w, it.h) >= 0.9) ? 'ok' : 'no', d: !entr.length ? 'Giriş kapısı eklenmemiş' : fmtM(Math.max(...entr.map(it => Math.max(it.w, it.h)))) + ' m'},
+    {t: 'Tüm odalarda kapı var', s: noDoor.length ? 'so' : 'ok', d: noDoor.length ? 'Kapısız: ' + noDoor.map(r => r.name).join(', ') : ''},
+  ];
+  return {total, roomsUnion, sales, overlaps, salesItemArea, walkable, shelf, checks};
+}
+
+/* insan ölçeği ipuçları — oda kartı */
+function roomHints(r) {
+  const t = roomType(r), net = netArea(r), a = r.w * r.h, mn = Math.min(r.w, r.h), mx = Math.max(r.w, r.h);
+  const H = [];
+  const fits = (fw, fh) => (r.w >= fw - 1e-6 && r.h >= fh - 1e-6) || (r.w >= fh - 1e-6 && r.h >= fw - 1e-6);
+  const inside = itemsInsideRoom(r), hasKey = k => inside.some(i => i.key === k);
+  const ok = (cond, tOk, tNo, soft) => H.push({s: cond ? 'ok' : (soft ? 'so' : 'no'), t: cond ? tOk : tNo});
+  H.push({s: 'info', t: `Ayakta rahat ${Math.floor(net / ERGO.m2Comfort)} kişi (1 m²/kişi) · ferah ${Math.floor(net / ERGO.m2Spacious)} kişi (1,5 m²)`});
+  if (t === 'bakim') {
+    const full = fits(ERGO.stretcherL + ERGO.stretcherHead, ERGO.stretcherW + ERGO.stretcherSide);
+    const bare = fits(ERGO.stretcherL, ERGO.stretcherW);
+    H.push({s: full ? 'ok' : bare ? 'so' : 'no', t: full ? 'Sedye 1,90×0,65 + uzun kenarda 0,90 + baş ucunda 0,60: SIĞAR' : bare ? 'Sedye sığar ama etrafında çalışma boşluğu dar (0,90 + 0,60 gerekir)' : 'Sedye 1,90×0,65: SIĞMAZ'});
+    ok(hasKey('sedye') && (hasKey('lavabo') || hasKey('bakim_lavabo')), 'Sedye + lavabo yerleştirilmiş', 'Sedye ve/veya lavabo eksik', true);
+    ok(a >= 5, `Alan ${fmtA(a)} ≥ 5 m² (rahat 7)`, `Alan ${fmtA(a)} < 5 m² — bakım için dar`, true);
+  } else if (t === 'wc') {
+    ok(mn >= 0.9 && mx >= 1.4, 'Klozet + lavabo (min 0,90×1,40): sığar', 'Klozet + lavabo için min 0,90×1,40 gerekir');
+    ok(mn >= 2.0 && mx >= 2.2, 'Engelli WC (2,00×2,20, Ø1,50 dönüş): sığar', 'Engelli WC için 2,00×2,20 gerekir (zorunlu değil)', true);
+    ok(hasKey('klozet'), 'Klozet yerleştirilmiş', 'Klozet eklenmemiş', true);
+  } else if (t === 'mutfak') {
+    ok(mn >= 1.8, 'Tezgâh 0,60 + karşısında 1,20 geçiş: sığar', `Dar kenar ${fmtM(mn)} m — tezgâh (0,60) + geçiş (1,20) için 1,80 gerekir`, true);
+  } else if (t === 'ofis' || t === 'lab') {
+    ok(fits(1.2, 1.5), 'Lab tezgâhı 1,20×0,60 + önünde 0,90: sığar', 'Lab tezgâhı + 0,90 önü için 1,20×1,50 gerekir', true);
+    ok(fits(1.4, 1.6), 'Masa 1,40×0,70 + arkada 0,90 sandalye payı: sığar', 'Masa + sandalye payı için 1,40×1,60 gerekir', true);
+    ok(hasKey('lab_tezgahi'), 'Laboratuvar tezgâhı bu odada', 'Laboratuvar tezgâhı yok (Yönetmelik Md. 21)', true);
+  } else if (t === 'hol') {
+    ok(mn >= 0.9, `Koridor ${fmtM(mn)} m — tekerlekli sandalye geçer`, `Koridor ${fmtM(mn)} m — 0,90 altı`, true);
+  }
+  H.push({s: mn >= ERGO.wheelTurn ? 'ok' : 'so', t: mn >= ERGO.wheelTurn ? 'Tekerlekli sandalye içeride dönebilir (Ø1,50)' : `Tekerlekli sandalye dönemez (dar kenar ${fmtM(mn)} < 1,50)`});
+  if (!roomHasDoor(r)) H.push({s: 'so', t: 'Kapı yok — “Kapı ekle” ile ekle'});
+  if (roomOverlaps(r)) H.push({s: 'no', t: 'Başka bir odayla çakışıyor'});
+  return H;
+}
+function compareLines(a, w, h) {
+  const out = [];
+  const fitsOnce = c => (w >= c.w && h >= c.h) || (w >= c.h && h >= c.w);
+  for (const c of COMPARE) { if (fitsOnce(c)) out.push({n: c.n, k: a / (c.w * c.h)}); }
+  out.sort((p, q) => p.k - q.k);
+  return out.slice(0, 2).map(o => `≈ ${fmt1(o.k)} ${o.n}`);
+}
+
+/* geçiş kontrolü */
+let passageOn = false, passages = [];
+function computePassages() {
+  const S = state.shop, obs = [];
+  for (const it of state.items) if (isFurniture(it) && !itemRoom(it)) obs.push({...itemAABB(it), n: it.name});
+  for (const r of state.rooms) obs.push({x: r.x, y: r.y, w: r.w, h: r.h, n: r.name});
+  const walls = [{x: -1, y: -1, w: S.w + 2, h: 1, n: 'duvar'}, {x: -1, y: S.h, w: S.w + 2, h: 1, n: 'duvar'}, {x: -1, y: 0, w: 1, h: S.h, n: 'duvar'}, {x: S.w, y: 0, w: 1, h: S.h, n: 'duvar'}];
+  const all = obs.concat(walls), res = [];
+  // duvar boyunca dizili iki ünite arasındaki niş geçiş değildir: hizalı kenar bir duvar/oda çizgisine oturuyorsa atla
+  const lines = {x: [0, S.w], y: [0, S.h]};
+  for (const r of state.rooms) { lines.x.push(r.x, r.x + r.w); lines.y.push(r.y, r.y + r.h); }
+  const onLine = (v, axis) => lines[axis].some(l => Math.abs(l - v) < 0.03);
+  const niche = (A, B, dir) => {
+    if (dir === 'h') return (Math.abs(A.y - B.y) < 0.03 && onLine(A.y, 'y')) || (Math.abs(A.y + A.h - B.y - B.h) < 0.03 && onLine(A.y + A.h, 'y'));
+    return (Math.abs(A.x - B.x) < 0.03 && onLine(A.x, 'x')) || (Math.abs(A.x + A.w - B.x - B.w) < 0.03 && onLine(A.x + A.w, 'x'));
+  };
+  for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) {
+    const A = all[i], B = all[j];
+    if (A.n === 'duvar' && B.n === 'duvar') continue;
+    // dikey boşluk (x aralıkları örtüşür)
+    const ox0 = Math.max(A.x, B.x), ox1 = Math.min(A.x + A.w, B.x + B.w);
+    if (ox1 - ox0 >= 0.3) {
+      const top = A.y < B.y ? A : B, bot = A.y < B.y ? B : A, gap = bot.y - (top.y + top.h);
+      if (gap > 0.3 && gap < 1.5 && !niche(A, B, 'v')) {
+        const g = {x: ox0, y: top.y + top.h, w: ox1 - ox0, h: gap};
+        if (!all.some(o => o !== A && o !== B && interArea(o, g) > 1e-4)) res.push({dir: 'v', x: (ox0 + ox1) / 2, y1: g.y, y2: g.y + gap, gap, a: top.n, b: bot.n});
+      }
+    }
+    const oy0 = Math.max(A.y, B.y), oy1 = Math.min(A.y + A.h, B.y + B.h);
+    if (oy1 - oy0 >= 0.3) {
+      const left = A.x < B.x ? A : B, right = A.x < B.x ? B : A, gap = right.x - (left.x + left.w);
+      if (gap > 0.3 && gap < 1.5 && !niche(A, B, 'h')) {
+        const g = {x: left.x + left.w, y: oy0, w: gap, h: oy1 - oy0};
+        if (!all.some(o => o !== A && o !== B && interArea(o, g) > 1e-4)) res.push({dir: 'h', y: (oy0 + oy1) / 2, x1: g.x, x2: g.x + gap, gap, a: left.n, b: right.n});
+      }
+    }
+  }
+  passages = res.filter(p => p.gap < 1.2).sort((a, b) => a.gap - b.gap);
+  return passages;
+}
+function drawPassages() {
+  if (!passageOn) return;
+  ctx.save();
+  for (const p of passages) {
+    const col = p.gap < 0.9 ? TK.danger : TK.warn;
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2;
+    let x1, y1, x2, y2;
+    if (p.dir === 'v') { x1 = x2 = w2sx(p.x); y1 = w2sy(p.y1); y2 = w2sy(p.y2); } else { y1 = y2 = w2sy(p.y); x1 = w2sx(p.x1); x2 = w2sx(p.x2); }
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    const ah = 5;
+    if (p.dir === 'v') { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 - ah, y1 + ah); ctx.lineTo(x1 + ah, y1 + ah); ctx.fill(); ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 - ah, y2 - ah); ctx.lineTo(x2 + ah, y2 - ah); ctx.fill(); }
+    else { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 + ah, y1 - ah); ctx.lineTo(x1 + ah, y1 + ah); ctx.fill(); ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 - ah, y2 - ah); ctx.lineTo(x2 - ah, y2 + ah); ctx.fill(); }
+    ctx.font = FONT(600, 11, true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tx = (x1 + x2) / 2 + (p.dir === 'v' ? 24 : 0), ty = (y1 + y2) / 2 + (p.dir === 'h' ? -12 : 0), txt = fmtM(p.gap);
+    const tw = ctx.measureText(txt).width + 8;
+    ctx.fillStyle = TK.paper; ctx.fillRect(tx - tw / 2, ty - 8, tw, 16); ctx.fillStyle = col; ctx.fillText(txt, tx, ty);
+  }
+  ctx.restore();
+}
+function counterFrontDepth() {
+  const counters = state.items.filter(it => /^banko_/.test(it.key));
+  if (!counters.length) return null;
+  const obs = [];
+  for (const it of state.items) if (isFurniture(it) && !/^banko_|^kasa_pos/.test(it.key)) obs.push(itemAABB(it));
+  for (const r of state.rooms) obs.push(r);
+  let best = null;
+  for (const c of counters) {
+    const t = deg2rad(c.rot || 0), dirx = -Math.sin(t), diry = Math.cos(t);
+    const f = toWorld(c, 0, c.h / 2);
+    let d = 0;
+    for (d = 0.05; d < 8; d += 0.05) {
+      const px = f.x + dirx * d, py = f.y + diry * d;
+      if (px < 0 || py < 0 || px > state.shop.w || py > state.shop.h) break;
+      if (obs.some(o => pointInRect(o, px, py))) break;
+    }
+    if (best === null || d < best) best = d;
+  }
+  return best;
+}
+
+/* =====================================================================
+   PANEL
+   ===================================================================== */
+let activeTab = 'rooms', libQuery = '', libCat = 'satis';
+const PIN_LABEL = {'': 'Serbest', tl: 'Sol üst', tr: 'Sağ üst', bl: 'Sol alt', br: 'Sağ alt'};
+function numField(label, key, val, opts = {}) {
+  return `<div class="field"><label>${label}</label><input type="text" inputmode="decimal" data-num="${key}" value="${fmtM(val)}" ${opts.disabled ? 'disabled' : ''}></div>`;
+}
+function renderPanel() {
+  const body = $('#panelBody');
+  const o = findSel();
+  let html = '';
+  if (o) html += sel.type === 'room' ? roomCard(o) : itemCard(o);
+  if (activeTab === 'rooms') html += roomsTab();
+  else if (activeTab === 'lib') html += libTab();
+  else html += summaryTab();
+  body.innerHTML = html;
+  bindPanel(body);
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === activeTab));
+  if (activeTab === 'lib') drawLibIcons(body);
+  positionCtxBar();
+}
+function hintsHtml(list) {
+  const ic = {ok: '✓', no: '✗', so: '!', info: '•'};
+  return `<div class="hints">${list.map(h => `<div><span class="ic ${h.s}">${ic[h.s] || '•'}</span><span>${esc(h.t)}</span></div>`).join('')}</div>`;
+}
+function roomCard(r) {
+  const a = r.w * r.h, net = netArea(r), cmp = compareLines(a, r.w, r.h);
+  return `<div class="card sel">
+    <h3>Seçili oda <span class="sp"></span><span class="chip" style="background:${hexA(r.color, .35)}">${esc(roomType(r) === 'other' ? 'oda' : roomType(r))}</span></h3>
+    <div class="row"><div class="field grow"><label>Oda adı</label><input type="text" data-name value="${esc(r.name)}"></div></div>
+    <div class="swatches">${ROOM_COLORS.map(c => `<button data-color="${c}" class="${c === r.color ? 'on' : ''}" style="background:${c}" title="Renk"></button>`).join('')}</div>
+    <div class="row">${numField('X (m)', 'x', r.x, {disabled: r.locked || r.pin})}${numField('Y (m)', 'y', r.y, {disabled: r.locked || r.pin})}${numField('En (m)', 'w', r.w, {disabled: r.locked})}${numField('Boy (m)', 'h', r.h, {disabled: r.locked})}</div>
+    <div class="stat"><span class="k">Brüt alan</span><span class="v big" data-live="area">${fmtA(a)}</span><span class="k">Net (duvar düşülmüş)</span><span class="v" data-live="net">${fmtA(net)}</span></div>
+    ${cmp.length ? `<div class="cmp" data-live="cmp">${cmp.map(c => `<span class="chip">${esc(c)}</span>`).join('')}</div>` : ''}
+    <div class="row"><div class="field"><label>Köşe pimi</label><select data-pin>${Object.entries(PIN_LABEL).map(([k, v]) => `<option value="${k}" ${r.pin === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+      <div class="field"><label>&nbsp;</label><div class="row"><button class="mini ${r.locked ? 'on' : ''}" data-act="lock">${r.locked ? '🔒 Kilitli' : '🔓 Kilit'}</button><button class="mini" data-act="door">Kapı ekle</button></div></div></div>
+    ${r.pin ? '<div class="note">📌 Köşeye sabit — yalnızca boyutu değişir; pimi kaldırmak için “Serbest” seç.</div>' : ''}
+    <div data-live="hints">${hintsHtml(roomHints(r))}</div>
+    <div class="row"><button class="mini" data-act="dup">Çoğalt</button><button class="mini" data-act="fit">Sığdır</button><span class="sp" style="flex:1"></span><button class="mini danger" data-act="del">Sil</button></div>
+  </div>`;
+}
+function itemCard(it) {
+  const d = LIB_BY_KEY[it.key] || {}, room = itemRoom(it), bb = itemAABB(it), isDoor = DOOR_SHAPES.has(d.s);
+  const cat = (CATS.find(c => c[0] === d.c) || [])[1] || '';
+  return `<div class="card sel">
+    <h3>Seçili eşya <span class="sp"></span><span class="chip">${esc(cat)}</span></h3>
+    <div class="row"><div class="field grow"><label>Ad</label><input type="text" data-name value="${esc(it.name)}"></div></div>
+    <div class="row">${numField('En (m)', 'w', it.w, {disabled: it.locked})}${numField('Derinlik (m)', 'h', it.h, {disabled: it.locked})}
+      <div class="field"><label>Döndürme (°)</label><div class="rotwrap"><input type="text" inputmode="numeric" data-rot value="${it.rot || 0}" ${it.locked ? 'disabled' : ''}><button class="mini" data-act="rot-" title="−90°">⟲</button><button class="mini" data-act="rot+" title="+90°">⟳</button></div></div></div>
+    <div class="stat"><span class="k">Ekranda kaplama</span><span class="v" data-live="bb">${fmtM(bb.w)} × ${fmtM(bb.h)} m</span><span class="k">Yer</span><span class="v" style="font-family:var(--font-ui)" data-live="room">${room ? esc(room.name) : 'Satış alanı'}</span>${d.hm ? `<span class="k">Yükseklik</span><span class="v">${fmtM(d.hm)} m</span>` : ''}</div>
+    ${d.note ? `<div class="note">${esc(d.note)}</div>` : ''}
+    <div class="row">${isDoor ? `<button class="mini ${it.flip ? 'on' : ''}" data-act="flip">Menteşe: ${it.flip ? 'sağ' : 'sol'}</button>` : ''}<button class="mini ${it.locked ? 'on' : ''}" data-act="lock">${it.locked ? '🔒 Kilitli' : '🔓 Kilit'}</button><button class="mini" data-act="dup">Çoğalt</button><span style="flex:1"></span><button class="mini danger" data-act="del">Sil</button></div>
+  </div>`;
+}
+function roomsTab() {
+  const an = analyze(), S = state.shop;
+  const rows = state.rooms.map(r => `<div class="room-item ${sel && sel.id === r.id ? 'active' : ''}" data-room="${r.id}"><span class="sw" style="background:${r.color}"></span><div><div class="nm">${esc(r.name)} ${r.pin ? '📌' : ''}${r.locked ? '🔒' : ''}</div><div class="dm">${fmtM(r.w)} × ${fmtM(r.h)} m${roomOverlaps(r) ? ' · <span class="warn">çakışıyor</span>' : ''}</div></div><span class="ar">${fmtA(r.w * r.h)}</span></div>`).join('');
+  return `<div class="card"><h3>Dükkân</h3>
+    <div class="row">${numField('Uzunluk (m)', 'shop.w', S.w)}${numField('En (m)', 'shop.h', S.h)}${numField('Bölme duvar (m)', 'shop.wall', S.wall)}</div>
+    <div class="stat"><span class="k">Toplam iç alan</span><span class="v big">${fmtA(an.total)}</span></div>
+    <div class="row"><button class="mini" data-act="fliph">⇄ Yatay çevir</button><button class="mini" data-act="flipv">⇅ Dikey çevir</button></div>
+    <div class="note">Plan üstten görünüştür. Girişin yeri farklıysa çevir ya da kapıyı taşı.</div></div>
+  <div class="card"><h3>Odalar <span class="sp"></span><span class="chip">${state.rooms.length}</span></h3>
+    <div class="roomlist">${rows}
+      <div class="room-item" style="cursor:default;border-style:dashed"><span class="sw" style="background:transparent;border-color:var(--line-strong)"></span><div><div class="nm">Satış alanı (kalan)</div><div class="dm">dükkân − odalar</div></div><span class="ar">${fmtA(an.sales)}</span></div>
+    </div>
+    <div class="bar" title="Odalar / satış alanı">${state.rooms.map(r => `<i style="width:${(r.w * r.h / an.total * 100).toFixed(1)}%;background:${r.color}"></i>`).join('')}</div>
+    <div class="note">Odalar %${Math.round(an.roomsUnion / an.total * 100)} · Satış alanı %${Math.round(an.sales / an.total * 100)}${an.sales / an.total < 0.5 ? ' — <span style="color:var(--warn)">satış alanı yarının altında</span>' : ''}</div>
+  </div>
+  <div class="card"><h3>Oda ekle</h3>
+    <div class="chips">${ROOM_TEMPLATES.map((t, i) => `<button class="chip" data-tpl="${i}" style="border-left:4px solid ${t.color}">${esc(t.name)} <b>${fmtM(t.w)}×${fmtM(t.h)}</b></button>`).join('')}</div>
+    <div class="note">Şablon ilk boş yere düşer; sonra sürükle ve köşelerden boyutlandır. Serbest çizim için üstteki <b>Oda çiz</b> aracı.</div>
+  </div>`;
+}
+function libTab() {
+  const q = libQuery.toLocaleLowerCase('tr');
+  const list = LIB.filter(d => (q ? d.n.toLocaleLowerCase('tr').includes(q) : d.c === libCat));
+  return `<div class="card"><h3>Eşya ekle</h3>
+    <input class="search" type="search" placeholder="Ara: banko, sedye, raf…" data-search value="${esc(libQuery)}">
+    <div class="chips">${CATS.map(c => `<button class="chip ${!q && libCat === c[0] ? 'on' : ''}" data-cat="${c[0]}">${c[1]}</button>`).join('')}</div>
+    <div class="note">${sel && sel.type === 'room' ? 'Eşya seçili odanın ortasına düşer.' : 'Eşya ekranın ortasına düşer; sonra sürükle. Bir oda seçersen onun içine düşer.'}</div>
+    <div class="lib">${list.map(d => `<button data-add="${d.key}" title="${esc(d.note || d.n)}"><canvas width="128" height="72" data-icon="${d.key}"></canvas><span class="n">${esc(d.n)}</span><span class="d">${fmtM(d.w)} × ${fmtM(d.h)}</span></button>`).join('')}</div>
+  </div>`;
+}
+function drawLibIcons(root) {
+  readTokens();
+  root.querySelectorAll('canvas[data-icon]').forEach(cv => {
+    const d = LIB_BY_KEY[cv.dataset.icon], g = cv.getContext('2d');
+    g.setTransform(2, 0, 0, 2, 0, 0); g.clearRect(0, 0, 64, 36);
+    const s = Math.min(54 / d.w, 28 / d.h, 60);
+    g.translate(32, 18);
+    drawShape(g, d.s, d.w * s, d.h * s, {tk: TK, w: d.w, h: d.h});
+  });
+}
+function summaryTab() {
+  const an = analyze();
+  const rows = state.rooms.map(r => `<tr><td><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${r.color};margin-right:5px"></span>${esc(r.name)}</td><td class="num">${fmtM(r.w)} × ${fmtM(r.h)}</td><td class="num">${fmtM(r.w * r.h)} / ${fmtM(netArea(r))}</td></tr>`).join('');
+  const narrow = passageOn ? computePassages() : passages;
+  const cf = counterFrontDepth();
+  const ic = {ok: '✓', no: '✗', so: '!'};
+  return `<div class="card"><h3>Alan özeti</h3>
+    <div class="stat"><span class="k">Dükkân</span><span class="v big">${fmtA(an.total)}</span>
+      <span class="k">Odalar toplamı</span><span class="v">${fmtA(an.roomsUnion)} <span style="color:var(--muted);font-weight:500">%${Math.round(an.roomsUnion / an.total * 100)}</span></span>
+      <span class="k">Satış alanı (kalan)</span><span class="v" style="${an.sales / an.total < 0.5 ? 'color:var(--warn)' : ''}">${fmtA(an.sales)} <span style="color:var(--muted);font-weight:500">%${Math.round(an.sales / an.total * 100)}</span></span>
+      <span class="k">Satış alanında eşya</span><span class="v">${fmtA(an.salesItemArea)}</span>
+      <span class="k">Yürünebilir alan</span><span class="v">${fmtA(an.walkable)}</span>
+      <span class="k">Aynı anda rahat müşteri (4 m²)</span><span class="v">${Math.floor(an.walkable / ERGO.m2CustomerComfort)} kişi · yoğun ${Math.floor(an.walkable / ERGO.m2CustomerBusy)}</span>
+      <span class="k">Raf yüzü</span><span class="v">${fmt1(an.shelf)} m <span style="color:var(--muted);font-weight:500">hedef 18–23</span></span>
+      ${cf !== null ? `<span class="k">Banko önü serbest derinlik</span><span class="v" style="${cf < 1.5 ? 'color:var(--warn)' : ''}">${fmtM(cf)} m <span style="color:var(--muted);font-weight:500">≥1,50</span></span>` : ''}
+      ${narrow.length ? `<span class="k">En dar geçiş</span><span class="v" style="color:${narrow[0].gap < 0.9 ? 'var(--danger)' : 'var(--warn)'}">${fmtM(narrow[0].gap)} m</span>` : ''}
+    </div>
+    ${an.overlaps.length ? `<div class="check"><span class="m no">✗</span><span>Odalar çakışıyor: ${an.overlaps.map(o => `${esc(o.a.name)} – ${esc(o.b.name)} (${fmtA(o.area)})`).join(', ')}</span></div>` : ''}
+    <div class="row"><button class="mini ${passageOn ? 'on' : ''}" data-act="passage">${passageOn ? 'Geçiş kontrolü açık' : 'Geçiş kontrolü'}</button><span class="note">1,20 m altı geçişler planda oklarla gösterilir (0,90 altı kırmızı)</span></div>
+    ${passageOn && narrow.length ? `<div class="hints">${narrow.slice(0, 6).map(p => `<div><span class="ic ${p.gap < 0.9 ? 'no' : 'so'}">${p.gap < 0.9 ? '✗' : '!'}</span><span>${fmtM(p.gap)} m — ${esc(p.a)} ↔ ${esc(p.b)}: ${esc(rulerComment(p.gap).t)}</span></div>`).join('')}</div>` : passageOn ? '<div class="note">1,20 m altında geçiş yok 👍</div>' : ''}
+  </div>
+  <div class="card"><h3>Odalar (brüt / net m²)</h3>
+    <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Oda</th><th style="text-align:right">En × Boy</th><th style="text-align:right">m²</th></tr></thead><tbody>${rows}<tr><td>Satış alanı</td><td class="num">—</td><td class="num">${fmtM(an.sales)}</td></tr></tbody></table></div>
+    <div class="note">Net alan bölme duvarı (${fmtM(state.shop.wall)} m) düşülerek yaklaşık hesaplanır.</div>
+  </div>
+  <div class="card"><h3>Yönetmelik kontrol</h3>
+    ${an.checks.map(c => `<div class="check"><span class="m ${c.s}">${ic[c.s]}</span><span>${esc(c.t)}${c.d ? ` <span style="color:var(--muted)">— ${esc(c.d)}</span>` : ''}</span></div>`).join('')}
+    <div class="note">Eczacılar ve Eczaneler Hakkında Yönetmelik Md. 20–22 özetidir; il sağlık müdürlüğü ve eczacı odasıyla teyit et. Bu plan ön tasarımdır, resmî kroki yerine geçmez.</div>
+  </div>
+  <div class="card"><h3>Kısayollar</h3>
+    <div class="note" style="line-height:1.9"><span class="kbd">V</span> Seç · <span class="kbd">O</span> Oda çiz · <span class="kbd">C</span> Cetvel · <span class="kbd">H</span> Kaydır · <span class="kbd">F</span> Sığdır · <span class="kbd">G</span> Izgara · <span class="kbd">S</span> Yapış · <span class="kbd">R</span> Döndür 90° · <span class="kbd">L</span> Kilit · <span class="kbd">Del</span> Sil · <span class="kbd">Ok</span> 5 cm · <span class="kbd">Shift+Ok</span> 25 cm · <span class="kbd">Ctrl+Z</span> Geri · <span class="kbd">Ctrl+Y</span> Yinele · <span class="kbd">Ctrl+D</span> Çoğalt · <span class="kbd">Alt</span> Yapışmayı geçici kapat · <span class="kbd">Space</span> Kaydır · <span class="kbd">Esc</span> İptal · Boş alana çift tık: sığdır</div>
+  </div>`;
+}
+function bindPanel(body) {
+  const o = findSel();
+  body.querySelectorAll('[data-name]').forEach(inp => inp.addEventListener('change', () => { if (!o) return; o.name = inp.value.trim().slice(0, 60) || o.name; commit(); renderPanel(); }));
+  body.querySelectorAll('[data-num]').forEach(inp => {
+    const apply = () => {
+      const k = inp.dataset.num, prev = k.startsWith('shop.') ? state.shop[k.slice(5)] : (o ? o[k] : 0);
+      let v = parseNum(inp.value, prev);
+      if (k === 'shop.w' || k === 'shop.h') { v = clamp(v, 2, 100); state.shop[k.slice(5)] = r2(v); for (const r of state.rooms) clampRoom(r); for (const it of state.items) clampItem(it); $('#shopDims').textContent = `${fmtM(state.shop.w)} × ${fmtM(state.shop.h)} m`; }
+      else if (k === 'shop.wall') { state.shop.wall = clamp(v, 0, 0.5); }
+      else if (o) {
+        if (sel.type === 'room') { if (k === 'w' || k === 'h') v = Math.max(MIN_ROOM, v); o[k] = r3(v); clampRoom(o); }
+        else { if (k === 'w' || k === 'h') { const c = itemCenter(o); o[k] = Math.max(MIN_ITEM, r3(v)); o.x = r3(c.x - o.w / 2); o.y = r3(c.y - o.h / 2); } else o[k] = r3(v); clampItem(o); }
+      }
+      commit(); renderPanel();
+    };
+    inp.addEventListener('change', apply);
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') { inp.blur(); } });
+  });
+  body.querySelectorAll('[data-rot]').forEach(inp => inp.addEventListener('change', () => { if (o) { setRotation(o, parseFloat(inp.value.replace(',', '.')) || 0); renderPanel(); } }));
+  body.querySelectorAll('[data-pin]').forEach(s => s.addEventListener('change', () => { if (o) { o.pin = s.value; clampRoom(o); commit(); renderPanel(); } }));
+  body.querySelectorAll('[data-color]').forEach(b => b.addEventListener('click', () => { if (o) { o.color = b.dataset.color; commit(); renderPanel(); } }));
+  body.querySelectorAll('[data-room]').forEach(el => el.addEventListener('click', () => { selectObj('room', el.dataset.room); renderPanel(); }));
+  body.querySelectorAll('[data-tpl]').forEach(b => b.addEventListener('click', () => addRoomTemplate(ROOM_TEMPLATES[+b.dataset.tpl])));
+  body.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => addItem(b.dataset.add)));
+  body.querySelectorAll('[data-cat]').forEach(b => b.addEventListener('click', () => { libCat = b.dataset.cat; libQuery = ''; renderPanel(); }));
+  const sr = body.querySelector('[data-search]');
+  if (sr) { sr.addEventListener('input', () => { libQuery = sr.value; const pos = sr.selectionStart; renderPanel(); const n = $('#panelBody [data-search]'); n.focus(); n.setSelectionRange(pos, pos); }); }
+  body.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => doAct(b.dataset.act)));
+}
+function doAct(act) {
+  const o = findSel();
+  switch (act) {
+    case 'lock': toggleLock(); renderPanel(); break;
+    case 'del': deleteSel(); break;
+    case 'dup': duplicateSel(); break;
+    case 'door': if (o && sel.type === 'room') addDoorToRoom(o); break;
+    case 'flip': if (o) { o.flip = !o.flip; commit(); renderPanel(); } break;
+    case 'rot+': rotateSel(90); renderPanel(); break;
+    case 'rot-': rotateSel(-90); renderPanel(); break;
+    case 'fit': if (o) { const bb = sel.type === 'room' ? o : itemAABB(o); const s = clamp(Math.min((cw - 120) / bb.w, (ch - 120) / bb.h), 5, 800); autoFit = false; view.s = s; view.ox = cw / 2 - (bb.x + bb.w / 2) * s; view.oy = ch / 2 - (bb.y + bb.h / 2) * s; requestDraw(); } break;
+    case 'fliph': flipPlan('h'); break;
+    case 'flipv': flipPlan('v'); break;
+    case 'passage': passageOn = !passageOn; if (passageOn) computePassages(); renderPanel(); requestDraw(); break;
+  }
+}
+function updateLive() {
+  const o = findSel(); if (!o) return;
+  const body = $('#panelBody');
+  const set = (k, v) => { const el = body.querySelector(`[data-live="${k}"]`); if (el) el.textContent = v; };
+  const setV = (k, v) => { const el = body.querySelector(`[data-num="${k}"]`); if (el && document.activeElement !== el) el.value = fmtM(v); };
+  if (sel.type === 'room') { set('area', fmtA(o.w * o.h)); set('net', fmtA(netArea(o))); setV('x', o.x); setV('y', o.y); setV('w', o.w); setV('h', o.h); const ce = body.querySelector('[data-live="cmp"]'); if (ce) ce.innerHTML = compareLines(o.w * o.h, o.w, o.h).map(c => `<span class="chip">${esc(c)}</span>`).join(''); const he = body.querySelector('[data-live="hints"]'); if (he) he.innerHTML = hintsHtml(roomHints(o)); }
+  else { const bb = itemAABB(o), r = itemRoom(o); set('bb', `${fmtM(bb.w)} × ${fmtM(bb.h)} m`); set('room', r ? r.name : 'Satış alanı'); setV('w', o.w); setV('h', o.h); const ri = body.querySelector('[data-rot]'); if (ri && document.activeElement !== ri) ri.value = o.rot || 0; }
+  if (passageOn) computePassages();
+  positionCtxBar();
+}
+/* mini bağlam çubuğu */
+function positionCtxBar() {
+  const bar = $('#ctxbar'), o = findSel();
+  if (!o || drag) { bar.hidden = true; return; }
+  const bb = sel.type === 'room' ? o : itemAABB(o);
+  const px = w2sx(bb.x + bb.w / 2), py = w2sy(bb.y) - 46;
+  bar.hidden = false;
+  bar.style.left = clamp(px - bar.offsetWidth / 2, 6, cw - bar.offsetWidth - 6) + 'px';
+  bar.style.top = clamp(py < 8 ? w2sy(bb.y + bb.h) + 12 : py, 6, ch - 44) + 'px';
+  bar.querySelector('[data-act="rot+"]').hidden = sel.type !== 'item';
+  bar.querySelector('[data-act="lock"]').textContent = o.locked ? '🔒' : '🔓';
+}
+
+/* =====================================================================
+   DIŞA / İÇE AKTARMA
+   ===================================================================== */
+function planJSON() { return JSON.stringify({v: 1, app: 'Eczane Plan Masası', rev: state.rev, exported: new Date().toISOString(), shop: state.shop, rooms: state.rooms, items: state.items, nextId: state.nextId}, null, 1); }
+function stamp() { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; }
+async function saveFile(filename, data, mime) {
+  if (downloadsApi) {
+    try { await downloadsApi.save({filename, data}); toast('İndirildi: ' + filename); return true; }
+    catch (e) { if (e && e.code === 'declined') return false; }
+  }
+  try {
+    const blob = data instanceof Blob ? data : new Blob([data], {type: mime});
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    toast('İndiriliyor: ' + filename + ' (tarayıcı engellediyse metni kopyala)');
+    return true;
+  } catch (e) { toast('İndirme yapılamadı — JSON metnini kopyalayabilirsin'); return false; }
+}
+function openExport() {
+  $('#jsonBox').value = planJSON();
+  const dlg = $('#dlgExport'); try { dlg.showModal(); } catch (e) {}
+}
+function importJSON(text) {
+  let d; try { d = JSON.parse(text); } catch (e) { toast('Dosya geçersiz: JSON okunamadı'); return; }
+  if (!validState(d)) { toast('Dosya geçersiz: bu bir eczane planı değil ya da ölçüler bozuk'); return; }
+  const s = sanitize(d); s.rev = (state.rev || 0) + 1;
+  for (const r of s.rooms) { const W = s.shop.w, H = s.shop.h; r.w = clamp(r.w, MIN_ROOM, W); r.h = clamp(r.h, MIN_ROOM, H); r.x = clamp(r.x, 0, W - r.w); r.y = clamp(r.y, 0, H - r.h); }
+  state = s; for (const r of state.rooms) applyPin(r);
+  sel = null; $('#shopDims').textContent = `${fmtM(state.shop.w)} × ${fmtM(state.shop.h)} m`;
+  commit(); fit(); renderPanel(); toast(`Plan yüklendi (${state.rooms.length} oda, ${state.items.length} eşya)`);
+  try { $('#dlgExport').close(); } catch (e) {}
+}
+function exportPNG() {
+  const S = state.shop, pxm = Math.min(220, 2800 / (S.w + 1.5));
+  const pad = 70, tableH = 26 * (state.rooms.length + 2) + 40, W = Math.round(S.w * pxm + pad * 2), H = Math.round(S.h * pxm + pad * 2 + 70 + tableH);
+  const off = document.createElement('canvas'); off.width = W; off.height = H;
+  const g = off.getContext('2d');
+  // geçici olarak çizim hedefini değiştir
+  const keep = {ctx, view: {...view}, cw, ch, dpr, sel, rulerLine, guides, drag, passageOn};
+  ctx = g; view = {s: pxm, ox: pad, oy: pad + 60}; cw = W; ch = H; dpr = 1; sel = null; rulerLine = null; guides = []; drag = null;
+  exporting = true;
+  draw();
+  exporting = false;
+  ctx = keep.ctx; view = keep.view; cw = keep.cw; ch = keep.ch; dpr = keep.dpr; sel = keep.sel; rulerLine = keep.rulerLine; guides = keep.guides; drag = keep.drag;
+  // beyaz zemin altına
+  const out = document.createElement('canvas'); out.width = W; out.height = H;
+  const o = out.getContext('2d'); o.fillStyle = '#FFFFFF'; o.fillRect(0, 0, W, H); o.drawImage(off, 0, 0);
+  o.fillStyle = '#1B2321'; o.font = "700 22px 'Bricolage Grotesque','Archivo',system-ui,sans-serif"; o.textBaseline = 'top';
+  o.fillText(`${state.shop.name || 'Eczane'} — yerleşim planı`, pad, 22);
+  o.font = "500 13px 'IBM Plex Mono',ui-monospace,monospace"; o.fillStyle = '#5D6864';
+  o.fillText(`${fmtM(S.w)} × ${fmtM(S.h)} m · ${fmtA(S.w * S.h)} · ${new Date().toLocaleDateString('tr-TR')}`, pad, 50);
+  const an = analyze();
+  let ty = S.h * pxm + pad * 2 + 70;
+  o.font = "600 12px 'Archivo',system-ui,sans-serif"; o.fillStyle = '#5D6864';
+  o.fillText('ODA', pad, ty); o.fillText('EN × BOY', pad + 300, ty); o.fillText('BRÜT / NET m²', pad + 460, ty); ty += 22;
+  o.font = "500 13px 'Archivo',system-ui,sans-serif"; o.fillStyle = '#1B2321';
+  for (const r of state.rooms) { o.fillStyle = r.color; o.fillRect(pad, ty + 2, 10, 10); o.fillStyle = '#1B2321'; o.fillText(r.name, pad + 16, ty); o.fillText(`${fmtM(r.w)} × ${fmtM(r.h)} m`, pad + 300, ty); o.fillText(`${fmtM(r.w * r.h)} / ${fmtM(netArea(r))}`, pad + 460, ty); ty += 26; }
+  o.fillText('Satış alanı (kalan)', pad + 16, ty); o.fillText('—', pad + 300, ty); o.fillText(fmtM(an.sales), pad + 460, ty); ty += 30;
+  // ölçek çubuğu
+  o.strokeStyle = '#1B2321'; o.lineWidth = 2; const sx = W - pad - pxm, sy = ty + 4; o.beginPath(); o.moveTo(sx, sy); o.lineTo(sx + pxm, sy); o.moveTo(sx, sy - 5); o.lineTo(sx, sy + 5); o.moveTo(sx + pxm, sy - 5); o.lineTo(sx + pxm, sy + 5); o.stroke(); o.font = "600 11px 'IBM Plex Mono',monospace"; o.fillStyle = '#5D6864'; o.textAlign = 'center'; o.fillText('1 m', sx + pxm / 2, sy + 8); o.textAlign = 'left';
+  o.font = "500 11px 'Archivo',system-ui,sans-serif"; o.fillStyle = '#8A948F';
+  o.fillText('Ön tasarım — resmî kroki yerine geçmez. Eczane Plan Masası', pad, ty);
+  return out;
+}
+let exporting = false;
+const LIGHT_TK = {paper:'#FFFFFF', ink:'#1B2321', muted:'#5D6864', faint:'#8A948F', accent:'#1F7A5A', accentSoft:'#DDF0E7', line:'#D8DDD6', lineStrong:'#B4BCB4', gridMinor:'#EDF0EB', gridMajor:'#DADFD8', gridMeter:'#C4CBC3', wall:'#2B3431', wallHatch:'#8A948F', danger:'#C2412D', warn:'#A8690F', surface:'#FFFFFF', furnFill:'#FBFAF4', furnStroke:'#3E4744', glass:'rgba(120,170,220,.25)'};
+async function doExportPNG() {
+  const cv = exportPNG();
+  const name = `eczane-plani-${stamp()}.png`;
+  await new Promise(res => cv.toBlob(async b => {
+    if (!b) { try { const url = cv.toDataURL('image/png'); window.open(url, '_blank'); toast('Görsel yeni sekmede açıldı — uzun basıp kaydet'); } catch (e) { toast('PNG oluşturulamadı'); } res(); return; }
+    await saveFile(name, b, 'image/png'); res();
+  }, 'image/png'));
+}
+
+/* =====================================================================
+   BAŞLATMA
+   ===================================================================== */
+function init() {
+  const hadLocal = loadLocal();
+  lastCommitted = snapshot();
+  $('#shopDims').textContent = `${fmtM(state.shop.w)} × ${fmtM(state.shop.h)} m`;
+  // bağlam çubuğu
+  const bar = document.createElement('div'); bar.id = 'ctxbar'; bar.hidden = true;
+  bar.innerHTML = `<button class="ibtn" data-act="rot+" title="Döndür 90° (R)">⟳</button><button class="ibtn" data-act="dup" title="Çoğalt (Ctrl+D)">⧉</button><button class="ibtn" data-act="lock" title="Kilit (L)">🔓</button><button class="ibtn" data-act="del" title="Sil (Delete)" style="color:var(--danger)">🗑</button>`;
+  bar.style.cssText = 'position:absolute;display:flex;gap:3px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px;box-shadow:var(--shadow);z-index:5';
+  bar.querySelectorAll('button').forEach(b => { b.style.cssText = 'min-width:34px;justify-content:center;border:0;border-radius:999px;padding:6px 8px'; b.addEventListener('click', () => doAct(b.dataset.act)); });
+  stage.appendChild(bar);
+  // araçlar
+  document.querySelectorAll('.tbtn[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+  $('#btnUndo').addEventListener('click', undo); $('#btnRedo').addEventListener('click', redo);
+  $('#btnSnap').addEventListener('click', toggleSnap); $('#btnGrid').addEventListener('click', toggleGrid);
+  $('#btnHuman').addEventListener('click', () => { settings.humanBadge = !settings.humanBadge; $('#btnHuman').classList.toggle('on', settings.humanBadge); requestDraw(); });
+  $('#btnExport').addEventListener('click', openExport);
+  $('#btnReset').addEventListener('click', () => ask('Plan sıfırlansın mı? Mevcut plan geri alınabilir (Ctrl+Z), ama önce JSON yedek almanı öneririm.', ['Varsayılan plan', 'Boş plan (sadece WC)', 'Vazgeç']).then(i => {
+    if (i < 0 || i === 2) return;
+    const d = defaultState(i === 1 ? 'empty' : 'default'); d.rev = (state.rev || 0) + 1; state = d; sel = null;
+    $('#shopDims').textContent = `${fmtM(state.shop.w)} × ${fmtM(state.shop.h)} m`;
+    commit(); fit(); renderPanel(); toast('Plan sıfırlandı');
+  }));
+  $('#zoomIn').addEventListener('click', () => zoomAt(1.25, cw / 2, ch / 2));
+  $('#zoomOut').addEventListener('click', () => zoomAt(1 / 1.25, cw / 2, ch / 2));
+  $('#zoomFit').addEventListener('click', fit);
+  document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { activeTab = b.dataset.tab; $('#panel').classList.remove('collapsed'); renderPanel(); }));
+  $('#panelToggle').addEventListener('click', () => { const p = $('#panel'); p.classList.toggle('collapsed'); $('#panelToggle').textContent = p.classList.contains('collapsed') ? '▴ Panel' : '▾ Panel'; setTimeout(resize, 220); });
+  // dışa aktarma diyaloğu
+  $('#expPng').addEventListener('click', doExportPNG);
+  $('#expJson').addEventListener('click', () => saveFile(`eczane-plani-${stamp()}.json`, planJSON(), 'application/json'));
+  $('#expCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(planJSON()); toast('Panoya kopyalandı'); } catch (e) { $('#jsonBox').select(); toast('Metni seçtim — Ctrl+C ile kopyala'); } });
+  $('#impPaste').addEventListener('click', () => importJSON($('#jsonBox').value));
+  $('#impFile').addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; f.text().then(importJSON); e.target.value = ''; });
+  $('#expPrint').addEventListener('click', () => { try { $('#dlgExport').close(); } catch (e) {} setTimeout(() => window.print(), 200); });
+  $('#dlgClose').addEventListener('click', () => $('#dlgExport').close());
+  // tema / boyut
+  new ResizeObserver(() => resize()).observe(stage);
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { requestDraw(); renderPanel(); });
+  new MutationObserver(() => { requestDraw(); renderPanel(); }).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
+  document.fonts && document.fonts.ready.then(() => { requestDraw(); renderPanel(); });
+  resize(); fit(); setTool('select'); renderPanel(); updateUndoButtons(); setSaveStatus('local');
+  initRemote();
+  if (!hadLocal) setTimeout(() => toast('Dükkânın 13,65 × 6,95 m (94,9 m²) hazır. Örnek yerleşimi dilediğin gibi değiştir.'), 400);
+}
+// draw() içine geçiş okları ve dışa aktarma modu için kanca
+const _draw = draw;
+draw = function () { _draw(); if (!exporting) drawPassages(); if (!exporting) positionCtxBar(); };
+init();
+
+</script>
+
+</body>
+</html>
