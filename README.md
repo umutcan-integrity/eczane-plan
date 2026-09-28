@@ -21,7 +21,9 @@ bilgisayarda çalışır, kurulum gerektirmez; projeler cihazın tarayıcısınd
   bir şey keserse kırmızıya döner. Seçili öğenin dört yanındaki boşluk cm olarak yazılır
   (kırmızı: geçilemez, turuncu: tek kişi, yeşil: rahat). Ölç aracı mesafeyi yorumlar.
 - **Mıknatıs:** Duvara, odalara ve diğer öğelerin kenarına yapışma; ızgara 5 cm.
-- **3B:** Yörünge (döndür, yakınlaştır, üstten/açılı), duvar yüksekliği tam/yarım/yok.
+- **3B:** Yörünge (döndür, yakınlaştır, üstten/açılı), duvar yüksekliği tam/yarım/yok. Cephede ışıklı
+  eczane tabelası ve kırmızı “E” bayrak tabela (yazısı proje panelindeki *Tabela yazısı*ndan).
+  Raflarda ilaç kutuları, fiyat rayları ve LED; çekmeceli dolap altta çekmece, üstte açık raf.
 - **3B gez (oyun gibi):** Girişin önünden insan gözü hizasında başlar. Bilgisayarda tıkla → fareyle
   bak, **W A S D** / oklar yürü, Shift koş, Q/E dön, Esc bırak. Telefonda sol alttaki joystick ile
   yürü, ekranı sürükleyerek dön. Duvar ve eşyalardan geçilmez, kapılardan geçilir. Mini haritaya

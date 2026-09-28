@@ -39,10 +39,11 @@ const Ed = {
     this.P = null; this.sel = null;
     return true;
   },
-  snap() { const P = this.P; return JSON.stringify({name: P.name, shop: P.shop, rooms: P.rooms, items: P.items}); },
+  snap() { const P = this.P; return JSON.stringify({name: P.name, sign: P.sign, shop: P.shop, rooms: P.rooms, items: P.items}); },
   restore(str) {
     const o = JSON.parse(str);
     Object.assign(this.P, {name: o.name, shop: o.shop, rooms: o.rooms, items: o.items});
+    if (o.sign === undefined) delete this.P.sign; else this.P.sign = o.sign;
     if (this.sel && !this.objOf(this.sel)) this.sel = null;
     $('#pnameText').textContent = this.P.name;
   },
@@ -369,6 +370,8 @@ const Props = {
     drawArea(); this.liveFns.push(drawArea);
     root.append(this.grp('Dükkân',
       this.text('Proje adı', () => P.name, v => { P.name = v.slice(0, 60); $('#pnameText').textContent = P.name || 'Proje'; }, 'pname'),
+      this.text('Tabela yazısı (3B cephede)', () => P.sign ?? P.name, v => { P.sign = v.slice(0, 60); }, 'psign'),
+      h('p', {class: 'tip', style: 'margin-top:-4px'}, '“Eczanesi” yazmazsan kendisi eklenir. Boş bırakırsan tabela gösterilmez.'),
       h('div', {class: 'prow'},
         this.num('Genişlik', () => P.shop.w, v => { P.shop.w = v; }, {unit: 'm', min: 2, max: 150, key: 'shopw'}),
         this.num('Derinlik', () => P.shop.d, v => { P.shop.d = v; }, {unit: 'm', min: 2, max: 150, key: 'shopd'})),
