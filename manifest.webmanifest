@@ -1,0 +1,17 @@
+{
+  "name": "Eczane Plan",
+  "short_name": "Eczane Plan",
+  "description": "Eczane ve dükkân için sade 2B plan çizimi ve 3B gezinti.",
+  "lang": "tr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F3F4F1",
+  "theme_color": "#FFFFFF",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+    {"src": "icon.svg", "sizes": "any", "type": "image/svg+xml"}
+  ]
+}

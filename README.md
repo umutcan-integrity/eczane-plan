@@ -1,47 +1,54 @@
-# Eczane Plan Masası
+# Eczane Plan
 
-13,65 × 6,95 m'lik bir eczane için tarayıcıda çalışan 2B yerleşim planlayıcı.
-Odaları ve mobilyaları sürükleyerek yerleştirir, anlık m² ve gerçek insan
-ölçeğine göre "sığar / sığmaz" geri bildirimi verir.
+Eczane ve dükkânlar için **sade 2B plan çizimi + 3B görüntüleme ve gezinti**. Telefonda ve
+bilgisayarda çalışır, kurulum gerektirmez; projeler cihazın tarayıcısında saklanır.
 
 **Canlı sürüm:** https://umutcan-integrity.github.io/eczane-plan/
 
-## Ne yapar
+## Neler var
 
-- Oda çizimi, taşıma, köşelerden boyutlandırma; anlık brüt/net m²
-- 55'ten fazla gerçek ölçülü eşya: banko, kasa, gondol, çekmeceli ilaç dolabı,
-  ilaç buzdolabı, sedye, lavabo, mutfak tezgâhı, stok rafı, kapı, pencere
-- İnsan ölçeği katmanı: ayakta insan, tekerlekli sandalye, Ø1,50 m dönüş
-  dairesi, 0,90 / 1,20 m geçiş şeritleri
-- Cetvel; ölçülen mesafe için "iki kişi yan yana geçer" türünden yorum
-- Geçiş kontrolü: 1,20 m altındaki boşlukları planda oklarla işaretler
-- Özet paneli: satış alanı, yürünebilir alan, raf yüzü metrajı, banko önü derinlik
-- Yönetmelik kontrol listesi (Eczacılar ve Eczaneler Hk. Yönetmelik Md. 20–22 özeti)
-- PNG ve JSON dışa aktarma, JSON'dan geri yükleme, yazdırma
-- Koyu / açık tema, masaüstü + dokunmatik
+- **Projeler:** İsim vererek başla, birden fazla proje tut. Son proje en üstte. Yeniden adlandır,
+  çoğalt, sil, JSON olarak yedekle / içe aktar.
+- **Kaydetme:** `Kaydet` düğmesi (Ctrl+S) ve açılıp kapatılabilen otomatik kayıt. Veriler yalnızca
+  bu cihazda (localStorage) durur; önceki sürümde kalan plan ilk açılışta otomatik içe alınır.
+- **2B çizim:** Oda çiz / taşı / boyutlandır (içindekiler odayla birlikte taşınır), duvarlar oda
+  kenarlarından otomatik oluşur. Öğeler: kapı, pencere, kolon; dolap (kapaklı, açık raf, çekmeceli,
+  gondol, vitrin, buzdolabı); banko; masa; insan, tekerlekli sandalye ve geçiş/dönüş alanları.
+- **Kapılar kolay:** Eklenince en yakın duvara oturur, sürükleyince duvar boyunca kayar, başka
+  duvara yaklaşınca oraya geçer (dış duvarda içe açılır). “Yönü çevir” ile ya da resimli seçiciyle
+  açılış yönü; 80/90/100/120/160 cm hazır genişlikler; köşeye olan mesafeler görünür.
+- **İnsan boşlukları:** Dolap önü / banko müşteri ve personel tarafı boşlukları planda gösterilir,
+  bir şey keserse kırmızıya döner. Seçili öğenin dört yanındaki boşluk cm olarak yazılır
+  (kırmızı: geçilemez, turuncu: tek kişi, yeşil: rahat). Ölç aracı mesafeyi yorumlar.
+- **Mıknatıs:** Duvara, odalara ve diğer öğelerin kenarına yapışma; ızgara 5 cm.
+- **3B:** Yörünge (döndür, yakınlaştır, üstten/açılı), duvar yüksekliği tam/yarım/yok.
+- **3B gez (oyun gibi):** Girişin önünden insan gözü hizasında başlar. Bilgisayarda tıkla → fareyle
+  bak, **W A S D** / oklar yürü, Shift koş, Q/E dön, Esc bırak. Telefonda sol alttaki joystick ile
+  yürü, ekranı sürükleyerek dön. Duvar ve eşyalardan geçilmez, kapılardan geçilir. Mini haritaya
+  dokununca oraya yürür.
+- **Tema:** Sistem / açık / koyu ve 8 vurgu rengi.
+- **Dışa aktarma:** Plan PNG, 3B görüntü PNG, JSON yedek, paylaş (telefonda).
+- Çevrimdışı çalışır ve ana ekrana “uygulama” olarak eklenebilir (PWA).
 
-## Kullanım
+## Geliştirme
 
-Tek dosyalık statik bir sayfa. Kurulum yok:
+`index.html` üretilmiş dosyadır; kaynaklar `src/` altında:
 
-- Yukarıdaki bağlantıyı aç, ya da
-- `index.html` dosyasını indirip çift tıkla.
+```
+src/shell.html     sayfa iskeleti
+src/style.css      stiller
+src/js/*.js        uygulama (sırayla birleştirilir)
+src/sw.js          service worker şablonu
+vendor/            three.js (3B motoru, MIT)
+```
 
-Plan, açan kişinin **kendi tarayıcısında** saklanır (localStorage). Sayfayı
-paylaşmak planı paylaşmaz; başkasına göndermek için Dışa Aktar → JSON kullan.
-
-## Kaynak
-
-`index.html` üretilmiş dosyadır. Kaynak parçalar `part1.html` ve `part2–4c.js`;
-düzenledikten sonra birleştirmek için:
+Düzenledikten sonra:
 
 ```bash
-python3 build.py
-cp eczane-plan-masasi-local.html index.html
+python3 build.py      # index.html ve sw.js üretilir, JS sözdizimi kontrol edilir
 ```
 
 ## Sorumluluk reddi
 
-Ön tasarım aracıdır, resmî kroki yerine geçmez. Ölçüler ve yönetmelik notları
-bilgilendirme amaçlıdır; ruhsat işlemleri için il sağlık müdürlüğü ve eczacı
-odasıyla teyit edin.
+Ön tasarım aracıdır, resmî kroki yerine geçmez. Ölçü ve boşluk önerileri bilgilendirme
+amaçlıdır; ruhsat işlemleri için ilgili kurumlarla teyit edin.
