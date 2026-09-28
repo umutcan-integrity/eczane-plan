@@ -73,6 +73,7 @@ function normalizeProject(o) {
     shop: {w: num(shop.w, 10, 1, 200), d: num(shop.d, 6, 1, 200), h: num(shop.h, 2.8, 2, 8)},
     rooms: [], items: [], seq: num(o.seq, 1, 0, 1e9),
   };
+  if (typeof o.sign === 'string') p.sign = o.sign.slice(0, 60);
   const ids = new Set();
   const fresh = pre => { let id; do { id = pre + Math.random().toString(36).slice(2, 8); } while (ids.has(id)); return id; };
   for (const r of Array.isArray(o.rooms) ? o.rooms : []) {
