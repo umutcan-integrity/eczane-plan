@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="description" content="Eczane ve dükkân için sade 2B plan çizimi ve 3B gezinti. Projeler cihazında saklanır.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Eczane Plan">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Eczane Plan</title>
+<script>
+/* Tema, ilk boyamadan önce uygulanır (yanıp sönmeyi önler) */
+(function(){try{var s=JSON.parse(localStorage.getItem('eczplan.v2.settings')||'{}');var m=s.mode||'auto';if(m==='auto')m=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.mode=m;}catch(e){}})();
+</script>
+<style>
+/*@CSS@*/
+</style>
+</head>
+<body>
+
+<!-- ============ ANA EKRAN: projeler ============ -->
+<div id="home" class="home">
+  <header class="home-top">
+    <div class="logo"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></i>Eczane Plan</div>
+    <div class="grow"></div>
+    <button class="icon-btn" id="homeHelp" title="Nasıl kullanılır?"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-1 .6-1.5 1.1-1.5 2.2M12 17h.01"/></svg></button>
+    <button class="icon-btn" id="homeSettings" title="Görünüm ve tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
+  </header>
+  <main class="home-main">
+    <section class="card new-card">
+      <h1>Yeni proje</h1>
+      <p>Bir isim ver, ölçüleri gir ve çizmeye başla.</p>
+      <form id="newForm" autocomplete="off">
+        <label class="fl"><span>Proje adı</span><input class="inp" id="newName" placeholder="ör. Merkez Eczanesi" maxlength="60" enterkeyhint="go"></label>
+        <div class="row2">
+          <label class="fl"><span>Genişlik (m)</span><input class="inp" id="newW" inputmode="decimal" value="13,65"></label>
+          <label class="fl"><span>Derinlik (m)</span><input class="inp" id="newD" inputmode="decimal" value="6,95"></label>
+        </div>
+        <div class="tpl" id="newTpl">
+          <button type="button" data-v="empty" class="on"><b>Boş dükkân</b><small>Sadece dış duvarlar</small></button>
+          <button type="button" data-v="sample"><b>Örnek eczane</b><small>Odalar, banko ve dolaplar hazır</small></button>
+        </div>
+        <button class="btn primary big full" type="submit">Başla <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </form>
+    </section>
+    <section>
+      <div class="sec-head">
+        <h2>Projelerim</h2>
+        <label class="btn ghost" title="JSON yedeğinden proje yükle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 16V4m0 0L7 9m5-5l5 5"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/></svg>İçe aktar<input type="file" id="importFile" accept="application/json,.json" hidden></label>
+      </div>
+      <div id="projList" class="proj-grid"></div>
+      <p class="note">Projeler yalnızca bu cihazın tarayıcısında saklanır; internet gerekmez. Başka cihaza taşımak veya yedeklemek için proje menüsünden <b>JSON indir</b>’i kullan.</p>
+    </section>
+  </main>
+</div>
+
+<!-- ============ DÜZENLEYİCİ ============ -->
+<div id="editor" class="editor" hidden>
+  <header class="bar">
+    <button class="icon-btn" id="btnHome" title="Projeler"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="pname" id="pname" title="Yeniden adlandır"><b id="pnameText">Proje</b><small><i id="saveDot"></i><span id="saveText">Kaydedildi</span></small></button>
+    <div class="grow"></div>
+    <div class="seg center" id="viewSeg">
+      <button data-v="2d" class="on" title="2B plan (1)">2B</button>
+      <button data-v="3d" title="3B görünüm (2)">3B</button>
+    </div>
+    <div class="grow"></div>
+    <button class="icon-btn" id="btnUndo" title="Geri al (Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg></button>
+    <button class="icon-btn" id="btnRedo" title="Yinele (Ctrl+Y)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 000 11H13"/></svg></button>
+    <button class="btn primary save-btn" id="btnSave" title="Kaydet (Ctrl+S)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l4 4v13a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg><span>Kaydet</span></button>
+    <button class="icon-btn" id="btnMenu" title="Menü"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+  </header>
+
+  <div class="work">
+    <aside class="side side-l" id="sheetAdd">
+      <div class="sheet-grip"></div>
+      <div class="sheet-head"><b>Ekle</b><button class="icon-btn sheet-close" data-close="sheetAdd" title="Kapat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <div class="sheet-body" id="palette"></div>
+    </aside>
+
+    <main class="stage" id="stage">
+      <canvas id="plan"></canvas>
+      <canvas id="scene" hidden></canvas>
+
+      <div class="float tools" id="tools2d">
+        <button class="tb on" data-tool="select" title="Seç ve taşı (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 3l14 8-6.5 1.6L9.5 19z"/></svg><span class="lbl">Seç</span></button>
+        <button class="tb" data-tool="room" title="Oda çiz (O)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="4.5" width="17" height="15" rx="1"/><path d="M12 4.5v8h8.5"/></svg><span class="lbl">Oda çiz</span></button>
+        <button class="tb" data-tool="measure" title="Ölç (M)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 16L16 3l5 5L8 21z"/><path d="M7 12l2 2M10 9l2 2M13 6l2 2"/></svg><span class="lbl">Ölç</span></button>
+        <span class="tsep hide-m"></span>
+        <button class="tb tog on hide-m" id="togGrid" title="Izgara (G)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg><span class="lbl">Izgara</span></button>
+        <button class="tb tog on" id="togSnap" title="Mıknatıs: duvara ve eşyalara yapış (S)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3v8a6 6 0 0012 0V3"/><path d="M6 3h4M14 3h4M6 7h4M14 7h4"/></svg><span class="lbl">Mıknatıs</span></button>
+        <button class="tb tog on" id="togClear" title="İnsan boşluklarını göster (B)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="5" r="2"/><path d="M12 8v6m0 0l-3 6m3-6l3 6M7 11h10"/><path d="M2 4v16M22 4v16" stroke-dasharray="2 2"/></svg><span class="lbl">Boşluklar</span></button>
+      </div>
+
+      <div class="float tools" id="tools3d" hidden>
+        <div class="seg" id="modeSeg">
+          <button data-v="orbit" class="on" title="Etrafında döndür"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="12" rx="9" ry="4"/><path d="M12 3v18"/></svg><span class="lbl">Döndür</span></button>
+          <button data-v="walk" title="İnsan gözüyle gez (WASD + fare)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="13" cy="4" r="2"/><path d="M10 21l2-6-3-3 2-5 3 4h4M7 11l2-4"/></svg><span class="lbl">Gez</span></button>
+        </div>
+        <span class="tsep"></span>
+        <button class="tb orbit-only" id="camTop" title="Üstten bak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 12h16M12 4v16"/></svg><span class="lbl">Üstten</span></button>
+        <button class="tb orbit-only" id="camIso" title="Açılı bak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg><span class="lbl">Açılı</span></button>
+        <button class="tb" id="camWalls" title="Duvar yüksekliği"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18M5 20V9h6v11M13 20v-7h6v7"/></svg><span class="lbl" id="camWallsLbl">Duvar: tam</span></button>
+      </div>
+
+      <div class="hintpill" id="hintPill" hidden><span id="hintText"></span><button id="hintDone">Bitti</button></div>
+
+      <div class="float ctxbar" id="ctxbar" hidden>
+        <button class="tb" data-act="rotate" title="90° döndür (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12a8 8 0 11-2.3-5.6"/><path d="M20 4v5h-5"/></svg><span class="lbl">Döndür</span></button>
+        <button class="tb" data-act="dup" title="Yanına kopyala (Ctrl+D)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/></svg><span class="lbl">Kopyala</span></button>
+        <button class="tb edit-only" data-act="edit" title="Özellikler"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span class="lbl">Düzenle</span></button>
+        <button class="tb danger" data-act="del" title="Sil (Del)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg><span class="lbl">Sil</span></button>
+      </div>
+
+      <div class="float zoom" id="zoomCtl">
+        <button class="tb" id="zoomOut" title="Uzaklaştır (−)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 12h12"/></svg></button>
+        <button class="tb" id="zoomFit" title="Tümünü göster (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span class="lbl fitlbl">Sığdır</span></button>
+        <button class="tb" id="zoomIn" title="Yakınlaştır (+)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 12h12M12 6v12"/></svg></button>
+      </div>
+
+      <div class="walkhint" id="walkHint" hidden></div>
+      <canvas class="minimap" id="minimap" hidden title="Haritaya dokun: oraya git"></canvas>
+      <div class="crosshair" id="crosshair" hidden></div>
+      <div class="joy" id="joy" hidden><div class="joy-knob" id="joyKnob"></div></div>
+      <div class="loading3d" id="loading3d" hidden>3B hazırlanıyor…</div>
+    </main>
+
+    <aside class="side side-r" id="sheetProps">
+      <div class="sheet-grip"></div>
+      <div class="sheet-head"><b id="propsTitle">Proje</b><button class="icon-btn sheet-close" data-close="sheetProps" title="Kapat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <div class="sheet-body" id="props"></div>
+    </aside>
+  </div>
+
+  <nav class="dock" id="dock">
+    <button class="main" data-dock="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Ekle</button>
+    <button data-dock="room"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="4.5" width="17" height="15" rx="1"/><path d="M12 4.5v8h8.5"/></svg>Oda çiz</button>
+    <button data-dock="measure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 16L16 3l5 5L8 21z"/><path d="M7 12l2 2M10 9l2 2M13 6l2 2"/></svg>Ölç</button>
+    <button data-dock="props"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span id="dockPropsLbl">Proje</span></button>
+  </nav>
+</div>
+
+<div class="toast" id="toast"></div>
+<dialog class="modal" id="modal"></dialog>
+
+<script>
+/*@JS@*/
+</script>
+</body>
+</html>
