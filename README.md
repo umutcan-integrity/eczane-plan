@@ -14,6 +14,13 @@ bilgisayarda çalışır, kurulum gerektirmez; projeler cihazın tarayıcısınd
 - **2B çizim:** Oda çiz / taşı / boyutlandır (içindekiler odayla birlikte taşınır), duvarlar oda
   kenarlarından otomatik oluşur. Öğeler: kapı, pencere, kolon; dolap (kapaklı, açık raf, çekmeceli,
   gondol, vitrin, buzdolabı); banko; masa; insan, tekerlekli sandalye ve geçiş/dönüş alanları.
+- **Ekipmanlar:** İlaç dolabı (altı çekmece, üstü raf; çekmece sırası/yan yana sayısı ve çekmece bölümü
+  yüksekliği seçilebilir), OTC dolabı (ışıklı başlık), demir kozmetik standı (cam raf, ayna), demir raf (depo),
+  açık raf, gondol, vitrin, buzdolabı, mutfak tezgâhı (evye, çekmece, üst dolap), klozet, lavabo, banko, masa.
+- **Zemin:** 9 kaplama (seramik, mermer, terrazzo, parke, laminat, epoksi, vinil, karo) önizlemeli; dükkân
+  geneli ve her oda için ayrı seçilebilir.
+- **Render ve sunum:** 3B render (HD–4K, açılı/üstten/girişten, ön duvarları kesme, ölçüler üzerinde);
+  tek sayfalık sunum paftası (tüm ölçülü plan + iki 3B görünüm + ekipman listesi); ölçülü plan PNG.
 - **Kapılar kolay:** Eklenince en yakın duvara oturur, sürükleyince duvar boyunca kayar, başka
   duvara yaklaşınca oraya geçer (dış duvarda içe açılır). “Yönü çevir” ile ya da resimli seçiciyle
   açılış yönü; 80/90/100/120/160 cm hazır genişlikler; köşeye olan mesafeler görünür.

@@ -45,11 +45,13 @@ const TYPES = {
   column:  {n: 'Kolon', solid: 1, color: '#9AA0A6'},
   door:    {n: 'Kapı', opening: 1, color: '#A07D58'},
   window:  {n: 'Pencere', opening: 1, color: '#6FB3E6'},
+  fixture: {n: 'Islak hacim', solid: 1, color: '#F4F4F2', front: 1},
   human:   {n: 'İnsan', color: '#E07A5F'},
   zone:    {n: 'Boşluk', color: '#3FA66B'},
 };
 const STYLES = {
-  cabinet: [['closed', 'Kapaklı'], ['open', 'Açık raf'], ['drawer', 'Çekmeceli'], ['gondola', 'Gondol'], ['glass', 'Vitrin'], ['fridge', 'Buzdolabı']],
+  cabinet: [['drawer', 'İlaç dolabı'], ['otc', 'OTC dolabı'], ['cosmetic', 'Demir kozmetik'], ['open', 'Açık raf'], ['metal', 'Demir raf'], ['closed', 'Kapaklı'], ['gondola', 'Gondol'], ['glass', 'Vitrin'], ['fridge', 'Buzdolabı'], ['kitchen', 'Mutfak tezgâhı']],
+  fixture: [['toilet', 'Klozet'], ['sink', 'Lavabo']],
   table:   [['rect', 'Dikdörtgen'], ['round', 'Yuvarlak']],
   door:    [['single', 'Tek kanat'], ['double', 'Çift kanat'], ['sliding', 'Sürgülü']],
   human:   [['stand', 'Ayakta'], ['wheelchair', 'Tekerlekli sandalye']],
@@ -66,14 +68,22 @@ const CATALOG = [
     {k: 'window', n: 'Pencere', sub: '150 cm', t: 'window', w: 1.5, d: .1, h: 1.4, elev: .9},
     {k: 'column', n: 'Kolon', sub: '40 × 40', t: 'column', w: .4, d: .4, h: 0},
   ]},
-  {g: 'Dolaplar', list: [
-    {k: 'cab', n: 'Dolap', sub: '100 × 45', t: 'cabinet', s: 'closed', w: 1, d: .45, h: 2.2, clear: .9},
+  {g: 'Dolap & raf', list: [
+    {k: 'drawer', n: 'İlaç dolabı', sub: 'altı çekmece · üstü raf', t: 'cabinet', s: 'drawer', w: 1, d: .5, h: 2.2, clear: 1, rows: 4, cols: 2},
+    {k: 'otc', n: 'OTC dolabı', sub: '120 × 45 · ışıklı', t: 'cabinet', s: 'otc', w: 1.2, d: .45, h: 2.2, clear: .9, label: 'OTC', color: '#E9E1D3'},
+    {k: 'cosmetic', n: 'Demir kozmetik', sub: '100 × 45 · cam raf', t: 'cabinet', s: 'cosmetic', w: 1, d: .45, h: 2.1, clear: .9, label: 'KOZMETİK', color: '#3E4A52'},
     {k: 'shelf', n: 'Açık raf', sub: '100 × 40', t: 'cabinet', s: 'open', w: 1, d: .4, h: 2.2, clear: .9},
-    {k: 'drawer', n: 'Çekmeceli dolap', sub: '100 × 50', t: 'cabinet', s: 'drawer', w: 1, d: .5, h: 2.2, clear: 1},
+    {k: 'metal', n: 'Demir raf', sub: '100 × 40 · depo', t: 'cabinet', s: 'metal', w: 1, d: .4, h: 2, clear: .9, color: '#8FA8C0', rows: 5},
     {k: 'gondola', n: 'Gondol', sub: '120 × 80 · orta', t: 'cabinet', s: 'gondola', w: 1.2, d: .8, h: 1.5, clear: .9, clearB: .9},
+    {k: 'cab', n: 'Dolap', sub: '100 × 45 · kapaklı', t: 'cabinet', s: 'closed', w: 1, d: .45, h: 2.2, clear: .9},
     {k: 'base', n: 'Alt dolap', sub: '100 × 60', t: 'cabinet', s: 'closed', w: 1, d: .6, h: .9, clear: .9},
     {k: 'glass', n: 'Vitrin', sub: '100 × 45', t: 'cabinet', s: 'glass', w: 1, d: .45, h: 1.9, clear: .9},
     {k: 'fridge', n: 'Buzdolabı', sub: '60 × 65', t: 'cabinet', s: 'fridge', w: .6, d: .65, h: 1.8, clear: .9},
+  ]},
+  {g: 'Mutfak & WC', list: [
+    {k: 'kitchen', n: 'Mutfak tezgâhı', sub: '180 × 60 · evyeli', t: 'cabinet', s: 'kitchen', w: 1.8, d: .6, h: .9, clear: .9, rows: 3, color: '#F4F3EF', upper: true},
+    {k: 'toilet', n: 'Klozet', sub: '40 × 70', t: 'fixture', s: 'toilet', w: .4, d: .7, h: .8, clear: .6},
+    {k: 'sink', n: 'Lavabo', sub: '50 × 40 · aynalı', t: 'fixture', s: 'sink', w: .5, d: .4, h: .85, clear: .6},
   ]},
   {g: 'Banko & masa', list: [
     {k: 'counter', n: 'Banko', sub: '240 × 70', t: 'counter', w: 2.4, d: .7, h: 1.05, clear: 1.2, clearB: .9},
@@ -104,6 +114,12 @@ function palIcon(k) {
     case 'door2': return S(`<path d="M2 25h6M36 25h6" stroke-width="3"/><path d="M8 25V11M36 25V11"/><path d="M8 11a14 14 0 0114 14a14 14 0 0114-14" stroke-dasharray="2 2"/>`);
     case 'window': return S(`<path d="M2 15h8M34 15h8" stroke-width="4"/><path d="M10 13h24M10 17h24" stroke="#5AA6DE"/><path d="M10 15h24" stroke="#5AA6DE" stroke-width=".8"/>`);
     case 'column': return S(`<rect x="15" y="8" width="14" height="14" fill="currentColor" fill-opacity=".25"/><path d="M15 8l14 14M29 8L15 22"/>`);
+    case 'otc': return S(`<rect x="4" y="9" width="36" height="13" fill="#E9E1D3" fill-opacity=".6"/><rect x="4" y="4" width="36" height="5" fill="${acc}" stroke="none"/><path d="M12 9v13M22 9v13M32 9v13" stroke-width="1"/><path d="M4 22h36" stroke-width="2.6"/>`);
+    case 'cosmetic': return S(`<rect x="4" y="9" width="36" height="13" fill="#3E4A52" fill-opacity=".15"/><path d="M4 9v13M40 9v13" stroke-width="2.6"/><path d="M8 13h28M8 18h28" stroke="#5AA6DE" stroke-width="1.2"/><path d="M4 22h36" stroke-width="2.6"/><circle cx="14" cy="11" r="1.4" fill="currentColor"/><circle cx="26" cy="16" r="1.4" fill="currentColor"/>`);
+    case 'metal': return S(`<rect x="4" y="10" width="36" height="11" fill="#8FA8C0" fill-opacity=".25"/><path d="M4 10h36M4 21h36" stroke-width="1.8"/><rect x="3" y="9" width="3" height="3" fill="currentColor"/><rect x="38" y="9" width="3" height="3" fill="currentColor"/><rect x="3" y="19" width="3" height="3" fill="currentColor"/><rect x="38" y="19" width="3" height="3" fill="currentColor"/><path d="M9 13h8v6H9zM20 13h9v6h-9z" stroke-width="1" fill="#B58A5C" fill-opacity=".4"/>`);
+    case 'kitchen': return S(`<rect x="2" y="7" width="40" height="16" fill="#F4F3EF" fill-opacity=".6"/><rect x="7" y="10" width="11" height="9" rx="2" stroke-width="1.3"/><circle cx="12.5" cy="14.5" r="1" fill="currentColor"/><circle cx="31" cy="15" r="3.5" stroke-width="1.2"/><path d="M2 23h40" stroke-width="2.6"/>`);
+    case 'toilet': return S(`<rect x="14" y="3" width="16" height="7" rx="1.5" fill="#F4F4F2"/><ellipse cx="22" cy="18" rx="7" ry="9" fill="#F4F4F2"/><ellipse cx="22" cy="19" rx="4" ry="5.5" stroke-width="1"/>`);
+    case 'sink': return S(`<rect x="10" y="6" width="24" height="17" rx="4" fill="#F4F4F2"/><ellipse cx="22" cy="15" rx="7.5" ry="5" stroke-width="1"/><circle cx="22" cy="15" r="1.2" fill="currentColor"/><path d="M22 6v4" stroke-width="2"/>`);
     case 'cab': return S(`<rect x="4" y="9" width="36" height="13" fill="#C9A47E" fill-opacity=".35"/><path d="M4 9l36 13M40 9L4 22"/><path d="M4 22h36" stroke-width="2.6"/>`);
     case 'shelf': return S(`<rect x="4" y="10" width="36" height="11" fill="#C9A47E" fill-opacity=".35"/><path d="M12 10v11M20 10v11M28 10v11M36 10v11" stroke-width="1"/><path d="M4 21h36" stroke-width="2.6"/>`);
     case 'drawer': return S(`<rect x="4" y="8" width="36" height="14" fill="#C9A47E" fill-opacity=".35"/><path d="M8 19h6M19 19h6M30 19h6" stroke-width="1.4"/><path d="M4 22h36" stroke-width="2.6"/>`);
@@ -124,6 +140,81 @@ function palIcon(k) {
     case 'turn': return S(`<circle cx="22" cy="15" r="12" fill="#3FA66B" fill-opacity=".18" stroke="#3FA66B" stroke-dasharray="3 2"/><path d="M16 15a6 6 0 1112 0" stroke="#3FA66B"/><path d="M28 15l2-3M28 15l-3-1" stroke="#3FA66B"/>`);
   }
   return S('');
+}
+
+/* Zemin kaplamaları */
+const FLOORS = [
+  {k: 'seramik', n: 'Açık seramik', kind: 'tile', base: '#EEEAE2', line: '#D9D3C8', size: .6},
+  {k: 'gri', n: 'Gri seramik', kind: 'tile', base: '#C9CBC8', line: '#B3B6B2', size: .6},
+  {k: 'mermer', n: 'Beyaz mermer', kind: 'marble', base: '#F1EFEB', line: '#DEDAD3', size: .8},
+  {k: 'terrazzo', n: 'Terrazzo', kind: 'terrazzo', base: '#E6E2DA', line: '#D2CCC1', size: .6},
+  {k: 'parke', n: 'Meşe parke', kind: 'wood', base: '#C49A6C', line: '#A77C50', size: 1.2},
+  {k: 'laminat', n: 'Koyu laminat', kind: 'wood', base: '#7A5A3F', line: '#5E4430', size: 1.2},
+  {k: 'epoksi', n: 'Epoksi (düz)', kind: 'plain', base: '#DCDFDD', line: '#DCDFDD', size: 2},
+  {k: 'vinil', n: 'Antibakteriyel vinil', kind: 'speckle', base: '#CFD8D3', line: '#C3CDC8', size: 2},
+  {k: 'dama', n: 'Siyah-beyaz karo', kind: 'checker', base: '#F2F0EC', line: '#2E3230', size: .6},
+];
+const FLOOR_BY_KEY = Object.fromEntries(FLOORS.map(f => [f.k, f]));
+/* Zemin dokusu (512×512, bir karo/döşeme periyodu) */
+const _floorCanvas = new Map();
+function floorCanvas(k) {
+  if (_floorCanvas.has(k)) return _floorCanvas.get(k);
+  const f = FLOOR_BY_KEY[k] || FLOORS[0], N = 512;
+  const c = document.createElement('canvas'); c.width = c.height = N;
+  const g = c.getContext('2d');
+  let sd = hashStr(k) || 7; const r = () => (sd = (Math.imul(sd, 48271) >>> 0) % 2147483647) / 2147483647;
+  g.fillStyle = f.base; g.fillRect(0, 0, N, N);
+  const noise = (n, a, sz) => { for (let i = 0; i < n; i++) { g.fillStyle = `rgba(${r() < .5 ? '0,0,0' : '255,255,255'},${a * r()})`; const z = sz * (.4 + r()); g.fillRect(r() * N, r() * N, z, z); } };
+  switch (f.kind) {
+    case 'tile': noise(2500, .05, 4); g.strokeStyle = f.line; g.lineWidth = 5; g.strokeRect(0, 0, N, N); break;
+    case 'marble': {
+      noise(1500, .04, 6);
+      for (let v = 0; v < 7; v++) {
+        g.beginPath(); let x = r() * N, y = 0; g.moveTo(x, y);
+        while (y < N) { x += (r() - .5) * 60; y += 20 + r() * 40; g.lineTo(x, y); }
+        g.strokeStyle = `rgba(120,115,108,${.12 + r() * .18})`; g.lineWidth = .8 + r() * 2.5; g.stroke();
+      }
+      g.strokeStyle = f.line; g.lineWidth = 3; g.strokeRect(0, 0, N, N); break;
+    }
+    case 'terrazzo': {
+      const cols = ['#9C9589', '#B9B0A2', '#7E8A86', '#C98F6B', '#F7F5F0', '#5E6360'];
+      for (let i = 0; i < 1400; i++) { g.fillStyle = cols[Math.floor(r() * cols.length)]; g.beginPath(); g.ellipse(r() * N, r() * N, 2 + r() * 7, 2 + r() * 5, r() * 3, 0, 7); g.fill(); }
+      g.strokeStyle = f.line; g.lineWidth = 3; g.strokeRect(0, 0, N, N); break;
+    }
+    case 'wood': {
+      const planks = 4, ph = N / planks;
+      for (let p = 0; p < planks; p++) {
+        const tint = (r() - .5) * .14;
+        g.fillStyle = mixHex(f.base, tint > 0 ? '#FFFFFF' : '#000000', Math.abs(tint)); g.fillRect(0, p * ph, N, ph);
+        for (let l = 0; l < 26; l++) {
+          const y = p * ph + r() * ph; g.beginPath(); g.moveTo(0, y);
+          for (let x = 0; x <= N; x += 32) g.lineTo(x, y + Math.sin(x / 60 + l) * 3 * r());
+          g.strokeStyle = `rgba(60,35,15,${.05 + r() * .1})`; g.lineWidth = .6 + r() * 1.6; g.stroke();
+        }
+        g.fillStyle = f.line; g.fillRect(0, p * ph, N, 3);
+        const cut = (p % 2 ? .3 : .75) * N; g.fillRect(cut, p * ph, 3, ph);
+      }
+      break;
+    }
+    case 'plain': noise(1200, .025, 10); break;
+    case 'speckle': noise(9000, .12, 2.5); break;
+    case 'checker': {
+      const n = 2, s2 = N / n;
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { g.fillStyle = (i + j) % 2 ? f.line : f.base; g.fillRect(i * s2, j * s2, s2, s2); }
+      noise(1500, .04, 4); break;
+    }
+  }
+  _floorCanvas.set(k, c);
+  return c;
+}
+let _floorThumbs = {};
+function floorThumb(k) {
+  if (_floorThumbs[k]) return _floorThumbs[k];
+  const f = FLOOR_BY_KEY[k], src = floorCanvas(k), c = document.createElement('canvas'); c.width = c.height = 96;
+  const g = c.getContext('2d'), rep = Math.max(1, Math.round(1.2 / f.size));
+  const t = 96 / rep;
+  for (let i = 0; i < rep; i++) for (let j = 0; j < rep; j++) g.drawImage(src, i * t, j * t, t, t);
+  return (_floorThumbs[k] = c.toDataURL('image/jpeg', .85));
 }
 
 /* Ölçü yorumu (insan geçişi) */

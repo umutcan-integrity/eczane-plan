@@ -12,7 +12,7 @@ function planColors() {
 
 /* ---------- Çizim (ekrana, küçük resme ve PNG'ye ortak) ---------- */
 function drawPlan(ctx, P, V, o) {
-  const C = o.C, s = V.s, W = P.shop.w, D = P.shop.d, dpr = o.dpr;
+  const C = o.C, s = V.s, W = P.shop.w, D = P.shop.d, dpr = o.dpr, F = o.fs || 1;
   const segs = o.segs, A = o.A;
   const WT = () => ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * V.ox, dpr * V.oy);
   const ST = () => ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -21,7 +21,9 @@ function drawPlan(ctx, P, V, o) {
   ST();
   ctx.fillStyle = C.bg; ctx.fillRect(0, 0, o.w, o.h);
   WT();
-  ctx.fillStyle = C.floor; ctx.fillRect(0, 0, W, D);
+  const ftint = k => { const F = FLOOR_BY_KEY[k]; return F ? mixHex(C.floor.startsWith('#') ? C.floor : '#FFFFFF', F.base, C.dark ? .16 : .4) : null; };
+  ctx.fillStyle = ftint(P.floor) || C.floor; ctx.fillRect(0, 0, W, D);
+  for (const r of P.rooms) if (r.floor) { ctx.fillStyle = ftint(r.floor); ctx.fillRect(r.x, r.y, r.w, r.d); }
 
   // Izgara
   if (o.grid) {
@@ -95,28 +97,37 @@ function drawPlan(ctx, P, V, o) {
   // ---- Ekran uzayı: yazılar
   ST();
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  const halo = (t, x, y) => { ctx.lineWidth = 3.5; ctx.strokeStyle = rgba(C.floor.startsWith('#') ? C.floor : '#ffffff', .9); ctx.lineJoin = 'round'; ctx.strokeText(t, x, y); ctx.fillText(t, x, y); };
+  const halo = (t, x, y) => { ctx.lineWidth = 3.5 * F; ctx.strokeStyle = rgba(C.floor.startsWith('#') ? C.floor : '#ffffff', .9); ctx.lineJoin = 'round'; ctx.strokeText(t, x, y); ctx.fillText(t, x, y); };
   if (o.labels) {
     for (const r of P.rooms) {
       const cx = sx(r.x + r.w / 2), cy = sy(r.y + r.d / 2), rw = r.w * s, rh = r.d * s;
-      ctx.font = `700 ${clamp(s * 0.28, 11, 15)}px ${getFont()}`;
+      ctx.font = `700 ${clamp(s * 0.28, 11, 15) * F}px ${getFont()}`;
       const tw = ctx.measureText(r.name).width;
       const area = fmtA(r.w * r.d) + ' m²';
-      if (rw > tw + 10 && rh > 34) {
-        ctx.fillStyle = C.ink; halo(r.name, cx, cy - 8);
-        ctx.font = `500 ${clamp(s * 0.22, 10, 13)}px ${getMono()}`; ctx.fillStyle = C.muted; halo(area, cx, cy + 9);
-      } else if (rw > 40 && rh > 16) {
-        ctx.font = `500 10px ${getMono()}`; ctx.fillStyle = C.muted; halo(area, cx, cy);
+      const dimsT = `${fmtM(r.w)} × ${fmtM(r.d)} m`;
+      const fitsDims = o.roomDims && (ctx.save(), ctx.font = `500 ${clamp(s * 0.22, 10, 13) * F}px ${getMono()}`, ctx.measureText(dimsT).width < rw - 12 * F);
+      ctx.restore();
+      if (fitsDims && rw > tw + 10 && rh > 56 * F) {
+        ctx.fillStyle = C.ink; halo(r.name, cx, cy - 15 * F);
+        ctx.font = `500 ${clamp(s * 0.22, 10, 13) * F}px ${getMono()}`; ctx.fillStyle = C.muted; halo(area, cx, cy + 2 * F); halo(dimsT, cx, cy + 17 * F);
+      } else if (rw > tw + 10 && rh > 34 * F) {
+        ctx.fillStyle = C.ink; halo(r.name, cx, cy - 8 * F);
+        ctx.font = `500 ${clamp(s * 0.22, 10, 13) * F}px ${getMono()}`; ctx.fillStyle = C.muted; halo(area, cx, cy + 9 * F);
+      } else if (rw > 40 * F && rh > 16 * F) {
+        ctx.font = `500 ${10 * F}px ${getMono()}`; ctx.fillStyle = C.muted; halo(area, cx, cy);
       }
     }
-    ctx.font = `600 10.5px ${getFont()}`;
+    const fItem = `600 ${10.5 * F}px ${getFont()}`;
+    ctx.font = fItem;
     for (const it of P.items) {
       if (!(isSolid(it) || it.type === 'zone') || it.type === 'column') continue;
       let t = it.type === 'zone' ? (it.style === 'circle' ? 'Ø ' + fmtCm(it.w) : fmtCm(Math.min(it.w, it.d)) + ' cm') : it.name;
       if (!t) continue;
       const long = it.w >= it.d, L = (long ? it.w : it.d) * s, Sh = (long ? it.d : it.w) * s;
       let tw = ctx.measureText(t).width;
-      if (Sh < 12 || L < 30) continue;
+      if (Sh < 12 * F || L < 30 * F) continue;
+      const dimT = o.itemDims && it.type !== 'zone' ? `${fmtCm(it.w)}×${fmtCm(it.d)}` : '';
+      const two = dimT && Sh > 25 * F;
       if (tw > L - 8) { // kısalt
         while (t.length > 3 && ctx.measureText(t + '…').width > L - 8) t = t.slice(0, -1);
         t += '…'; tw = ctx.measureText(t).width;
@@ -125,35 +136,89 @@ function drawPlan(ctx, P, V, o) {
       let ang = (it.rot + (long ? 0 : 90)) % 180; if (ang > 90) ang -= 180;
       ctx.save(); ctx.translate(sx(it.cx), sy(it.cy)); ctx.rotate(ang * D2R);
       ctx.fillStyle = it.type === 'zone' ? (A.zoneBad.has(it.id + ':z') ? C.danger : C.ok) : C.ink;
-      if (it.type === 'zone') { ctx.font = `700 11px ${getMono()}`; halo(t, 0, it.style === 'circle' ? 0 : -9); ctx.font = `600 10.5px ${getFont()}`; }
-      else { ctx.lineWidth = 3; ctx.strokeStyle = rgba(it.color, .0); ctx.fillText(t, 0, 0.5); }
+      if (it.type === 'zone') { ctx.font = `700 ${11 * F}px ${getMono()}`; halo(t, 0, it.style === 'circle' ? 0 : -9 * F); ctx.font = fItem; }
+      else {
+        ctx.fillText(t, 0, two ? -5.5 * F : .5);
+        if (two) { ctx.font = `500 ${9.5 * F}px ${getMono()}`; ctx.fillStyle = C.muted; ctx.fillText(dimT, 0, 6.5 * F); ctx.font = fItem; }
+      }
       ctx.restore();
     }
   }
 
-  // Dış ölçüler
+  // Oda iç ölçüleri
+  if (o.roomDimLines) {
+    ctx.font = `600 ${10.5 * F}px ${getMono()}`; ctx.strokeStyle = C.muted; ctx.lineWidth = F;
+    for (const r of P.rooms) {
+      const x0 = sx(r.x + INNER_T / 2), x1 = sx(r.x + r.w - INNER_T / 2), y0 = sy(r.y + INNER_T / 2), y1 = sy(r.y + r.d - INNER_T / 2);
+      const pad = 12 * F;
+      if (x1 - x0 > 70 * F) dimLine(ctx, x0, y0 + pad, x1, y0 + pad, fmtM(r.w) + ' m', C, false, F);
+      if (y1 - y0 > 70 * F) dimLine(ctx, x0 + pad, y0, x0 + pad, y1, fmtM(r.d) + ' m', C, true, F);
+    }
+  }
+  // Dış ölçüler: duvar boyunca parça ölçüleri (cm) + toplam (m)
   if (o.dims) {
-    ctx.strokeStyle = C.muted; ctx.fillStyle = C.muted; ctx.lineWidth = 1;
-    ctx.font = `600 12px ${getMono()}`;
-    const off = OUTER_T * s + 18;
-    dimLine(ctx, sx(0), sy(0) - off, sx(W), sy(0) - off, fmtM(W) + ' m', C, false);
-    dimLine(ctx, sx(0) - off, sy(0), sx(0) - off, sy(D), fmtM(D) + ' m', C, true);
+    ctx.strokeStyle = C.muted; ctx.fillStyle = C.muted; ctx.lineWidth = F;
+    const off = OUTER_T * s + 18 * F, gap = 24 * F;
+    if (o.chains) {
+      ctx.font = `600 ${10.5 * F}px ${getMono()}`;
+      for (const side of ['t', 'b', 'l', 'r']) {
+        const horiz = side === 't' || side === 'b', L = horiz ? W : D;
+        const pts = new Set([0, L]);
+        for (const sg of segs) {
+          if (sg.outer) {
+            const on = horiz ? (sg.h && (side === 't' ? sg.c < 0 : sg.c > D)) : (!sg.h && (side === 'l' ? sg.c < 0 : sg.c > W));
+            if (on) for (const op of sg.open) { pts.add(r3(clamp(op.a, 0, L))); pts.add(r3(clamp(op.b, 0, L))); }
+          } else if (horiz ? !sg.h : sg.h) {
+            const touches = side === 't' || side === 'l' ? sg.a <= INNER_T : sg.b >= (horiz ? D : W) - INNER_T;
+            if (touches) pts.add(r3(sg.c));
+          }
+        }
+        const arr = [...pts].sort((a, b) => a - b);
+        if (arr.length < 3) continue;
+        chainLine(ctx, arr, side, W, D, s, V, off, C, F);
+      }
+    }
+    ctx.font = `600 ${12 * F}px ${getMono()}`;
+    const o2 = o.chains ? off + gap : off;
+    dimLine(ctx, sx(0), sy(0) - o2, sx(W), sy(0) - o2, fmtM(W) + ' m', C, false, F);
+    dimLine(ctx, sx(0) - o2, sy(0), sx(0) - o2, sy(D), fmtM(D) + ' m', C, true, F);
+  }
+}
+/* Bir dış kenar boyunca zincir ölçü */
+function chainLine(ctx, arr, side, W, D, s, V, off, C, F) {
+  const horiz = side === 't' || side === 'b';
+  const fixed = side === 't' ? V.oy - off : side === 'b' ? D * s + V.oy + off : side === 'l' ? V.ox - off : W * s + V.ox + off;
+  const P = v => horiz ? [v * s + V.ox, fixed] : [fixed, v * s + V.oy];
+  ctx.beginPath();
+  const [a0, b0] = P(arr[0]), [a1, b1] = P(arr[arr.length - 1]);
+  ctx.moveTo(a0, b0); ctx.lineTo(a1, b1);
+  for (const v of arr) { const [x, y] = P(v); if (horiz) { ctx.moveTo(x - 3 * F, y + 3 * F); ctx.lineTo(x + 3 * F, y - 3 * F); ctx.moveTo(x, y - 5 * F); ctx.lineTo(x, y + 5 * F); } else { ctx.moveTo(x - 3 * F, y + 3 * F); ctx.lineTo(x + 3 * F, y - 3 * F); ctx.moveTo(x - 5 * F, y); ctx.lineTo(x + 5 * F, y); } }
+  ctx.stroke();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = C.muted;
+  for (let i = 0; i < arr.length - 1; i++) {
+    const len = arr[i + 1] - arr[i]; if (len < .02) continue;
+    const t = fmtCm(len), [x0, y0] = P(arr[i]), [x1, y1] = P(arr[i + 1]);
+    const px = Math.hypot(x1 - x0, y1 - y0), tw = ctx.measureText(t).width;
+    if (px < tw + 6 * F) continue;
+    ctx.save(); ctx.translate((x0 + x1) / 2, (y0 + y1) / 2); if (!horiz) ctx.rotate(-Math.PI / 2);
+    const dy = (side === 't' || side === 'l') ? -7 * F : 8 * F;
+    ctx.fillText(t, 0, dy); ctx.restore();
   }
 }
 function getFont() { return 'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; }
 function getMono() { return 'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'; }
 function pathPoly(ctx, P) { ctx.beginPath(); P.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); }
 function withItem(ctx, it, fn) { ctx.save(); ctx.translate(it.cx, it.cy); ctx.rotate((it.rot || 0) * D2R); fn(); ctx.restore(); }
-function dimLine(ctx, x0, y0, x1, y1, label, C, vert) {
+function dimLine(ctx, x0, y0, x1, y1, label, C, vert, F = 1) {
   ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
-  const t = 5;
+  const t = 5 * F;
   if (vert) { ctx.moveTo(x0 - t, y0); ctx.lineTo(x0 + t, y0); ctx.moveTo(x1 - t, y1); ctx.lineTo(x1 + t, y1); }
   else { ctx.moveTo(x0, y0 - t); ctx.lineTo(x0, y0 + t); ctx.moveTo(x1, y1 - t); ctx.lineTo(x1, y1 + t); }
   ctx.stroke();
   const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
   ctx.save(); ctx.translate(mx, my); if (vert) ctx.rotate(-Math.PI / 2);
-  const tw = ctx.measureText(label).width + 10;
-  ctx.fillStyle = C.bg; ctx.fillRect(-tw / 2, -8, tw, 16);
+  const tw = ctx.measureText(label).width + 10 * F;
+  ctx.fillStyle = C.bg; ctx.fillRect(-tw / 2, -8 * F, tw, 16 * F);
   ctx.fillStyle = C.muted; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, 0, 0.5);
   ctx.restore();
 }
@@ -170,6 +235,20 @@ function drawSolid(ctx, it, C, px, bad) {
     ctx.beginPath(); ctx.ellipse(0, 0, w / 2, d / 2, 0, 0, Math.PI * 2);
     ctx.fillStyle = rgba(base, .55); ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.ellipse(0, 0, Math.max(0, w / 2 - .04), Math.max(0, d / 2 - .04), 0, 0, Math.PI * 2); ctx.strokeStyle = rgba(edge, .35); ctx.stroke();
+  } else if (it.type === 'fixture') {
+    const white = C.dark ? '#D9DCDA' : '#FFFFFF';
+    ctx.fillStyle = white; ctx.strokeStyle = C.ink.startsWith('#') ? rgba(C.ink, .7) : C.ink; ctx.lineWidth = 1.2 * px;
+    if (it.style === 'toilet') {
+      const th = Math.min(.2, d * .28);
+      ctx.beginPath(); ctx.roundRect(x0, y0, w, th, .03); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(0, y0 + th + (d - th) / 2, w / 2 * .92, (d - th) / 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(0, y0 + th + (d - th) / 2 + .02, w / 2 * .55, (d - th) / 2 * .62, 0, 0, Math.PI * 2); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.roundRect(x0, y0, w, d, Math.min(.08, d / 3)); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(0, .03, w / 2 * .7, d / 2 * .6, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, .03, .018, 0, Math.PI * 2); ctx.fillStyle = C.ink; ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(0, y0 + .08); ctx.lineWidth = 3 * px; ctx.stroke();
+    }
   } else {
     ctx.fillStyle = rgba(base, it.type === 'cabinet' && it.style === 'glass' ? .3 : .55);
     ctx.fillRect(x0, y0, w, d); ctx.strokeRect(x0, y0, w, d);
@@ -182,6 +261,10 @@ function drawSolid(ctx, it, C, px, bad) {
         case 'gondola': ctx.moveTo(x0, 0); ctx.lineTo(-x0, 0); break;
         case 'glass': ctx.rect(x0 + .04, y0 + .04, w - .08, d - .08); break;
         case 'fridge': ctx.rect(x0 + .05, y0 + .05, w - .1, d - .1); break;
+        case 'otc': { const n = Math.max(1, Math.round(w / .6)); for (let i = 1; i < n; i++) { const x = x0 + w * i / n; ctx.moveTo(x, y0); ctx.lineTo(x, -y0); } ctx.moveTo(x0, y0 + .06); ctx.lineTo(-x0, y0 + .06); break; }
+        case 'cosmetic': ctx.moveTo(x0 + .04, 0); ctx.lineTo(-x0 - .04, 0); ctx.moveTo(x0 + .04, d * .25); ctx.lineTo(-x0 - .04, d * .25); break;
+        case 'metal': for (const [a, b] of [[x0, y0], [-x0 - .04, y0], [x0, -y0 - .04], [-x0 - .04, -y0 - .04]]) ctx.rect(a, b, .04, .04); ctx.moveTo(x0, y0); ctx.lineTo(-x0, -y0); break;
+        case 'kitchen': { const sw = Math.min(.5, w * .3), sx = x0 + Math.min(.25, w * .1); ctx.roundRect(sx, y0 + .1, sw, d - .2, .04); ctx.moveTo(sx + sw / 2 + .02, y0 + d / 2); ctx.arc(sx + sw / 2, y0 + d / 2, .02, 0, 7); break; }
       }
     } else if (it.type === 'counter') {
       ctx.moveTo(x0 + .04, y0 + .06); ctx.lineTo(-x0 - .04, y0 + .06);
@@ -190,7 +273,7 @@ function drawSolid(ctx, it, C, px, bad) {
     }
     ctx.stroke();
     // Ön yüz (kalın çizgi)
-    if (TYPES[it.type].front && !(it.type === 'table')) {
+    if (TYPES[it.type].front && it.type !== 'table' && it.type !== 'fixture') {
       ctx.beginPath(); ctx.moveTo(x0, d / 2); ctx.lineTo(-x0, d / 2);
       if (it.style === 'gondola') { ctx.moveTo(x0, y0); ctx.lineTo(-x0, y0); }
       ctx.lineWidth = 3 * px; ctx.strokeStyle = it.type === 'counter' ? C.accent : edge; ctx.stroke();

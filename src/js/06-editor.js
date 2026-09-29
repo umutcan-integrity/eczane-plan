@@ -39,10 +39,10 @@ const Ed = {
     this.P = null; this.sel = null;
     return true;
   },
-  snap() { const P = this.P; return JSON.stringify({name: P.name, sign: P.sign, shop: P.shop, rooms: P.rooms, items: P.items}); },
+  snap() { const P = this.P; return JSON.stringify({name: P.name, sign: P.sign, floor: P.floor, shop: P.shop, rooms: P.rooms, items: P.items}); },
   restore(str) {
     const o = JSON.parse(str);
-    Object.assign(this.P, {name: o.name, shop: o.shop, rooms: o.rooms, items: o.items});
+    Object.assign(this.P, {name: o.name, floor: o.floor, shop: o.shop, rooms: o.rooms, items: o.items});
     if (o.sign === undefined) delete this.P.sign; else this.P.sign = o.sign;
     if (this.sel && !this.objOf(this.sel)) this.sel = null;
     $('#pnameText').textContent = this.P.name;
@@ -391,6 +391,7 @@ const Props = {
       if (P.rooms.length) list.append(h('div', {class: 'kv', style: 'margin-top:4px'}, h('span', null, 'Odalar toplamı'), h('b', null, fmtA(roomsA) + ' m²'), h('span', null, 'Satış / açık alan'), h('b', null, fmtA(Math.max(0, P.shop.w * P.shop.d - roomsA)) + ' m²')));
     };
     drawRooms(); this.liveFns.push(drawRooms);
+    root.append(this.grp('Zemin', this.floorPicker(() => P.floor, k => { P.floor = k; })));
     root.append(this.grp('Odalar', list));
 
     // Kontrol
@@ -441,6 +442,7 @@ const Props = {
         this.num('Sol kenar (X)', () => r.x, v => { r.x = v; }, {unit: 'm', min: -50, max: 200, key: 'rx'}),
         this.num('Üst kenar (Y)', () => r.y, v => { r.y = v; }, {unit: 'm', min: -50, max: 200, key: 'ry'}))));
     root.append(this.grp('Renk', this.swatches(ROOM_COLORS, () => r.color, c => { r.color = c; })));
+    root.append(this.grp('Zemin', this.floorPicker(() => r.floor || '', k => { r.floor = k; }, true)));
     root.append(this.grp(null,
       this.actions([['Kopyala', () => Ed.duplicate(), '', ICONS.dup], ['Sil', () => Ed.remove(), 'danger', ICONS.del], ['Bitti', () => { Ed.select(null); Sheets.closeAll(); }, '', ICONS.ok]]),
       h('p', {class: 'tip'}, 'Odayı taşıyınca içindeki dolap, banko ve kapılar da birlikte taşınır. Kenarlar komşu odalara ve dış duvarlara yapışır.')));
@@ -453,6 +455,8 @@ const Props = {
     if (STYLES[it.type]) top.append(h('div', {class: 'pf'}, h('label', null, 'Tür'), this.chips(STYLES[it.type], () => it.style, v => {
       Ed.change(() => {
         it.style = v;
+        const def = Object.values(CATALOG_BY_KEY).find(e => e.t === it.type && e.s === v);
+        if (def) { if (def.label && !it.label) it.label = def.label; if (def.rows && !it.rows) it.rows = def.rows; if (def.upper) it.upper = true; }
         if ((it.type === 'table' && v === 'round') || (it.type === 'zone' && v === 'circle')) { const m = Math.max(it.w, it.d); it.w = it.d = m; }
         if (it.type === 'human') { if (v === 'wheelchair') { it.w = .7; it.d = 1.2; it.h = 1.3; } else { it.w = .6; it.d = .4; it.h = 1.75; } }
         if (it.type === 'door' && v === 'double' && it.w < 1.2) it.w = 1.6;
@@ -499,6 +503,7 @@ const Props = {
       if (it.type === 'zone') size.append(this.chips([[.6, '60'], [.9, '90'], [1.2, '120'], [1.5, '150']], () => it.w, v => { Ed.change(() => { it.w = v; }); }));
     }
     root.append(size);
+    if (it.type === 'cabinet') { const og = this.cabinetOpts(it); if (og) root.append(og); }
 
     // Yön
     if (!isRound(it)) {
@@ -532,6 +537,54 @@ const Props = {
     root.append(this.grp(null, this.actions([['Kopyala', () => Ed.duplicate(), '', ICONS.dup], ['Sil', () => Ed.remove(), 'danger', ICONS.del], ['Bitti', () => { Ed.select(null); Sheets.closeAll(); }, '', ICONS.ok]])));
   },
 
+  /* Dolap türüne göre ayarlar: çekmece sayısı, raf sayısı, başlık, üst dolap */
+  cabinetOpts(it) {
+    const st = it.style;
+    const cnt = (label, get, set, min, max, autoFn) => {
+      const wrap = h('div', {class: 'pf'});
+      const val = h('input', {type: 'text', inputmode: 'numeric', 'aria-label': label});
+      const show = () => { const v = get(); val.value = v ? String(v) : String(autoFn()); val.style.opacity = v ? 1 : .55; };
+      const apply = v => { if (!isFinite(v)) return show(); Ed.change(() => set(clamp(Math.round(v), min, max)), 'cnt:' + label); show(); };
+      val.addEventListener('change', () => apply(parseNum(val.value)));
+      val.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') val.blur(); });
+      const b = (t, d) => h('button', {type: 'button', tabindex: -1, onclick: () => apply((get() || autoFn()) + d)}, t);
+      show(); this.syncers.push(() => { if (document.activeElement !== val) show(); });
+      wrap.append(h('label', null, label), h('div', {class: 'num'}, b('−', -1), val, b('+', 1)));
+      return wrap;
+    };
+    const g = this.grp(st === 'drawer' || st === 'kitchen' ? 'Çekmeceler' : 'Raflar');
+    if (st === 'drawer') {
+      g.append(h('div', {class: 'prow'},
+        cnt('Çekmece sırası (alt alta)', () => it.rows, v => { it.rows = v; }, 1, 12, () => cabAuto(it).rows),
+        cnt('Yan yana', () => it.cols, v => { it.cols = v; }, 1, 8, () => cabAuto(it).cols)));
+      g.append(h('div', {class: 'prow'},
+        this.num('Çekmece bölümü yüksekliği', () => it.split || cabAuto(it).lowH, v => { it.split = v; }, {min: .3, max: 3, key: 'split'}),
+        h('div', {class: 'pf'})));
+      g.append(h('p', {class: 'tip'}, `Toplam ${(it.rows || cabAuto(it).rows) * (it.cols || cabAuto(it).cols)} çekmece. Çekmece bölümü dolap boyuna eşitse üst raf olmaz.`));
+    } else if (st === 'kitchen') {
+      g.append(h('div', {class: 'prow'}, cnt('Çekmece sayısı', () => it.rows, v => { it.rows = v; }, 0, 6, () => 3), h('div', {class: 'pf'})));
+      const up = h('input', {type: 'checkbox'}); up.checked = !!it.upper;
+      up.onchange = () => Ed.change(() => { it.upper = up.checked; });
+      g.append(h('label', {class: 'switch'}, up, h('span', null, 'Üst dolaplar', h('small', null, 'Tezgâhın üstünde duvar dolabı'))));
+    } else if (['open', 'otc', 'cosmetic', 'metal', 'gondola', 'glass'].includes(st)) {
+      g.append(h('div', {class: 'prow'}, cnt('Raf sayısı', () => it.rows, v => { it.rows = v; }, 1, 10, () => cabAuto(it).shelves), h('div', {class: 'pf'})));
+    } else return null;
+    if (st === 'otc' || st === 'cosmetic') g.append(this.text('Işıklı başlık yazısı', () => it.label, v => { it.label = v.slice(0, 24); }, 'lbl:' + it.id));
+    return g;
+  },
+  /* Zemin seçici: tüm kaplamalar önizlemeli */
+  floorPicker(get, set, inherit) {
+    const wrap = h('div', {class: 'floors'});
+    const draw = () => {
+      wrap.innerHTML = '';
+      const opts = inherit ? [{k: '', n: 'Dükkânla aynı'}, ...FLOORS] : FLOORS;
+      for (const f of opts) {
+        const img = f.k ? h('img', {src: floorThumb(f.k), alt: ''}) : h('span', {class: 'inh'}, '=');
+        wrap.append(h('button', {type: 'button', class: get() === f.k ? 'on' : '', title: f.n, onclick: () => { Ed.change(() => set(f.k)); draw(); }}, img, h('small', null, f.n)));
+      }
+    };
+    draw(); return wrap;
+  },
   /* Dört küçük plan çizimi: menteşe × açılış tarafı */
   swingPicker(it) {
     const base = quarter(it.rot) % 2 === 0 ? 0 : 90;
@@ -563,6 +616,7 @@ const ICONS = {
   ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l5 5 9-10"/></svg>',
   rotL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12a8 8 0 102.3-5.6"/><path d="M4 4v5h5"/></svg>',
   rotR: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12a8 8 0 11-2.3-5.6"/><path d="M20 4v5h-5"/></svg>',
+  camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>',
   png: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>',
   json: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 4v12m0 0l-5-5m5 5l5-5"/><path d="M4 18v2h16v-2"/></svg>',
   share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.3M8.2 13.2l7.6 4.3"/></svg>',

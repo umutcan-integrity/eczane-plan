@@ -238,3 +238,22 @@ function gapsAround(box, obstacles, maxD = 8) {
   }
   return res;
 }
+
+/* Dolap için otomatik değerler (çekmece / raf sayısı, çekmece bölümü) */
+function cabAuto(it) {
+  const h = it.h, w = it.w, st = it.style;
+  let lowH = 0;
+  if (st === 'drawer') lowH = it.split > 0 ? Math.min(it.split, h) : (h >= 1.4 ? clamp(h * .4, .75, .95) : h);
+  const rows = st === 'kitchen' ? 3 : Math.max(1, Math.round((lowH - .14) / .19));
+  const cols = Math.max(1, Math.round(w / .45));
+  let shelves;
+  switch (st) {
+    case 'otc': shelves = Math.max(2, Math.round((h - .5 - .3) / .34)); break;
+    case 'cosmetic': shelves = Math.max(2, Math.round((h - .62 - .28) / .32)); break;
+    case 'metal': shelves = Math.max(3, Math.round(h / .42)); break;
+    case 'gondola': shelves = Math.max(2, Math.round((h - .14) / .34)); break;
+    case 'glass': shelves = 4; break;
+    default: shelves = Math.max(2, Math.round((h - .2) / .36));
+  }
+  return {lowH, rows, cols, shelves};
+}
