@@ -130,7 +130,8 @@ const View3D = {
 
   /* ---------- Malzemeler ---------- */
   mat(color, o = {}) {
-    const key = color + JSON.stringify(o);
+    let key = color;
+    for (const k in o) { const v = o[k]; key += '|' + k + '=' + (v && v.isTexture ? v.uuid : v); }
     if (!this.mats.has(key)) {
       const T = this.T;
       this.mats.set(key, new T.MeshStandardMaterial(Object.assign({color: new T.Color(color), roughness: .78, metalness: 0}, o)));
@@ -138,6 +139,41 @@ const View3D = {
     return this.mats.get(key);
   },
   glass() { return this.mat('#A9D4EE', {transparent: true, opacity: .28, roughness: .05, depthWrite: false}); },
+  /* Seçilen zemin kaplaması; ızgara dükkân köşesine hizalı */
+  floorMat(k, w, d, x, y) {
+    const T = this.T, f = FLOOR_BY_KEY[k] || FLOORS[0];
+    const t = new T.CanvasTexture(floorCanvas(f.k));
+    t.colorSpace = T.SRGBColorSpace; t.wrapS = t.wrapT = T.RepeatWrapping; t.anisotropy = 8;
+    t.repeat.set(w / f.size, d / f.size); t.offset.set((x / f.size) % 1, (-(y + d) / f.size) % 1);
+    const rough = {tile: .3, marble: .12, wood: .45, plain: .2, speckle: .4, terrazzo: .28, checker: .25}[f.kind] ?? .35;
+    const m = new T.MeshStandardMaterial({map: t, roughness: rough, metalness: 0}); m._own = true;
+    return m;
+  },
+  skyTex(dark) {
+    const key = dark ? 'd' : 'l';
+    if (this._sky && this._sky.k === key) return this._sky.t;
+    const T = this.T, c = document.createElement('canvas'); c.width = 4; c.height = 256;
+    const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256);
+    if (dark) { gr.addColorStop(0, '#0C1116'); gr.addColorStop(.6, '#18212A'); gr.addColorStop(1, '#222A2E'); }
+    else { gr.addColorStop(0, '#A9CBE6'); gr.addColorStop(.55, '#D8E7F1'); gr.addColorStop(1, '#EEF1F0'); }
+    g.fillStyle = gr; g.fillRect(0, 0, 4, 256);
+    const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace;
+    this._sky = {k: key, t};
+    return t;
+  },
+  /* Duvar diplerinde yumuşak koyulaşma (her iki yanda) */
+  wallAo(root, s, a, b) {
+    const T = this.T, len = b - a, mid = (a + b) / 2, wd = .32;
+    const mat = this.mat('#000000', {map: this.wallAoTex(), transparent: true, opacity: .9, depthWrite: false});
+    for (const sg of [-1, 1]) {
+      const off = s.c + sg * (s.t / 2 + wd / 2);
+      const grp = new T.Group();
+      if (s.h) { grp.position.set(mid, .0045, off); grp.rotation.y = sg > 0 ? 0 : Math.PI; }
+      else { grp.position.set(off, .0045, mid); grp.rotation.y = sg > 0 ? Math.PI / 2 : -Math.PI / 2; }
+      const p = new T.Mesh(new T.PlaneGeometry(len, wd), mat); p.rotation.x = -Math.PI / 2; p.renderOrder = 1;
+      grp.add(p); root.add(grp);
+    }
+  },
   floorTex(base, line, lw = 3) {
     const T = this.T, c = document.createElement('canvas'); c.width = c.height = 256;
     const g = c.getContext('2d'); g.fillStyle = base; g.fillRect(0, 0, 256, 256);
@@ -180,7 +216,7 @@ const View3D = {
     this.clearRoot();
     this.prods = []; this.signInfo = null;
     const SW = 7;   // kaldırım genişliği
-    this.scene.background = new T.Color(css('--scene-bg'));
+    this.scene.background = this.skyTex(dark);
     const root = this.root;
     const wallMode = Settings.v.walls || 'full';
     const wallH = wallMode === 'full' ? H : wallMode === 'half' ? 1.1 : 0.06;
@@ -198,16 +234,12 @@ const View3D = {
     for (const [x, z, w, d] of [[W / 2, -SW - .05, W + SW * 2 + .1, .1], [W / 2, D + SW + .05, W + SW * 2 + .1, .1], [-SW - .05, D / 2, .1, D + SW * 2], [W + SW + .05, D / 2, .1, D + SW * 2]]) this.box(root, w, .04, d, curb, x, -.01, z);
 
     // İç zemin (seramik)
-    const fb = css('--scene-floor');
-    const fm = new T.MeshStandardMaterial({color: 0xffffff, roughness: .35, map: this.floorTex(fb, mixHex(fb, '#000000', .09), 2)});
-    fm._own = true; fm.map.repeat.set(W / 0.6, D / 0.6);
-    const floor = new T.Mesh(new T.PlaneGeometry(W, D), fm);
+    const floor = new T.Mesh(new T.PlaneGeometry(W, D), this.floorMat(P.floor, W, D, 0, 0));
     floor.rotation.x = -Math.PI / 2; floor.position.set(W / 2, 0, D / 2); floor.receiveShadow = true; floor.userData.floor = 1; root.add(floor);
 
     // Oda zeminleri + etiketleri
     for (const r of P.rooms) {
-      const rm = new T.MeshStandardMaterial({color: 0xffffff, roughness: .45, map: this.floorTex(mixHex(fb, r.color, .22), mixHex(mixHex(fb, r.color, .22), '#000000', .08), 2)});
-      rm._own = true; rm.map.repeat.set(r.w / .45, r.d / .45);
+      const rm = r.floor && r.floor !== P.floor ? this.floorMat(r.floor, r.w, r.d, r.x, r.y) : this.mat('#FFFFFF', {visible: false});
       const m = new T.Mesh(new T.PlaneGeometry(r.w, r.d), rm);
       m.rotation.x = -Math.PI / 2; m.position.set(r.x + r.w / 2, 0.002, r.y + r.d / 2); m.receiveShadow = true;
       m.userData.pick = {k: 'room', id: r.id}; m.userData.floor = 1; root.add(m);
@@ -232,7 +264,8 @@ const View3D = {
       const mats = [side, side, cap, side, side, side];
       if (s.outer) mats[s.h ? (s.c < 0 ? 5 : 4) : (s.c < 0 ? 1 : 0)] = facade;
       const m = s.h ? this.box(root, len, hh, s.t, mats, mid, y0 + hh / 2, s.c) : this.box(root, s.t, hh, len, mats, s.c, y0 + hh / 2, mid);
-      m.userData.wall = 1;
+      m.userData.wall = 1; m.userData.seg = s; m.userData.y0 = y0;
+      if (y0 < .01) this.wallAo(root, s, a, b);
       if (y0 < .01 && wallH > .5) { // süpürgelik
         const k = s.h ? this.box(root, len, .08, s.t + .016, skirt, mid, .04, s.c) : this.box(root, s.t + .016, .08, len, skirt, s.c, .04, mid);
         k.castShadow = false;
@@ -358,6 +391,7 @@ const View3D = {
     if (s.h) { bm[0] = em; bm[1] = em; this.box(g, bd, bs, bs, bm, bAlong, y + .02, face + out * (off + .04)); this.box(g, .03, .04, off, frame, bAlong, y + .02, face + out * off / 2); }
     else { bm[4] = em; bm[5] = em; this.box(g, bs, bs, bd, bm, face + out * (off + .04), y + .02, bAlong); this.box(g, off, .04, .03, frame, face + out * off / 2, y + .02, bAlong); }
     this.signInfo = {s, along, face, out, sl, y};
+    g.userData.signSeg = s;
     this.root.add(g);
   },
   signTex(text) {
@@ -384,6 +418,7 @@ const View3D = {
     return {t, aspect: Wd / Hh};
   },
   eTex() {
+    if (this._et) return this._et;
     const T = this.T, c = document.createElement('canvas'); c.width = c.height = 256;
     const g = c.getContext('2d');
     g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, 256, 256);
@@ -391,53 +426,136 @@ const View3D = {
     g.fillStyle = '#D0102B'; g.font = `900 200px ${getFont()}`; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText('E', 128, 138);
     const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace;
-    return t;
+    return (this._et = t);
   },
 
-  /* ---------- Ürünler (ilaç kutuları) ---------- */
+  /* ---------- Dokular ve malzemeler ---------- */
+  woodTex() {
+    if (this._wood) return this._wood;
+    const T = this.T, c = document.createElement('canvas'); c.width = 256; c.height = 512;
+    const g = c.getContext('2d'); g.fillStyle = '#EDEDED'; g.fillRect(0, 0, 256, 512);
+    let sd = 11; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 90; i++) {
+      const x = r() * 256; g.beginPath(); g.moveTo(x, 0);
+      for (let y = 0; y <= 512; y += 16) g.lineTo(x + Math.sin(y / 70 + i) * 4 * r(), y);
+      g.strokeStyle = `rgba(0,0,0,${.03 + r() * .07})`; g.lineWidth = .5 + r() * 2; g.stroke();
+    }
+    for (let i = 0; i < 6; i++) { g.fillStyle = 'rgba(0,0,0,.05)'; g.beginPath(); g.ellipse(r() * 256, r() * 512, 3 + r() * 6, 10 + r() * 20, 0, 0, 7); g.fill(); }
+    const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.wrapS = t.wrapT = T.RepeatWrapping; t.anisotropy = 4;
+    return (this._wood = t);
+  },
+  wood(color, o = {}) {
+    const [r, g, b] = hexToRgb(color), lum = (.2126 * r + .7152 * g + .0722 * b) / 255;
+    if (lum > .78) return this.mat(color, Object.assign({roughness: .32}, o)); // açık renk: lake
+    return this.mat(color, Object.assign({map: this.woodTex(), roughness: .6}, o));
+  },
+  steel(color = '#A3ABB2', o = {}) { return this.mat(color, Object.assign({metalness: .8, roughness: .32}, o)); },
+  chrome() { return this.mat('#E8ECEF', {metalness: 1, roughness: .1}); },
+  ceramic() { return this.mat('#FBFBF9', {roughness: .08}); },
+  mirror() { return this.mat('#DDE3E6', {metalness: 1, roughness: .03}); },
+  aoTex() {
+    if (this._ao) return this._ao;
+    const T = this.T, c = document.createElement('canvas'); c.width = c.height = 128;
+    const g = c.getContext('2d');
+    for (let i = 0; i < 24; i++) { const k = i * 2.2; g.fillStyle = 'rgba(0,0,0,.055)'; g.beginPath(); g.roundRect(k, k, 128 - 2 * k, 128 - 2 * k, 40 - k * .6 > 2 ? 40 - k * .6 : 2); g.fill(); }
+    const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace;
+    return (this._ao = t);
+  },
+  wallAoTex() {
+    if (this._wao) return this._wao;
+    const T = this.T, c = document.createElement('canvas'); c.width = 4; c.height = 64;
+    const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 64);
+    gr.addColorStop(0, 'rgba(0,0,0,.34)'); gr.addColorStop(.35, 'rgba(0,0,0,.12)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 4, 64);
+    const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace;
+    return (this._wao = t);
+  },
+  /* Eşyanın altına yumuşak temas gölgesi */
+  contact(g, w, d, strength = .5, pad = .14) {
+    const T = this.T;
+    const m = new T.Mesh(new T.PlaneGeometry(w + pad * 2, d + pad * 2), this.mat('#000000', {map: this.aoTex(), transparent: true, opacity: strength, depthWrite: false}));
+    m.rotation.x = -Math.PI / 2; m.position.y = .0035; m.renderOrder = 1; m.castShadow = false; m.receiveShadow = false;
+    g.add(m); return m;
+  },
+  labelTex(text, bg, fg) {
+    const T = this.T, c = document.createElement('canvas'); c.width = 1024; c.height = 160;
+    const g = c.getContext('2d');
+    g.fillStyle = bg; g.fillRect(0, 0, 1024, 160);
+    let f = 96; g.font = `800 ${f}px ${getFont()}`;
+    while (g.measureText(text).width > 940 && f > 30) { f -= 4; g.font = `800 ${f}px ${getFont()}`; }
+    g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 512, 84);
+    const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4;
+    return t;
+  },
+  /* Işıklı başlık kutusu (OTC / kozmetik) */
+  header(g, w, y, z, text, bg, fg) {
+    const T = this.T, t = this.labelTex(text || '', bg, fg);
+    const sm = new T.MeshStandardMaterial({map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: .7, roughness: .4}); sm._own = true;
+    const fr = this.mat(bg);
+    this.box(g, w, .22, .06, [fr, fr, fr, fr, sm, fr], 0, y, z);
+  },
+
+  /* ---------- Ürünler ---------- */
   prodMats() {
     if (this._pm) return this._pm;
-    const T = this.T, pal = ['#D7263D', '#1B6CA8', '#2A9D5C', '#F08A24', '#7B4FB8', '#0E8C8C', '#E0569B', '#243B6B', '#E8B923', '#5E6B73', '#3AAFA9', '#B5651D'];
-    this._pm = pal.map((col, i) => {
-      const c = document.createElement('canvas'); c.width = c.height = 64;
-      const g = c.getContext('2d');
-      const full = i % 4 === 3;
-      g.fillStyle = full ? col : '#FBFBF8'; g.fillRect(0, 0, 64, 64);
-      g.fillStyle = full ? '#FFFFFF' : col;
-      if (full) { g.fillRect(6, 34, 52, 5); g.fillRect(6, 44, 36, 4); }
-      else {
-        g.fillRect(0, 0, 64, 18 + (i % 3) * 4);
-        g.beginPath(); g.arc(46, 42, 8, 0, Math.PI * 2); g.fill();
-        g.fillStyle = '#9BA3A7'; g.fillRect(6, 36, 26, 3); g.fillRect(6, 44, 20, 3); g.fillRect(6, 52, 30, 3);
-      }
-      const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.magFilter = T.LinearFilter; t.generateMipmaps = true;
-      return new T.MeshStandardMaterial({map: t, roughness: .5});
-    });
-    return this._pm;
+    const T = this.T;
+    const tex = draw => { const c = document.createElement('canvas'); c.width = c.height = 64; draw(c.getContext('2d')); const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; return t; };
+    const med = ['#D7263D', '#1B6CA8', '#2A9D5C', '#F08A24', '#7B4FB8', '#0E8C8C', '#E0569B', '#243B6B', '#E8B923', '#5E6B73', '#3AAFA9', '#B5651D'].map((col, i) =>
+      new T.MeshStandardMaterial({roughness: .5, map: tex(g => {
+        const full = i % 4 === 3;
+        g.fillStyle = full ? col : '#FBFBF8'; g.fillRect(0, 0, 64, 64);
+        g.fillStyle = full ? '#FFFFFF' : col;
+        if (full) { g.fillRect(6, 34, 52, 5); g.fillRect(6, 44, 36, 4); }
+        else { g.fillRect(0, 0, 64, 18 + (i % 3) * 4); g.beginPath(); g.arc(46, 42, 8, 0, 7); g.fill(); g.fillStyle = '#9BA3A7'; g.fillRect(6, 36, 26, 3); g.fillRect(6, 44, 20, 3); g.fillRect(6, 52, 30, 3); }
+      })}));
+    const cos = [['#FFFFFF', '#C9A96E'], ['#F6D5D8', '#B0676F'], ['#1E1E22', '#D8B56A'], ['#E8EEF3', '#3F6E9A'], ['#F3E6D6', '#8A6A4A'], ['#DDEFE6', '#3E8A66'], ['#FFF3C7', '#C28B1A'], ['#EADFF3', '#7B4FB8']].map(([b, a]) =>
+      new T.MeshStandardMaterial({roughness: .18, map: tex(g => { g.fillStyle = b; g.fillRect(0, 0, 64, 64); g.fillStyle = a; g.fillRect(0, 26, 64, 10); g.fillRect(0, 0, 64, 5); })}));
+    const carton = ['#B58A5C', '#C49A6C', '#A77C50'].map((b, i) =>
+      new T.MeshStandardMaterial({roughness: .9, map: tex(g => { g.fillStyle = b; g.fillRect(0, 0, 64, 64); g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(28, 0, 8, 64); g.fillStyle = 'rgba(0,0,0,.25)'; if (i !== 1) { g.fillRect(8, 40, 20, 3); g.fillRect(8, 46, 14, 3); } })}));
+    const bins = ['#2F6FB5', '#D94B3D', '#E8B923', '#3E8A66'].map(col => new T.MeshStandardMaterial({color: col, roughness: .45}));
+    return (this._pm = {med, cos, carton, bins});
   },
   rng(seedStr) {
     let seed = hashStr(seedStr);
     return () => { seed = (Math.imul(seed ^ (seed >>> 15), 2246822507) + 0x9e3779b9) >>> 0; return seed / 4294967296; };
   },
-  /* Bir raf seviyesine ürün diz: x0..x1 boyunca, zön ön kenar, dir +1 → ürünler -z yönüne uzanır */
-  fillShelf(g, rnd, x0, x1, y, zFront, depth, maxH, dir = 1, big) {
+  /* Bir raf seviyesine ürün diz. zFront ön kenar; dir +1 → ürünler -z yönüne uzanır.
+     kind: med (ilaç kutusu), big (büyük kutu), cos (kozmetik şişe/kutu), carton (koli) */
+  fillShelf(g, rnd, x0, x1, y, zFront, depth, maxH, dir = 1, kind = 'med') {
     if (maxH < .07 || depth < .05) return;
     const M = this.T.Matrix4, V = this.T.Vector3, Q = this.T.Quaternion;
+    const push = (set, mi, geo, x, yy, z, sx, sy, sz) => this.prods.push({set, mi, geo, g, m: new M().compose(new V(x, yy, z), new Q(), new V(sx, sy, sz))});
     let x = x0 + .01;
+    if (kind === 'carton') {
+      while (x < x1 - .15) {
+        const bw = Math.min(x1 - x - .01, .22 + rnd() * .22), bh = Math.min(maxH - .03, .16 + rnd() * .2), bd = Math.max(.1, depth - .04 - rnd() * .08);
+        if (bw < .12) break;
+        if (rnd() < .22) push('bins', Math.floor(rnd() * 4), 'box', x + bw / 2, y + Math.min(bh, .18) / 2, zFront - dir * (bd / 2 + .01), bw, Math.min(bh, .18), bd);
+        else if (rnd() > .08) push('carton', Math.floor(rnd() * 3), 'box', x + bw / 2, y + bh / 2, zFront - dir * (bd / 2 + .01), bw, bh, bd);
+        x += bw + .025;
+      }
+      return;
+    }
     while (x < x1 - .05) {
-      if (rnd() < .07) { x += .05 + rnd() * .1; continue; } // boşluk
-      const mi = Math.floor(rnd() * 12);
+      if (rnd() < .07) { x += .05 + rnd() * .1; continue; }
+      if (kind === 'cos') {
+        const cyl = rnd() < .55, mi = Math.floor(rnd() * 8);
+        const bw = cyl ? .045 + rnd() * .035 : .06 + rnd() * .06;
+        const bh = Math.min(maxH - .03, cyl ? .1 + rnd() * .13 : .08 + rnd() * .1);
+        const bd = cyl ? bw : Math.min(depth - .04, .05 + rnd() * .05);
+        const n = 1 + Math.floor(rnd() * 3);
+        for (let k = 0; k < n && x + bw < x1 - .005; k++) { push('cos', mi, cyl ? 'cyl' : 'box', x + bw / 2, y + bh / 2, zFront - dir * (bd / 2 + .03), bw, bh, bd); x += bw + .012; }
+        x += .03;
+        continue;
+      }
+      const big = kind === 'big', mi = Math.floor(rnd() * 12);
       const bw = big ? .07 + rnd() * .1 : .04 + rnd() * .07;
       const bh = Math.min(maxH - .02, big ? .12 + rnd() * .14 : .07 + rnd() * .12);
       const bd = Math.min(depth - .02, big ? .06 + rnd() * .08 : .05 + rnd() * .08);
       const n = 1 + Math.floor(rnd() * 4);
       const rows = depth > bd * 2 + .06 ? 2 : 1;
       for (let k = 0; k < n && x + bw < x1 - .005; k++) {
-        for (let r = 0; r < rows; r++) {
-          const z = zFront - dir * (bd / 2 + .012 + r * (bd + .01));
-          const m = new M().compose(new V(x + bw / 2, y + bh / 2, z), new Q(), new V(bw, bh, bd));
-          this.prods.push({mi, m, g});
-        }
+        for (let r = 0; r < rows; r++) push('med', mi, 'box', x + bw / 2, y + bh / 2, zFront - dir * (bd / 2 + .012 + r * (bd + .01)), bw, bh, bd);
         x += bw + .004;
       }
       x += .01;
@@ -446,79 +564,161 @@ const View3D = {
   flushProducts() {
     const T = this.T; if (!this.prods || !this.prods.length) return;
     this.root.updateMatrixWorld(true);
-    const mats = this.prodMats(), geo = new T.BoxGeometry(1, 1, 1);
+    const mats = this.prodMats(), geos = {box: new T.BoxGeometry(1, 1, 1), cyl: new T.CylinderGeometry(.5, .5, 1, 16)};
     const by = new Map();
-    for (const p of this.prods) { if (!by.has(p.mi)) by.set(p.mi, []); by.get(p.mi).push(p); }
-    for (const [mi, list] of by) {
-      const im = new T.InstancedMesh(geo, mats[mi], list.length);
+    for (const p of this.prods) { const k = p.set + ':' + p.mi + ':' + p.geo; if (!by.has(k)) by.set(k, []); by.get(k).push(p); }
+    for (const list of by.values()) {
+      const p0 = list[0];
+      const im = new T.InstancedMesh(geos[p0.geo], mats[p0.set][p0.mi], list.length);
       list.forEach((p, i) => im.setMatrixAt(i, p.m.clone().premultiply(p.g.matrixWorld)));
       im.castShadow = false; im.receiveShadow = true; im.userData.products = 1;
       this.root.add(im);
     }
     this.prods = [];
   },
-  /* Açık raf gövdesi: arka pano, yanlar, raflar + fiyat rayı + ürünler, üstte LED'li korniş */
+  /* Açık raf gövdesi: arka pano, yanlar, raflar + fiyat rayı/pleksi + ürünler, üstte LED'li korniş */
   shelfBay(g, it, o) {
-    const {w, y0, y1, zb, depth, levels, rnd, body, panel, shelf, rail, led, big} = o;
+    const {w, y0, y1, zb, depth, levels, rnd, body, panel, shelf, rail, led, kind = 'med', lip, noTop} = o;
     const B = (...a) => this.box(g, ...a);
     const zc = zb + depth / 2;
     B(w - .04, y1 - y0, .018, panel, 0, y0 + (y1 - y0) / 2, zb + .009);
     for (const sx of [-1, 1]) B(.025, y1 - y0 + .06, depth, body, sx * (w / 2 - .0125), y0 + (y1 - y0 + .06) / 2 - .03, zc);
-    B(w, .07, depth + .03, body, 0, y1 + .035, zc + .015);
+    if (!noTop) B(w, .07, depth + .03, body, 0, y1 + .035, zc + .015);
     const l = B(w - .08, .012, .025, led, 0, y1 - .006, zb + depth - .04); l.castShadow = false;
     const step = (y1 - y0) / levels;
     for (let i = 0; i < levels; i++) {
       const y = y0 + i * step;
       if (i > 0) B(w - .05, .022, depth - .02, shelf, 0, y, zc + .005);
-      const r = B(w - .05, .034, .012, rail, 0, y + .006, zb + depth - .004); r.castShadow = false;
-      this.fillShelf(g, rnd, -w / 2 + .03, w / 2 - .03, y + .011, zb + depth - .02, depth - .05, step - .05, 1, big);
+      const r = lip === 'plexi' ? this.box(g, w - .05, .06, .008, this.glass(), 0, y + .03, zb + depth - .004) : B(w - .05, .034, .012, rail, 0, y + .006, zb + depth - .004);
+      r.castShadow = false;
+      this.fillShelf(g, rnd, -w / 2 + .03, w / 2 - .03, y + .011, zb + depth - .02, depth - .05, step - .05, 1, kind);
     }
   },
 
   buildItem(it, wallH, dark) {
     const T = this.T, g = new T.Group(), w = it.w, d = it.d, h = it.h;
-    const c = it.color, m = this.mat(c), light = this.mat(mixHex(c, '#FFFFFF', .22)), darkM = this.mat(mixHex(c, '#000000', .35));
-    const metal = this.mat('#B8BEC4', {metalness: .6, roughness: .35});
+    const c = it.color, m = this.wood(c), light = this.wood(mixHex(c, '#FFFFFF', .22), {roughness: .5}), darkM = this.mat(mixHex(c, '#000000', .45));
+    const metal = this.chrome();
     const B = (...a) => this.box(g, ...a);
+    if (isSolid(it) && it.type !== 'column') this.contact(g, isRound(it) ? w * .8 : w, isRound(it) ? d * .8 : d, it.type === 'fixture' ? .35 : .5);
     switch (it.type) {
       case 'cabinet': {
-        const st = it.style, rnd = this.rng(it.id);
+        const st = it.style, rnd = this.rng(it.id), auto = cabAuto(it);
+        const shelvesN = it.rows || auto.shelves;
         const panel = this.mat(mixHex(c, '#FFFFFF', .62), {roughness: .8});
-        const shelf = this.mat(dark ? '#D9D5CD' : '#F2EFEA', {roughness: .6});
+        const shelf = this.mat(dark ? '#D9D5CD' : '#F2EFEA', {roughness: .5});
         const rail = this.mat('#39434A', {roughness: .5});
         const led = this.mat('#FFFFFF', {emissive: '#FFF6E5', emissiveIntensity: 2.4});
-        const top = this.mat(dark ? '#D8D3CA' : '#EEEAE3', {roughness: .35});
-        const drawers = (x0, x1, y0, y1, zf, rowH = .2) => {
-          const ww = x1 - x0, rows = Math.max(1, Math.round((y1 - y0) / rowH)), cols = Math.max(1, Math.round(ww / .45));
-          const rh = (y1 - y0) / rows, cw = ww / cols;
+        const top = this.mat(dark ? '#D8D3CA' : '#EEEAE3', {roughness: .25});
+        const drawers = (x0, x1, y0, y1, zf, rows, cols) => {
+          const ww = x1 - x0, rh = (y1 - y0) / rows, cw = ww / cols;
           for (let r = 0; r < rows; r++) for (let k = 0; k < cols; k++) {
             const x = x0 + cw * (k + .5), y = y0 + rh * (r + .5);
-            B(cw - .01, rh - .01, .018, light, x, y, zf);
-            B(Math.min(.14, cw * .35), .014, .022, metal, x, y - rh * .12, zf + .015);
-            const lb = B(Math.min(.07, cw * .2), Math.min(.035, rh * .22), .004, this.mat('#FFFFFF'), x, y + rh * .2, zf + .011); lb.castShadow = false;
+            B(cw - .008, rh - .008, .02, light, x, y, zf);
+            B(Math.min(.14, cw * .4), .012, .012, metal, x, y - rh * .1, zf + .02);
+            for (const sx of [-1, 1]) B(.01, .01, .02, metal, x + sx * Math.min(.06, cw * .18), y - rh * .1, zf + .012);
+            if (rh > .1) { const lb = B(Math.min(.08, cw * .25), Math.min(.035, rh * .2), .004, this.mat('#FFFFFF'), x, y + rh * .22, zf + .012); lb.castShadow = false; }
+          }
+        };
+        const doors = (x0, x1, y0, y1, zf) => {
+          const n = Math.max(1, Math.round((x1 - x0) / .5)), dw = (x1 - x0) / n;
+          for (let i = 0; i < n; i++) {
+            const x = x0 + dw * (i + .5);
+            B(dw - .006, y1 - y0, .02, light, x, (y0 + y1) / 2, zf);
+            const hx = x + (i % 2 ? -1 : 1) * (dw / 2 - .05);
+            B(.012, Math.min(.2, (y1 - y0) * .35), .014, metal, n === 1 ? x + dw / 2 - .05 : hx, y1 - Math.min(.16, (y1 - y0) * .3), zf + .02);
           }
         };
         if (st === 'open') {
           B(w, .1, d - .02, darkM, 0, .05, -.01);
-          const levels = Math.max(2, Math.round((h - .2) / .36));
-          this.shelfBay(g, it, {w, y0: .1, y1: h - .07, zb: -d / 2, depth: d, levels, rnd, body: m, panel, shelf, rail, led});
+          this.shelfBay(g, it, {w, y0: .1, y1: h - .07, zb: -d / 2, depth: d, levels: shelvesN, rnd, body: m, panel, shelf, rail, led});
         } else if (st === 'drawer') {
-          // Altta çekmeceler + tezgâh, üstte açık ilaç rafı
-          const hasTop = h >= 1.4, lowH = hasTop ? clamp(h * .4, .75, .95) : h;
+          // İlaç dolabı: altta çekmeceler + tezgâh, üstte açık ilaç rafı
+          const lowH = auto.lowH, hasTop = h - lowH > .3;
           B(w, lowH - .03, d - .02, m, 0, (lowH - .03) / 2, -.01);
-          B(w, .1, d - .06, darkM, 0, .05, -.03);
-          drawers(-w / 2 + .01, w / 2 - .01, .1, lowH - .04, d / 2 - .01, .19);
+          B(w - .02, .1, d - .06, darkM, 0, .05, -.03);
+          drawers(-w / 2 + .01, w / 2 - .01, .1, lowH - .035, d / 2 - .01, it.rows || auto.rows, it.cols || auto.cols);
           B(w + .01, .03, d + .02, top, 0, lowH - .015, .01);
           if (hasTop) {
             const du = Math.min(.34, d * .72);
             const levels = Math.max(2, Math.round((h - lowH - .1) / .34));
             this.shelfBay(g, it, {w, y0: lowH, y1: h - .07, zb: -d / 2, depth: du, levels, rnd, body: m, panel, shelf, rail, led});
           }
+        } else if (st === 'otc') {
+          // OTC: kapaklı alt dolap, pleksi önlü raflar, ışıklı başlık
+          const baseH = .5, du = Math.min(d - .03, .36);
+          B(w, baseH - .03, d - .02, m, 0, (baseH - .03) / 2, -.01);
+          B(w - .02, .08, d - .06, darkM, 0, .04, -.03);
+          doors(-w / 2 + .01, w / 2 - .01, .09, baseH - .04, d / 2 - .01);
+          B(w + .01, .03, d + .02, top, 0, baseH - .015, .01);
+          const hy = h - .13;
+          this.shelfBay(g, it, {w, y0: baseH, y1: hy - .13, zb: -d / 2, depth: du, levels: it.rows || auto.shelves, rnd, body: m, panel: this.mat('#FFFFFF', {roughness: .7}), shelf, rail, led, kind: 'big', lip: 'plexi'});
+          this.header(g, w, hy, -d / 2 + du - .02, it.label || 'OTC', ACCENTS[Settings.v.accent]?.l || '#1F7A5A', '#FFFFFF');
+        } else if (st === 'cosmetic') {
+          // Demir kozmetik: boyalı metal gövde, cam raflar, ayna, ışıklı başlık
+          const mc = this.steel(c, {metalness: .55, roughness: .38}), baseH = .6, du = Math.min(d - .02, .4);
+          B(w, baseH - .02, d - .02, mc, 0, (baseH - .02) / 2, -.01);
+          doors(-w / 2 + .015, w / 2 - .015, .08, baseH - .05, d / 2 - .01);
+          B(w + .01, .02, d + .02, this.mat('#F3F1EC', {roughness: .2}), 0, baseH - .01, .01);
+          const zb = -d / 2, y1 = h - .28;
+          B(w - .04, y1 - baseH, .015, this.mat('#F7F6F3', {roughness: .6}), 0, (baseH + y1) / 2, zb + .008);
+          const mir = B(Math.min(.5, w * .3), y1 - baseH - .1, .006, this.mirror(), 0, (baseH + y1) / 2, zb + .018); mir.castShadow = false;
+          for (const sx of [-1, 1]) for (const sz of [0, 1]) B(.03, h - baseH, .03, mc, sx * (w / 2 - .015), baseH + (h - baseH) / 2, zb + .015 + sz * (du - .03));
+          const n = it.rows || auto.shelves, step = (y1 - baseH) / n;
+          for (let i = 0; i < n; i++) {
+            const y = baseH + i * step;
+            if (i) { const gs = this.box(g, w - .06, .012, du - .02, this.glass(), 0, y, zb + du / 2); gs.castShadow = false; B(w - .06, .025, .01, mc, 0, y + .006, zb + du - .005); }
+            const l = B(w - .1, .008, .015, led, 0, y + step - .03, zb + .06); l.castShadow = false;
+            this.fillShelf(g, rnd, -w / 2 + .05, w / 2 - .05, y + .008, zb + du - .02, du - .08, step - .06, 1, 'cos');
+          }
+          B(w, .04, du + .02, mc, 0, h - .02, zb + du / 2);
+          this.header(g, w - .02, h - .15, zb + du - .03, it.label || 'KOZMETİK', '#1E2226', '#F2E6CF');
+        } else if (st === 'metal') {
+          // Demir raf: köşe dikmeleri, sac raflar, çapraz, koliler
+          const mc = this.steel(c, {metalness: .6, roughness: .42}), sh = this.steel(mixHex(c, '#FFFFFF', .35), {metalness: .55, roughness: .45});
+          for (const sx of [-1, 1]) for (const sz of [-1, 1]) B(.035, h, .035, mc, sx * (w / 2 - .0175), h / 2, sz * (d / 2 - .0175));
+          const n = it.rows || auto.shelves, step = (h - .1) / (n - 1 || 1);
+          for (let i = 0; i < n; i++) {
+            const y = .08 + i * step;
+            B(w - .02, .015, d - .02, sh, 0, y, 0);
+            for (const sz of [-1, 1]) B(w - .04, .03, .012, mc, 0, y - .01, sz * (d / 2 - .006));
+            if (i < n - 1) this.fillShelf(g, rnd, -w / 2 + .03, w / 2 - .03, y + .008, d / 2 - .02, d - .04, step - .03, 1, 'carton');
+          }
+          const L = Math.hypot(w - .06, h - .1), ang = Math.atan2(h - .1, w - .06);
+          for (const sgn of [-1, 1]) { const b = B(L, .012, .006, mc, 0, h / 2, -d / 2 + .01); b.rotation.z = sgn * ang; b.castShadow = false; }
+        } else if (st === 'kitchen') {
+          // Mutfak tezgâhı: alt dolaplar + çekmece kolonu, granit tezgâh, evye, batarya, üst dolaplar
+          const bh = Math.min(.86, h - .04), zf = d / 2 - .01;
+          B(w, bh - .1, d - .04, m, 0, .1 + (bh - .1) / 2, -.02);
+          B(w - .02, .1, d - .1, this.mat('#2F3533'), 0, .05, -.05);
+          const rows = it.rows, dw = rows > 0 && w >= .9 ? Math.min(.5, w * .35) : 0;
+          if (dw) drawers(w / 2 - .01 - dw, w / 2 - .01, .1, bh - .005, zf, rows, 1);
+          doors(-w / 2 + .01, w / 2 - .01 - dw, .1, bh - .005, zf);
+          const stone = this.mat(dark ? '#5D6366' : '#40464A', {roughness: .22, metalness: .05});
+          B(w + .02, .04, d + .02, stone, 0, bh + .02, .01);
+          const sw = Math.min(.55, w * .32), sx = -w / 2 + .12 + sw / 2, zs = .02;
+          const inox = this.steel('#C9CED2', {metalness: .9, roughness: .25});
+          B(sw, .006, d - .16, inox, sx, bh + .042, zs);
+          const hole = B(sw - .06, .004, d - .24, this.mat('#5E666C', {metalness: .8, roughness: .35}), sx, bh + .046, zs); hole.castShadow = false;
+          const tap = new T.Group(); tap.position.set(sx, bh + .04, -d / 2 + .08);
+          const tp = new T.Mesh(new T.CylinderGeometry(.018, .022, .28, 14), metal); tp.position.y = .14; tap.add(tp);
+          const sp = new T.Mesh(new T.CylinderGeometry(.012, .012, .18, 12), metal); sp.rotation.x = Math.PI / 2; sp.position.set(0, .27, .08); tap.add(sp);
+          tap.traverse(n => { n.castShadow = true; }); g.add(tap);
+          const ket = new T.Mesh(new T.CylinderGeometry(.08, .095, .22, 20), this.steel('#E3E6E8', {metalness: .5, roughness: .3})); ket.position.set(w / 2 - .25, bh + .15, -.05); ket.castShadow = true; g.add(ket);
+          const splash = this.mat('#EDF1F2', {roughness: .15});
+          const topU = Math.min(wallH - .05, 2.2);
+          B(w, Math.min(.55, topU - bh - .05), .012, splash, 0, bh + .04 + Math.min(.55, topU - bh - .05) / 2, -d / 2 + .006);
+          if (it.upper && topU - bh > .9) {
+            const uy0 = bh + .6, ud = .34, uz = -d / 2 + ud / 2;
+            B(w, topU - uy0, ud - .02, m, 0, (uy0 + topU) / 2, uz - .01);
+            doors(-w / 2 + .01, w / 2 - .01, uy0 + .01, topU - .01, uz + ud / 2 - .01);
+            const l = B(w - .1, .01, .03, led, 0, uy0 - .006, uz + .05); l.castShadow = false;
+          }
         } else if (st === 'gondola') {
           B(w, .12, d, darkM, 0, .06, 0);
           B(w - .02, h - .12, .03, panel, 0, .12 + (h - .12) / 2, 0);
           for (const sx of [-1, 1]) B(.025, h - .1, d, m, sx * (w / 2 - .0125), .1 + (h - .1) / 2, 0);
-          const levels = Math.max(2, Math.round((h - .14) / .34)), step = (h - .12) / levels;
+          const levels = shelvesN, step = (h - .12) / levels;
           for (let i = 0; i < levels; i++) {
             const y = .12 + i * step;
             for (const sg of [-1, 1]) {
@@ -534,15 +734,15 @@ const View3D = {
           for (const sx of [-1, 1]) for (const sz of [-1, 1]) B(.03, h, .03, m, sx * (w / 2 - .015), h / 2, sz * (d / 2 - .015));
           B(w - .04, h - .17, .012, panel, 0, .12 + (h - .17) / 2, -d / 2 + .02);
           const l = B(w - .08, .012, .02, led, 0, h - .06, 0); l.castShadow = false;
-          const n = 4, step = (h - .17) / n;
+          const n = shelvesN, step = (h - .17) / n;
           for (let i = 0; i < n; i++) {
             const y = .12 + i * step;
             if (i) { const s = this.box(g, w - .05, .01, d - .05, this.glass(), 0, y, 0); s.castShadow = false; }
-            this.fillShelf(g, rnd, -w / 2 + .05, w / 2 - .05, y + .006, d / 2 - .06, d - .14, step - .06, 1, true);
+            this.fillShelf(g, rnd, -w / 2 + .05, w / 2 - .05, y + .006, d / 2 - .06, d - .14, step - .06, 1, 'cos');
           }
           const gl = this.box(g, w - .03, h - .17, d - .03, this.glass(), 0, .12 + (h - .17) / 2, 0); gl.castShadow = false;
         } else if (st === 'fridge') {
-          const white = this.mat('#EDEFF1', {roughness: .35});
+          const white = this.mat('#EDEFF1', {roughness: .3});
           B(w, h, .03, white, 0, h / 2, -d / 2 + .015);
           for (const sx of [-1, 1]) B(.03, h, d - .03, white, sx * (w / 2 - .015), h / 2, .015);
           B(w, .14, d - .03, white, 0, .07, .015); B(w, .12, d - .03, white, 0, h - .06, .015);
@@ -558,36 +758,61 @@ const View3D = {
           const l = B(w - .1, .01, .02, led, 0, h - .13, d / 2 - .1); l.castShadow = false;
         } else { // kapaklı
           B(w, h, d - .02, m, 0, h / 2, -.01);
-          const n = Math.max(1, Math.round(w / .5)), dw = (w - .02) / n;
-          const dh = h > 1.2 ? h - .12 : h - .08, dy = h > 1.2 ? .1 + dh / 2 : .06 + dh / 2;
-          for (let i = 0; i < n; i++) {
-            const x = -w / 2 + .01 + dw * (i + .5);
-            B(dw - .008, dh, .018, light, x, dy, d / 2 - .01);
-            const hxp = x + (i % 2 ? -1 : 1) * (dw / 2 - .05);
-            B(.014, Math.min(.22, dh * .2), .022, metal, n === 1 ? x + dw / 2 - .05 : hxp, h > 1.2 ? 1.05 : h - .12, d / 2 + .008);
-          }
-          B(w, h > 1.2 ? .1 : .06, d - .06, darkM, 0, h > 1.2 ? .05 : .03, -.03);
+          const dh0 = h > 1.2 ? .1 : .06;
+          doors(-w / 2 + .01, w / 2 - .01, dh0, h - .02, d / 2 - .01);
+          B(w - .02, dh0, d - .06, darkM, 0, dh0 / 2, -.03);
           if (h <= 1.2) B(w + .01, .03, d + .02, top, 0, h + .015, .01);
         }
         break;
       }
+      case 'fixture': {
+        const cer = this.ceramic();
+        if (it.style === 'toilet') {
+          const tk = Math.min(.18, d * .26);
+          B(w * .92, .36, tk, cer, 0, .6, -d / 2 + tk / 2 + .01);
+          B(w * .96, .03, tk + .02, cer, 0, .795, -d / 2 + tk / 2 + .01);
+          const btn = new T.Mesh(new T.CylinderGeometry(.025, .025, .01, 18), metal); btn.position.set(0, .815, -d / 2 + tk / 2 + .01); g.add(btn);
+          const bl = (d - tk) / 2, bz = -d / 2 + tk + bl;
+          const ped = new T.Mesh(new T.CylinderGeometry(w * .22, w * .3, .3, 24), cer); ped.scale.z = 1.3; ped.position.set(0, .15, bz - .03); ped.castShadow = true; g.add(ped);
+          const bowl = new T.Mesh(new T.SphereGeometry(.5, 32, 18, 0, Math.PI * 2, 0, Math.PI / 2), this.mat('#FBFBF9', {roughness: .08, side: T.DoubleSide}));
+          bowl.scale.set(w * .92, -.2, bl * 2 * .98); bowl.position.set(0, .4, bz); bowl.castShadow = true; g.add(bowl);
+          const seat = new T.Mesh(new T.TorusGeometry(.5, .06, 10, 36), this.mat('#FFFFFF', {roughness: .25}));
+          seat.rotation.x = Math.PI / 2; seat.scale.set(w * .9, bl * 2 * .92, .5); seat.position.set(0, .41, bz); seat.castShadow = true; g.add(seat);
+          const water = new T.Mesh(new T.CircleGeometry(.5, 24), this.mat('#CFE3EA', {roughness: .05, metalness: .2}));
+          water.rotation.x = -Math.PI / 2; water.scale.set(w * .45, bl * 1.1, 1); water.position.set(0, .32, bz + .02); g.add(water);
+        } else {
+          const bh = h;
+          B(w, .16, d, cer, 0, bh - .08, 0);
+          const inner = new T.Mesh(new T.CircleGeometry(.5, 32), this.mat('#E6EAEC', {roughness: .1}));
+          inner.rotation.x = -Math.PI / 2; inner.scale.set(w * .75, d * .6, 1); inner.position.set(0, bh + .002, .03); g.add(inner);
+          const col = new T.Mesh(new T.CylinderGeometry(.075, .09, bh - .16, 20), cer); col.position.set(0, (bh - .16) / 2, -d * .1); col.castShadow = true; g.add(col);
+          const tp = new T.Mesh(new T.CylinderGeometry(.016, .02, .16, 14), metal); tp.position.set(0, bh + .08, -d / 2 + .05); g.add(tp);
+          const sp = new T.Mesh(new T.CylinderGeometry(.01, .01, .1, 12), metal); sp.rotation.x = Math.PI / 2; sp.position.set(0, bh + .15, -d / 2 + .1); g.add(sp);
+          const mh = Math.min(.7, wallH - bh - .35);
+          if (mh > .2) { const mr = B(w * .95, mh, .012, this.mirror(), 0, bh + .3 + mh / 2, -d / 2 + .006); mr.castShadow = false; }
+        }
+        break;
+      }
       case 'counter': {
-        const top = this.mat(dark ? '#D8D3CA' : '#F1EDE6', {roughness: .3});
+        const top = this.mat(dark ? '#D8D3CA' : '#F3EFE9', {roughness: .18});
         const led = this.mat('#FFFFFF', {emissive: mixHex(c, '#FFFFFF', .4), emissiveIntensity: 1.6});
         B(w, h - .04, d - .06, m, 0, (h - .04) / 2, -.03);
         B(w + .02, .04, d + .02, top, 0, h - .02, 0);
-        // müşteri yüzü: açık renk pano + alt LED
-        B(w - .06, h - .22, .015, this.mat(mixHex(c, '#FFFFFF', .45), {roughness: .5}), 0, .12 + (h - .22) / 2, d / 2 - .06 + .0075);
+        B(w - .06, h - .22, .015, this.mat(mixHex(c, '#FFFFFF', .45), {roughness: .35}), 0, .12 + (h - .22) / 2, d / 2 - .06 + .0075);
         const l = B(w - .08, .015, .01, led, 0, .1, d / 2 - .052); l.castShadow = false;
         B(w, .08, d - .14, darkM, 0, .04, -.07);
-        // personel tarafı: alçak çalışma yüzeyi, ekran ve POS
+        if (w >= 1.5) { // eczane logosu
+          const em = new T.MeshStandardMaterial({map: this.eTex(), roughness: .4, emissive: 0xffffff, emissiveMap: this.eTex(), emissiveIntensity: .25}); em._own = true;
+          const lg = new T.Mesh(new T.PlaneGeometry(.3, .3), em); lg.position.set(0, h * .56, d / 2 - .06 + .016); g.add(lg);
+        }
         if (h > .95 && d > .5) B(w - .04, .03, .32, top, 0, .88, -d / 2 + .16);
-        const scr = this.mat('#1D2A36', {emissive: '#2E5A86', emissiveIntensity: .7, roughness: .2});
-        const blk = this.mat('#23272B', {roughness: .5});
+        const scr = this.mat('#1D2A36', {emissive: '#2E5A86', emissiveIntensity: .7, roughness: .15});
+        const blk = this.mat('#23272B', {roughness: .45});
         const nMon = Math.max(1, Math.floor(w / 1.6));
         for (let i = 0; i < nMon; i++) {
           const x = -w / 2 + w * (i + .5) / nMon;
           B(.06, .16, .06, blk, x, h + .08, -d / 2 + .22);
+          B(.18, .012, .14, blk, x, h + .006, -d / 2 + .22);
           this.box(g, .52, .32, .03, [blk, blk, blk, blk, blk, scr], x, h + .3, -d / 2 + .2);
           B(.3, .03, .14, blk, x + .38 < w / 2 ? x + .38 : x - .38, h + .015, -d / 2 + .2);
         }
@@ -596,41 +821,58 @@ const View3D = {
       case 'table': {
         const tH = .04;
         if (it.style === 'round') {
-          const top = new T.Mesh(new T.CylinderGeometry(w / 2, w / 2, tH, 40), m); top.position.y = h - tH / 2; top.scale.z = d / w; top.castShadow = top.receiveShadow = true; g.add(top);
-          const leg = new T.Mesh(new T.CylinderGeometry(.035, .035, h - tH, 12), darkM); leg.position.y = (h - tH) / 2; leg.castShadow = true; g.add(leg);
-          const base = new T.Mesh(new T.CylinderGeometry(Math.min(.25, w * .3), Math.min(.25, w * .3), .03, 24), darkM); base.position.y = .015; g.add(base);
+          const topM = new T.Mesh(new T.CylinderGeometry(w / 2, w / 2, tH, 40), m); topM.position.y = h - tH / 2; topM.scale.z = d / w; topM.castShadow = topM.receiveShadow = true; g.add(topM);
+          const leg = new T.Mesh(new T.CylinderGeometry(.035, .035, h - tH, 12), this.steel('#3A3F42')); leg.position.y = (h - tH) / 2; leg.castShadow = true; g.add(leg);
+          const base = new T.Mesh(new T.CylinderGeometry(Math.min(.25, w * .3), Math.min(.25, w * .3), .03, 24), this.steel('#3A3F42')); base.position.y = .015; g.add(base);
         } else {
           B(w, tH, d, m, 0, h - tH / 2, 0);
-          const lx = w / 2 - .05, lz = d / 2 - .05;
-          for (const sx of [-1, 1]) for (const sz of [-1, 1]) B(.045, h - tH, .045, darkM, sx * lx, (h - tH) / 2, sz * lz);
+          const lx = w / 2 - .05, lz = d / 2 - .05, lm = this.steel('#3A3F42', {metalness: .6, roughness: .4});
+          for (const sx of [-1, 1]) for (const sz of [-1, 1]) B(.04, h - tH, .04, lm, sx * lx, (h - tH) / 2, sz * lz);
+          B(w - .1, .06, .02, lm, 0, h - tH - .03, -d / 2 + .05);
         }
         break;
       }
       case 'column': B(w, wallH, d, this.mat(getComputedStyle(document.documentElement).getPropertyValue('--scene-wall').trim()), 0, wallH / 2, 0); break;
       case 'door': {
         const hh = Math.min(h, wallH > 1 ? h : wallH);
-        if (it.style === 'sliding') { B(w * .55, hh, .035, m, w * .2, hh / 2, d / 2 + .03); break; }
-        const leaves = it.style === 'double' ? [[-w / 2, w / 2, 1], [w / 2, w / 2, -1]] : [[it.flip ? w / 2 : -w / 2, w, it.flip ? -1 : 1]];
-        const ang = 75 * D2R;
-        for (const [hx, L, dir] of leaves) {
-          const piv = new T.Group(); piv.position.set(hx, 0, d / 2); piv.rotation.y = dir > 0 ? -ang : ang;
-          this.box(piv, L - .01, hh - .01, .04, m, dir * L / 2, hh / 2, .02);
-          this.box(piv, .02, .02, .12, metal, dir * (L - .08), hh * .48, .06);
-          g.add(piv);
+        const s = wallOf(it, Ed.segs), outer = s && s.outer;
+        const alu = this.steel('#3B4145', {metalness: .7, roughness: .35});
+        const leafMat = outer ? null : this.wood(c);
+        const leaf = (parent, L, dir) => {
+          if (outer) { // alüminyum çerçeveli cam kapı
+            const f = .05;
+            this.box(parent, L - .01, f, .045, alu, dir * L / 2, hh - f / 2, .02); this.box(parent, L - .01, .1, .045, alu, dir * L / 2, .05, .02);
+            this.box(parent, f, hh, .045, alu, dir * (L - .01 - f / 2), hh / 2, .02); this.box(parent, f, hh, .045, alu, dir * f / 2, hh / 2, .02);
+            const gl = this.box(parent, L - .1, hh - .15, .012, this.glass(), dir * L / 2, .1 + (hh - .15) / 2, .02); gl.castShadow = false;
+            this.box(parent, .025, .6, .025, metal, dir * (L - .12), hh * .5, .08);
+          } else {
+            this.box(parent, L - .01, hh - .01, .04, leafMat, dir * L / 2, hh / 2, .02);
+            this.box(parent, .12, .018, .018, metal, dir * (L - .1), hh * .47, .06);
+            this.box(parent, .018, .05, .03, metal, dir * (L - .06), hh * .47, .045);
+          }
+        };
+        if (it.style === 'sliding') { const p = new T.Group(); p.position.set(-w * .3, 0, d / 2 + .03); leaf(p, w * .55, 1); g.add(p); }
+        else {
+          const leaves = it.style === 'double' ? [[-w / 2, w / 2, 1], [w / 2, w / 2, -1]] : [[it.flip ? w / 2 : -w / 2, w, it.flip ? -1 : 1]];
+          const ang = 75 * D2R;
+          for (const [hx, L, dir] of leaves) {
+            const piv = new T.Group(); piv.position.set(hx, 0, d / 2); piv.rotation.y = dir > 0 ? -ang : ang;
+            leaf(piv, L, dir); g.add(piv);
+          }
         }
-        // söve
-        const fr = this.mat(dark ? '#8C9590' : '#5B6461');
-        B(.04, hh, d + .01, fr, -w / 2 + .02, hh / 2, 0); B(.04, hh, d + .01, fr, w / 2 - .02, hh / 2, 0);
-        if (hh < wallH) B(w, .05, d + .01, fr, 0, hh - .025, 0);
+        const fr = outer ? alu : this.mat(dark ? '#CFCAC0' : '#F1EDE6', {roughness: .5});
+        B(.05, hh, d + .02, fr, -w / 2 + .025, hh / 2, 0); B(.05, hh, d + .02, fr, w / 2 - .025, hh / 2, 0);
+        if (hh < wallH) B(w, .06, d + .02, fr, 0, hh - .03, 0);
         break;
       }
       case 'window': {
         const top = Math.min(it.elev + h, wallH); if (top <= it.elev) break;
-        const hh = top - it.elev, fr = this.mat(dark ? '#AEB6B2' : '#4E5754');
+        const hh = top - it.elev, fr = this.steel(dark ? '#AEB6B2' : '#3E4548', {metalness: .6, roughness: .4});
         const gl = this.box(g, w, hh, .02, this.glass(), 0, it.elev + hh / 2, 0); gl.castShadow = false;
         B(w, .05, d + .02, fr, 0, it.elev + .025, 0); B(w, .05, d + .02, fr, 0, top - .025, 0);
         B(.05, hh, d + .02, fr, -w / 2 + .025, it.elev + hh / 2, 0); B(.05, hh, d + .02, fr, w / 2 - .025, it.elev + hh / 2, 0);
         if (w > 1.2) B(.04, hh, .06, fr, 0, it.elev + hh / 2, 0);
+        if (it.elev > .05) B(w + .04, .03, d + .08, this.mat('#E9E6E0', {roughness: .3}), 0, it.elev - .015, 0);
         break;
       }
       case 'human': this.person(g, it); break;
@@ -978,6 +1220,136 @@ const View3D = {
     if (down) this.keys.add(e.code); else this.keys.delete(e.code);
     if (down) this.startLoop();
     return true;
+  },
+  /* ---------- Render (yüksek kaliteli görsel) ---------- */
+  async ready3d() {
+    if (!this.T) { this.loading = this.loading || loadThree(); this.T = await this.loading; this.cv = $('#scene'); this.setup(); }
+    if (this.sceneDirty || !this.root.children.length) this.build();
+  },
+  setShadow(n) { const sh = this.sun.shadow; if (sh.mapSize.x === n) return; sh.mapSize.set(n, n); if (sh.map) { sh.map.dispose(); sh.map = null; } },
+  /* Dükkânı kadraja sığdıran yörünge kamerası */
+  fitOrbit(aspect, view) {
+    const P = Ed.P, W = P.shop.w, D = P.shop.d, H = P.shop.h || 2.8;
+    const r = .5 * Math.hypot(W + 1.2, D + 1.2, H * .6);
+    const vf = 45 * D2R, hf = 2 * Math.atan(Math.tan(vf / 2) * aspect);
+    const f = Math.min(vf, hf);
+    const views = {iso: [Math.PI / 2 + .62, .95], iso2: [Math.PI / 2 - .62, .95], back: [-Math.PI / 2 + .62, .95], top: [Math.PI / 2, .001]};
+    const [theta, phi] = views[view] || views.iso;
+    let dist = r / Math.sin(f / 2) * .88;
+    if (view === 'top') dist = Math.max((D + 1.6) / (2 * Math.tan(vf / 2)), (W + 1.6) / (2 * Math.tan(hf / 2))) + H;
+    return {tx: W / 2, ty: view === 'top' ? 0 : H * .12, tz: D / 2, theta, phi, dist};
+  },
+  /* Girişin hemen içinden, göz hizasında */
+  entrancePose() {
+    const P = Ed.P, doors = P.items.filter(it => it.type === 'door').map(it => ({it, s: wallOf(it, Ed.segs)})).filter(o => o.s && o.s.outer);
+    doors.sort((a, b) => (b.it.style === 'double') - (a.it.style === 'double') || b.it.w - a.it.w);
+    if (!doors.length) return {x: P.shop.w / 2, z: P.shop.d - .6, yaw: 0, pitch: -.06};
+    const {it, s} = doors[0]; let ix = 0, iz = 0;
+    if (s.h) iz = s.c < 0 ? 1 : -1; else ix = s.c < 0 ? 1 : -1;
+    return {x: it.cx + ix * .7, z: it.cy + iz * .7, yaw: Math.atan2(ix, -iz), pitch: -.08};
+  },
+  async renderImage(o) {
+    await this.ready3d();
+    const T = this.T, R = this.R, W = o.w, H = o.h;
+    const saved = {mode: this.mode, orb: this.orb ? {...this.orb} : null, wk: {...this.wk}, pr: R.getPixelRatio()};
+    if (o.view === 'walk') { this.mode = 'walk'; Object.assign(this.wk, this.entrancePose(), {bob: 0}); }
+    else if (o.view !== 'current') { this.mode = 'orbit'; this.orb = this.fitOrbit(W / H, o.view); }
+    else if (!this.orb && this.mode === 'orbit') this.orb = this.fitOrbit(W / H, 'iso');
+    this.lightMode();
+    const hidden = [];
+    const hide = n => { if (n && n.visible) { hidden.push(n); n.visible = false; } };
+    hide(this.selHelper);
+    for (const c of this.root.children) {
+      if (c.userData.clearZone || c.userData.zoneItem || c.userData.label) hide(c);
+      if (!o.people && c.userData.pick && Ed.P.items.some(i => i.id === c.userData.pick.id && i.type === 'human')) hide(c);
+    }
+    this.setShadow(o.hq ? 4096 : 2048);
+    let out;
+    const cutRestore = [];
+    try {
+      R.setPixelRatio(1); R.setSize(W, H, false);
+      this.cam.aspect = W / H; this.cam.updateProjectionMatrix();
+      this.applyCam();
+      if (o.cut && o.view !== 'walk' && o.view !== 'top') {
+        // Kameraya bakan dış duvarları 1 m'de kes
+        const cp = this.cam.position, P = Ed.P, cutH = 1.0;
+        const facing = sg => sg && sg.outer && (sg.h ? (sg.c < 0 ? cp.z < 0 : cp.z > P.shop.d) : (sg.c < 0 ? cp.x < 0 : cp.x > P.shop.w));
+        for (const c of this.root.children) {
+          if (c.userData.wall && facing(c.userData.seg)) {
+            const y0 = c.userData.y0 || 0, hh = c.geometry.parameters.height, nh = Math.min(hh, cutH - y0);
+            cutRestore.push([c, c.scale.y, c.position.y, c.visible]);
+            if (nh <= .01) c.visible = false; else { c.scale.y = nh / hh; c.position.y = y0 + nh / 2; }
+          } else if (c.userData.signSeg && facing(c.userData.signSeg)) hide(c);
+          else if (c.userData.pick && c.userData.pick.k === 'item') {
+            const it = P.items.find(i => i.id === c.userData.pick.id);
+            if (it && isOpening(it) && facing(wallOf(it, Ed.segs))) hide(c);
+          }
+        }
+      }
+      R.render(this.scene, this.cam);
+      out = document.createElement('canvas'); out.width = W; out.height = H;
+      const g = out.getContext('2d'); g.drawImage(this.cv, 0, 0);
+      if (o.dims && o.view !== 'walk') this.drawDims3D(g, W, H);
+    } finally {
+      for (const [c, sy, py, v] of cutRestore) { c.scale.y = sy; c.position.y = py; c.visible = v; }
+      hidden.forEach(n => { n.visible = true; });
+      this.mode = saved.mode; this.orb = saved.orb; Object.assign(this.wk, saved.wk);
+      this.setShadow(2048);
+      R.setPixelRatio(saved.pr); this.resize(); this.lightMode();
+      if (Ed.view === '3d') this.req();
+    }
+    return out;
+  },
+  /* Render üzerine ölçü çizgileri ve oda etiketleri */
+  drawDims3D(g, Wp, Hp) {
+    const T = this.T, cam = this.cam, P = Ed.P, W = P.shop.w, D = P.shop.d, Hh = this.wallH;
+    const k = Math.max(1, Wp / 1250);
+    const taken = [];
+    const free = (x, y, w, h) => { const r = [x - w / 2, y - h / 2, x + w / 2, y + h / 2]; if (taken.some(t => r[0] < t[2] && r[2] > t[0] && r[1] < t[3] && r[3] > t[1])) return false; taken.push(r); return true; };
+    const pr = (x, y, z) => { const v = new T.Vector3(x, y, z).project(cam); return [(v.x + 1) / 2 * Wp, (1 - v.y) / 2 * Hp, v.z]; };
+    const cp = cam.position;
+    const pill = (x, y, lines, ang = 0, dark = true) => {
+      g.save(); g.translate(x, y); g.rotate(ang);
+      const f1 = `700 ${15 * k}px ${getFont()}`, f2 = `500 ${12.5 * k}px ${getMono()}`;
+      g.font = f1; let w = g.measureText(lines[0]).width;
+      if (lines[1]) { g.font = f2; w = Math.max(w, g.measureText(lines[1]).width); }
+      const hh = (lines[1] ? 40 : 24) * k, ww = w + 20 * k;
+      if (!ang && !free(x, y, ww + 6 * k, hh + 6 * k)) { g.restore(); return; }
+      g.beginPath(); g.roundRect(-ww / 2, -hh / 2, ww, hh, 8 * k);
+      g.fillStyle = dark ? 'rgba(27,33,31,.88)' : 'rgba(255,255,255,.92)'; g.fill();
+      g.fillStyle = dark ? '#FFFFFF' : '#1B211F'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = f1; g.fillText(lines[0], 0, lines[1] ? -8 * k : 1);
+      if (lines[1]) { g.font = f2; g.globalAlpha = .8; g.fillText(lines[1], 0, 10 * k); }
+      g.restore();
+    };
+    const dim = (a, b, label, extA, extB) => {
+      if (a[2] > 1 || b[2] > 1) return;
+      g.save(); g.lineCap = 'round';
+      for (const [p, q] of [[extA, a], [extB, b]]) if (p) { g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); g.strokeStyle = 'rgba(27,33,31,.45)'; g.lineWidth = 1.2 * k; g.setLineDash([4 * k, 4 * k]); g.stroke(); g.setLineDash([]); }
+      const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy); if (L < 30) { g.restore(); return; }
+      const ux = dx / L, uy = dy / L, nx = -uy * 8 * k, ny = ux * 8 * k;
+      g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]);
+      for (const p of [a, b]) { g.moveTo(p[0] + nx, p[1] + ny); g.lineTo(p[0] - nx, p[1] - ny); }
+      g.strokeStyle = '#FFFFFF'; g.lineWidth = 5 * k; g.stroke();
+      g.strokeStyle = '#1B211F'; g.lineWidth = 2 * k; g.stroke();
+      let ang = Math.atan2(dy, dx); if (ang > Math.PI / 2) ang -= Math.PI; if (ang < -Math.PI / 2) ang += Math.PI;
+      pill((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, [label], ang);
+      g.restore();
+    };
+    const o = OUTER_T, gap = .6;
+    const zF = cp.z > D / 2 ? D + o : -o, zE = cp.z > D / 2 ? D + o + gap : -o - gap;
+    const xF = cp.x > W / 2 ? W + o : -o, xE = cp.x > W / 2 ? W + o + gap : -o - gap;
+    dim(pr(0, 0, zE), pr(W, 0, zE), fmtM(W) + ' m', pr(0, 0, zF), pr(W, 0, zF));
+    dim(pr(xE, 0, 0), pr(xE, 0, D), fmtM(D) + ' m', pr(xF, 0, 0), pr(xF, 0, D));
+    if (this.mode === 'orbit' && this.orb && this.orb.phi > .2 && Hh > 1) {
+      const xc = cp.x > W / 2 ? -o : W + o, zc = zF;
+      dim(pr(xc, 0, zc + (zc > 0 ? gap * .6 : -gap * .6)), pr(xc, Hh, zc + (zc > 0 ? gap * .6 : -gap * .6)), fmtM(P.shop.h) + ' m', pr(xc, 0, zc), pr(xc, Hh, zc));
+    }
+    for (const r of [...P.rooms].sort((a, b) => b.w * b.d - a.w * a.d)) {
+      const c = pr(r.x + r.w / 2, .05, r.y + r.d / 2);
+      if (c[2] > 1) continue;
+      pill(c[0], c[1], [r.name, `${fmtM(r.w)} × ${fmtM(r.d)} m · ${fmtA(r.w * r.d)} m²`], 0, false);
+    }
   },
   snapshot() { this.render(); return this.cv.toDataURL('image/png'); },
 };

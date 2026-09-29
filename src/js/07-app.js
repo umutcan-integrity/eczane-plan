@@ -73,28 +73,145 @@ function makeThumb(P) {
     return c.toDataURL('image/jpeg', .82);
   } catch (e) { return ''; }
 }
-function planPNG(P) {
-  const pad = 1.1, W = P.shop.w + pad * 2, D = P.shop.d + pad * 2;
-  const s = clamp(Math.min(3600 / W, 2600 / D), 60, 220);
-  const head = 96, cw = Math.round(W * s), ch = Math.round(D * s) + head;
+/* Ölçülü plan tuvali (dışa aktarma için): tüm ölçüler, oda iç ölçüleri, eşya ölçüleri */
+function planCanvas(P, cw, ch) {
   const c = document.createElement('canvas'); c.width = cw; c.height = ch;
-  const g = c.getContext('2d');
+  const W = P.shop.w, D = P.shop.d;
+  const s0 = Math.min(cw / (W + 2.6), ch / (D + 2.6));
+  const F = clamp(s0 / 58, 1.3, 3.2), pad = 92 * F;
+  const s = Math.min((cw - pad * 2) / W, (ch - pad * 2) / D);
+  const V = {s, ox: (cw - W * s) / 2 + 12 * F, oy: (ch - D * s) / 2 + 12 * F};
   const segs = computeWalls(P);
-  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-  const C = Object.assign({}, LIGHT_PLAN, {accent: Settings.v.mode === 'dark' ? ACCENTS[Settings.v.accent]?.l || accent : accent});
-  drawPlan(g, P, {s, ox: pad * s, oy: head + pad * s}, {w: cw, h: ch, dpr: 1, C, segs, A: analyze(P, segs), grid: false, clear: Settings.v.clear, labels: true, dims: true});
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.fillStyle = '#1B211F'; g.textBaseline = 'alphabetic'; g.textAlign = 'left';
-  g.font = `700 34px ${getFont()}`; g.fillText(P.name, 40, 50);
-  g.font = `500 20px ${getFont()}`; g.fillStyle = '#626C67';
-  g.fillText(`${fmtM(P.shop.w)} × ${fmtM(P.shop.d)} m · ${fmtA(P.shop.w * P.shop.d)} m² · ${new Date().toLocaleDateString('tr-TR')}`, 40, 80);
-  g.textAlign = 'right'; g.font = `600 16px ${getFont()}`; g.fillStyle = '#98A09B'; g.fillText('Eczane Plan', cw - 40, 50);
+  const accent = ACCENTS[Settings.v.accent]?.l || '#1F7A5A';
+  const C = Object.assign({}, LIGHT_PLAN, {accent});
+  drawPlan(c.getContext('2d'), P, V, {w: cw, h: ch, dpr: 1, C, segs, A: analyze(P, segs), grid: false, clear: false, labels: true, dims: true, chains: true, roomDims: true, itemDims: true, fs: F});
   return c;
+}
+function planPNG(P) {
+  const W = P.shop.w + 2.6, D = P.shop.d + 2.6;
+  const cw = 3600, ch = Math.round(clamp(cw * D / W, 1500, 3200)), head = 150;
+  const c = document.createElement('canvas'); c.width = cw; c.height = ch + head;
+  const g = c.getContext('2d');
+  g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, cw, ch + head);
+  g.drawImage(planCanvas(P, cw, ch), 0, head);
+  sheetTitle(g, P, 60, 50, cw - 120, 'Ölçülü yerleşim planı');
+  return c;
+}
+function sheetTitle(g, P, x, y, w, sub) {
+  const L = 92;
+  g.fillStyle = '#D0102B'; g.beginPath(); g.roundRect(x, y, L, L, 16); g.fill();
+  g.fillStyle = '#FFFFFF'; g.font = `900 ${L * .78}px ${getFont()}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('E', x + L / 2, y + L / 2 + 4);
+  g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  g.fillStyle = '#1B211F'; g.font = `800 50px ${getFont()}`; g.fillText(P.name, x + L + 28, y + 50);
+  g.fillStyle = '#626C67'; g.font = `500 26px ${getFont()}`;
+  g.fillText(`${sub} · ${fmtM(P.shop.w)} × ${fmtM(P.shop.d)} m · ${fmtA(P.shop.w * P.shop.d)} m² · tavan ${fmtM(P.shop.h)} m · ${new Date().toLocaleDateString('tr-TR')}`, x + L + 28, y + 88);
+  g.textAlign = 'right'; g.fillStyle = '#98A09B'; g.font = `600 22px ${getFont()}`;
+  g.fillText('Ölçüler: toplam m · parçalar cm', x + w, y + 50);
+  g.fillText('Eczane Plan', x + w, y + 84);
 }
 async function exportPlanPNG() {
   const c = planPNG(Ed.P);
-  c.toBlob(b => download(safeFile(Ed.P.name) + '-plan.png', b), 'image/png');
-  toast('Plan resmi indiriliyor');
+  c.toBlob(b => download(safeFile(Ed.P.name) + '-olculu-plan.png', b), 'image/png');
+  toast('Ölçülü plan indiriliyor');
+}
+function equipmentList(P) {
+  const order = {counter: 0, cabinet: 1, table: 2, fixture: 3, column: 4, door: 5, window: 6};
+  const map = new Map();
+  for (const it of P.items) {
+    if (!(it.type in order)) continue;
+    const size = it.type === 'door' || it.type === 'window' ? `${fmtCm(it.w)} × ${fmtCm(it.h)}` : `${fmtCm(it.w)} × ${fmtCm(it.d)} × ${fmtCm(it.type === 'column' ? P.shop.h : it.h)}`;
+    const key = [it.type, it.style, it.name, size].join('|');
+    const e = map.get(key) || {it, size, n: 0}; e.n++; map.set(key, e);
+  }
+  return [...map.values()].sort((a, b) => order[a.it.type] - order[b.it.type] || a.it.name.localeCompare(b.it.name, 'tr'));
+}
+/* Tek sayfalık sunum paftası: ölçülü plan + iki 3B render + ekipman listesi */
+async function exportSheet() {
+  const P = Ed.P;
+  toast('Sunum paftası hazırlanıyor…');
+  const SW = 4200, SH = 2970, M = 90, headH = 150;
+  const c = document.createElement('canvas'); c.width = SW; c.height = SH;
+  const g = c.getContext('2d');
+  g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, SW, SH);
+  sheetTitle(g, P, M, M - 20, SW - 2 * M, 'Yerleşim ve 3B sunum');
+  g.fillStyle = '#E1E4DE'; g.fillRect(M, M + headH - 10, SW - 2 * M, 3);
+  const py = M + headH + 20, pw = 2560, ph = SH - py - M - 30;
+  g.drawImage(planCanvas(P, pw, ph), M, py);
+  const rx = M + pw + 60, rw = SW - M - rx;
+  const cap = (t, y) => { g.fillStyle = '#626C67'; g.font = `700 24px ${getFont()}`; g.textAlign = 'left'; g.textBaseline = 'alphabetic'; g.fillText(t.toLocaleUpperCase('tr-TR'), rx, y); };
+  const rr = (img, x, y, w, h) => { g.save(); g.beginPath(); g.roundRect(x, y, w, h, 18); g.clip(); g.drawImage(img, x, y, w, h); g.restore(); g.strokeStyle = '#E1E4DE'; g.lineWidth = 2; g.beginPath(); g.roundRect(x, y, w, h, 18); g.stroke(); };
+  let y = py + 10;
+  try {
+    const h1 = Math.round(rw * .66);
+    cap('3B görünüm', y + 20);
+    const iso = await View3D.renderImage({view: 'iso', w: Math.round(rw * 1.4), h: Math.round(h1 * 1.4), dims: true, people: true, cut: true, hq: true});
+    rr(iso, rx, y + 36, rw, h1); y += 36 + h1 + 50;
+    const h2 = Math.round(rw * .52);
+    cap('Girişten bakış', y + 20);
+    const walk = await View3D.renderImage({view: 'walk', w: Math.round(rw * 1.4), h: Math.round(h2 * 1.4), dims: false, people: true, hq: true});
+    rr(walk, rx, y + 36, rw, h2); y += 36 + h2 + 50;
+  } catch (e) {
+    g.fillStyle = '#98A09B'; g.font = `500 26px ${getFont()}`; g.fillText('3B görüntü oluşturulamadı (3B motoru yüklenemedi).', rx, y + 40); y += 90;
+  }
+  // Ekipman listesi
+  cap('Ekipman listesi', y + 20); y += 44;
+  const list = equipmentList(P), rowH = 34, maxRows = Math.floor((SH - M - 60 - y) / rowH) - 1;
+  g.font = `700 22px ${getFont()}`; g.fillStyle = '#98A09B';
+  g.fillText('Ekipman', rx, y + 26); g.textAlign = 'right'; g.fillText('Ölçü (cm)', rx + rw - 110, y + 26); g.fillText('Adet', rx + rw, y + 26); g.textAlign = 'left';
+  y += rowH;
+  list.slice(0, maxRows).forEach((e, i) => {
+    if (i % 2 === 0) { g.fillStyle = '#F5F6F3'; g.fillRect(rx - 10, y, rw + 20, rowH); }
+    g.fillStyle = '#1B211F'; g.font = `600 21px ${getFont()}`;
+    let t = e.it.name; while (g.measureText(t).width > rw - 420 && t.length > 4) t = t.slice(0, -2);
+    if (t !== e.it.name) t += '…';
+    g.fillText(t, rx, y + 24);
+    g.textAlign = 'right'; g.font = `500 20px ${getMono()}`; g.fillStyle = '#4A534F';
+    g.fillText(e.size, rx + rw - 110, y + 24); g.fillText(String(e.n), rx + rw, y + 24); g.textAlign = 'left';
+    y += rowH;
+  });
+  if (list.length > maxRows) { g.fillStyle = '#98A09B'; g.font = `500 22px ${getFont()}`; g.fillText(`+ ${list.length - maxRows} kalem daha`, rx, y + 28); }
+  g.fillStyle = '#98A09B'; g.font = `500 20px ${getFont()}`; g.textAlign = 'left';
+  g.fillText('Ön tasarımdır; resmî kroki yerine geçmez. Ölçüleri yerinde teyit edin.', M, SH - M + 30);
+  c.toBlob(b => { download(safeFile(P.name) + '-sunum.png', b); toast('Sunum paftası indirildi'); }, 'image/png');
+}
+/* 3B render penceresi */
+function renderDialog() {
+  const st = {view: Ed.view === '3d' ? 'current' : 'iso', res: isMobile() ? 'fhd' : 'qhd', dims: true, people: true, cut: true};
+  const RES = {hd: [1280, 720], fhd: [1920, 1080], qhd: [2560, 1440], uhd: [3840, 2160]};
+  let blob = null;
+  return modal(b => {
+    b.append(h('h2', null, 'Render al'));
+    b.append(h('p', null, 'Yüksek çözünürlüklü, yumuşak gölgeli 3B görsel. Ölçüler ve oda bilgileri üzerine yazılır.'));
+    const chips = (opts, key) => { const w = h('div', {class: 'chips'}); const draw = () => { w.innerHTML = ''; for (const [v, t] of opts) w.append(h('button', {type: 'button', class: st[key] === v ? 'on' : '', onclick: () => { st[key] = v; draw(); }}, t)); }; draw(); return w; };
+    const views = [['iso', 'Açılı (ön)'], ['iso2', 'Açılı (yan)'], ['back', 'Arkadan'], ['top', 'Üstten'], ['walk', 'Girişten']];
+    if (Ed.view === '3d') views.unshift(['current', 'Şu anki kamera']);
+    b.append(h('div', {class: 'fl'}, h('span', null, 'Görünüm'), chips(views, 'view')));
+    b.append(h('div', {class: 'fl'}, h('span', null, 'Çözünürlük'), chips([['hd', 'HD'], ['fhd', 'Full HD'], ['qhd', '2K'], ['uhd', '4K']], 'res')));
+    const sw = (key, t, sub) => { const i = h('input', {type: 'checkbox'}); i.checked = st[key]; i.onchange = () => { st[key] = i.checked; }; return h('label', {class: 'switch'}, i, h('span', null, t, h('small', null, sub))); };
+    b.append(sw('dims', 'Ölçüleri göster', 'Dükkân genişlik/derinlik/yükseklik ve oda ölçüleri'));
+    b.append(sw('cut', 'Ön duvarları kes', 'Kameraya bakan dış duvarlar 1 m’de kesilir, içerisi tamamen görünür'));
+    b.append(sw('people', 'İnsan figürleri', 'Ölçek için insan ve tekerlekli sandalye'));
+    const prev = h('div', {class: 'rprev'});
+    const go = h('button', {type: 'button', class: 'btn primary full'}, 'Render al');
+    const dl = h('button', {type: 'button', class: 'btn full', hidden: true}, 'İndir (PNG)');
+    const sh = navigator.share ? h('button', {type: 'button', class: 'btn full', hidden: true}, 'Paylaş') : null;
+    go.onclick = async () => {
+      go.disabled = true; go.textContent = 'Hazırlanıyor…';
+      try {
+        const [w, hh] = RES[st.res];
+        const cv = await View3D.renderImage({view: st.view, w, h: hh, dims: st.dims, people: st.people, cut: st.cut, hq: true});
+        blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+        prev.innerHTML = ''; prev.append(h('img', {src: URL.createObjectURL(blob), alt: 'Render önizleme'}));
+        dl.hidden = false; if (sh) sh.hidden = false;
+        go.textContent = 'Yeniden render al';
+      } catch (e) { toast('Render alınamadı: ' + (e && e.message || 'bilinmeyen hata'), 'err'); go.textContent = 'Render al'; }
+      go.disabled = false;
+    };
+    const name = () => safeFile(Ed.P.name) + '-render-' + st.view + '.png';
+    dl.onclick = () => blob && download(name(), blob);
+    if (sh) sh.onclick = async () => { try { const f = new File([blob], name(), {type: 'image/png'}); if (navigator.canShare && navigator.canShare({files: [f]})) await navigator.share({files: [f], title: Ed.P.name}); else download(f.name, blob); } catch (e) {} };
+    b.append(go, prev, h('div', {class: 'row2'}, dl, sh));
+  }, [{v: null, t: 'Kapat'}]);
 }
 function export3DPNG() {
   const url = View3D.snapshot();
@@ -291,6 +408,7 @@ function bindEditor() {
   $$('#modeSeg button').forEach(b => b.onclick = () => View3D.setMode(b.dataset.v));
   $('#camTop').onclick = () => View3D.preset('top');
   $('#camIso').onclick = () => View3D.preset('iso');
+  $('#camRender').onclick = () => renderDialog();
   const wl = {full: 'Duvar: tam', half: 'Duvar: yarım', none: 'Duvar: yok'};
   $('#camWallsLbl').textContent = wl[Settings.v.walls] || wl.full;
   $('#camWalls').onclick = () => {
@@ -299,8 +417,9 @@ function bindEditor() {
     View3D.markDirty(); toast(wl[n]);
   };
   $('#btnMenu').onclick = () => openMenu($('#btnMenu'), [
-    {t: 'Plan resmi indir (PNG)', icon: ICONS.png, fn: exportPlanPNG},
-    Ed.view === '3d' ? {t: '3B görüntü indir (PNG)', icon: ICONS.png, fn: export3DPNG} : null,
+    {t: 'Render al (3B görsel)', icon: ICONS.camera, fn: renderDialog},
+    {t: 'Sunum paftası (plan + 3B + liste)', icon: ICONS.png, fn: exportSheet},
+    {t: 'Ölçülü plan indir (PNG)', icon: ICONS.png, fn: exportPlanPNG},
     navigator.share ? {t: 'Paylaş', icon: ICONS.share, fn: sharePlan} : null,
     {t: 'JSON yedeği indir', icon: ICONS.json, fn: () => exportJSON(Ed.P)},
     '-',

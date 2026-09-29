@@ -294,3 +294,12 @@ dialog.modal::backdrop{background:rgba(10,15,13,.42);backdrop-filter:blur(2px)}
 .swing button:hover{border-color:var(--accent-line)}
 .swing button.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent) inset;color:var(--accent)}
 .swing svg{width:100%;height:100%;display:block}
+.floors{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.floors button{border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r-xs);padding:3px 3px 5px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+.floors button img,.floors .inh{width:100%;aspect-ratio:1.6;object-fit:cover;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--surface-3);font-weight:700;color:var(--muted)}
+.floors button small{font-size:11px;line-height:1.15;text-align:center;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.floors button.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;background:var(--accent-soft)}
+.floors button.on small{color:var(--ink);font-weight:600}
+.rprev img{width:100%;border-radius:12px;border:1px solid var(--line);display:block}
+.rprev:empty{display:none}
+.row2 .btn[hidden]{display:none}
