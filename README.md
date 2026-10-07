@@ -16,9 +16,16 @@ bilgisayarda çalışır, kurulum gerektirmez; projeler cihazın tarayıcısınd
   gondol, vitrin, buzdolabı); banko; masa; insan, tekerlekli sandalye ve geçiş/dönüş alanları.
 - **Ekipmanlar:** İlaç dolabı (altı çekmece, üstü raf; çekmece sırası/yan yana sayısı ve çekmece bölümü
   yüksekliği seçilebilir), OTC dolabı (ışıklı başlık), demir kozmetik standı (cam raf, ayna), demir raf (depo),
-  açık raf, gondol, vitrin, buzdolabı, mutfak tezgâhı (evye, çekmece, üst dolap), klozet, lavabo, banko, masa.
+  cam önü stand (vitrin camının önüne kendiliğinden yerleşir), kırmızı-yeşil reçete dolabı, açık raf, gondol, vitrin, buzdolabı, mutfak tezgâhı (evye, çekmece, üst dolap), klozet, lavabo, banko, masa.
 - **Zemin:** 9 kaplama (seramik, mermer, terrazzo, parke, laminat, epoksi, vinil, karo) önizlemeli; dükkân
   geneli ve her oda için ayrı seçilebilir.
+- **Kroki çizimi:** Sağlık müdürlüğü başvurularındaki rölöve planı biçiminde A4 dikey kroki (PDF/PNG):
+  ölçekli (1/100, gerekirse 1/200) siyah-beyaz plan, cm ölçüler, kapı etiketleri (90/210), RAF/BANKO/STAND
+  yazıları, oda adı + net alan + yükseklik, giriş oku, kuzey oku, eczane/eczacı adı, adres, alan tablosu
+  (toplam faydalı ve net alan) ve imza kutuları. Bilgiler projeyle saklanır.
+- **Toplu seçim:** Ctrl/Shift + tıkla (telefonda "Çoklu" düğmesi) ya da Ctrl + boş alanda sürükle ile
+  seç; birlikte taşı, döndür, kopyala, sil; hizala ve eşit aralıkla dağıt. Ctrl+A tümünü seçer.
+- **Video:** Girişten içeri yürüyüş, 360° dış tur veya kendin gezerek canlı kayıt (MP4/WebM).
 - **Render ve sunum:** 3B render (HD–4K, açılı/üstten/girişten, ön duvarları kesme, ölçüler üzerinde);
   tek sayfalık sunum paftası (tüm ölçülü plan + iki 3B görünüm + ekipman listesi); ölçülü plan PNG.
 - **Kapılar kolay:** Eklenince en yakın duvara oturur, sürükleyince duvar boyunca kayar, başka

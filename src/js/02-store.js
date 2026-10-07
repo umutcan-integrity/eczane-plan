@@ -76,6 +76,13 @@ function normalizeProject(o) {
   };
   if (typeof o.sign === 'string') p.sign = o.sign.slice(0, 60);
   p.floor = FLOOR_BY_KEY[o.floor] ? o.floor : 'seramik';
+  if (o.kroki && typeof o.kroki === 'object') {
+    const k = o.kroki, str = (v, n) => typeof v === 'string' ? v.slice(0, n) : undefined;
+    p.kroki = {title: str(k.title, 60), name: str(k.name, 80), pharmacist: str(k.pharmacist, 80), address: str(k.address, 400), salesName: str(k.salesName, 60),
+      scale: [50, 100, 200, 250, 500].includes(+k.scale) ? +k.scale : 'auto', rot: [0, 90, 180, 270].includes(+k.rot) && k.rot !== 'auto' ? +k.rot : 'auto',
+      north: isFinite(+k.north) ? normRot(+k.north) : 0, sign: k.sign !== false, items: k.items !== false};
+    for (const key in p.kroki) if (p.kroki[key] === undefined) delete p.kroki[key];
+  }
   const ids = new Set();
   const fresh = pre => { let id; do { id = pre + Math.random().toString(36).slice(2, 8); } while (ids.has(id)); return id; };
   for (const r of Array.isArray(o.rooms) ? o.rooms : []) {

@@ -261,6 +261,7 @@ function drawSolid(ctx, it, C, px, bad) {
         case 'gondola': ctx.moveTo(x0, 0); ctx.lineTo(-x0, 0); break;
         case 'glass': ctx.rect(x0 + .04, y0 + .04, w - .08, d - .08); break;
         case 'fridge': ctx.rect(x0 + .05, y0 + .05, w - .1, d - .1); break;
+        case 'wstand': for (let i = 1; i < 3; i++) { const y = y0 + d * i / 3; ctx.moveTo(x0, y); ctx.lineTo(-x0, y); } break;
         case 'otc': { const n = Math.max(1, Math.round(w / .6)); for (let i = 1; i < n; i++) { const x = x0 + w * i / n; ctx.moveTo(x, y0); ctx.lineTo(x, -y0); } ctx.moveTo(x0, y0 + .06); ctx.lineTo(-x0, y0 + .06); break; }
         case 'cosmetic': ctx.moveTo(x0 + .04, 0); ctx.lineTo(-x0 - .04, 0); ctx.moveTo(x0 + .04, d * .25); ctx.lineTo(-x0 - .04, d * .25); break;
         case 'metal': for (const [a, b] of [[x0, y0], [-x0 - .04, y0], [x0, -y0 - .04], [-x0 - .04, -y0 - .04]]) ctx.rect(a, b, .04, .04); ctx.moveTo(x0, y0); ctx.lineTo(-x0, -y0); break;
@@ -407,6 +408,26 @@ const Plan = {
     if (this.hover && !this.act && !(Ed.sel && Ed.sel.id === this.hover.id)) {
       const o = Ed.objOf(this.hover);
       if (o) { ctx.strokeStyle = rgba(C.accent.startsWith('#') ? C.accent : '#1F7A5A', .6); ctx.lineWidth = 1.5; this.outline(ctx, this.hover, o); ctx.stroke(); }
+    }
+    if (Ed.multi.length) {
+      const its = Ed.multiObjs();
+      ctx.strokeStyle = C.accent; ctx.lineWidth = 2;
+      let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+      for (const it of its) {
+        this.outline(ctx, {k: 'item', id: it.id}, it); ctx.stroke();
+        const b = itemBox(it); bx0 = Math.min(bx0, b.x0); by0 = Math.min(by0, b.y0); bx1 = Math.max(bx1, b.x1); by1 = Math.max(by1, b.y1);
+      }
+      if (its.length) {
+        const [a0, b0] = S(bx0, by0), [a1, b1] = S(bx1, by1);
+        ctx.setLineDash([6, 4]); ctx.lineWidth = 1.2; ctx.strokeRect(a0 - 6, b0 - 6, a1 - a0 + 12, b1 - b0 + 12); ctx.setLineDash([]);
+        ctx.font = `700 12px ${getMono()}`;
+        this.pill(ctx, (a0 + a1) / 2, b1 + 20, `${its.length} öğe · ${fmtCm(bx1 - bx0)} × ${fmtCm(by1 - by0)} cm`, C.accent);
+      }
+    }
+    if (this.act && this.act.type === 'marquee' && this.act.moved) {
+      const m = this.act, [a0, b0] = S(Math.min(m.p0[0], m.p1[0]), Math.min(m.p0[1], m.p1[1])), [a1, b1] = S(Math.max(m.p0[0], m.p1[0]), Math.max(m.p0[1], m.p1[1]));
+      ctx.fillStyle = rgba(C.accent.startsWith('#') ? C.accent : '#1F7A5A', .1); ctx.fillRect(a0, b0, a1 - a0, b1 - b0);
+      ctx.setLineDash([5, 4]); ctx.strokeStyle = C.accent; ctx.lineWidth = 1.5; ctx.strokeRect(a0, b0, a1 - a0, b1 - b0); ctx.setLineDash([]);
     }
     const sel = Ed.sel, o = sel && Ed.objOf(sel);
     if (o) {
@@ -585,6 +606,16 @@ const Plan = {
     if (e.button === 1 || e.button === 2 || this.space) { this.act = {type: 'pan', x, y, V0: {...this.V}, moved: true}; this.cv.style.cursor = 'grabbing'; return; }
     if (Ed.tool === 'room') { const p = this.snapPt(wx, wy); this.act = {type: 'draw', p0: p, r: null, x, y}; return; }
     if (Ed.tool === 'measure') { const p = this.snapPt(wx, wy, true); this.measure = {a: p, b: p}; this.act = {type: 'measure', x, y}; this.req(); return; }
+    const add = e.ctrlKey || e.metaKey || e.shiftKey || this.multiMode;
+    if (add) {
+      const hit0 = this.hitTest(wx, wy, touch);
+      if (hit0 && hit0.k === 'item') { this.act = {type: 'toggle', hit: hit0, w0: [wx, wy], x, y, moved: false, touch}; return; }
+      this.act = {type: 'marquee', p0: [wx, wy], p1: [wx, wy], x, y, moved: false, touch, keep: true}; return;
+    }
+    if (Ed.multi.length) {
+      const hit0 = this.hitTest(wx, wy, touch);
+      if (hit0 && hit0.k === 'item' && Ed.multi.includes(hit0.id)) { this.startGroupMove(Ed.multi, wx, wy, x, y, touch); return; }
+    }
     const h = this.hitHandle(x, y, touch);
     if (h) {
       const o = Ed.objOf(Ed.sel);
@@ -614,7 +645,7 @@ const Plan = {
         const h = Ed.tool === 'select' ? this.hitHandle(x, y, false) : null;
         const hit = Ed.tool === 'select' && !h ? this.hitTest(wx, wy, false) : null;
         const prev = this.hover; this.hover = hit;
-        this.cv.style.cursor = this.space ? 'grab' : Ed.tool !== 'select' ? 'crosshair' : h ? (h.rot ? 'grab' : this.resizeCursor(h)) : hit ? (hit.k === 'item' || (Ed.sel && Ed.sel.id === hit.id) ? 'move' : 'pointer') : 'default';
+        this.cv.style.cursor = (e.ctrlKey || e.metaKey || e.shiftKey || this.multiMode) && Ed.tool === 'select' ? (hit && hit.k === 'item' ? 'copy' : 'crosshair') : this.space ? 'grab' : Ed.tool !== 'select' ? 'crosshair' : h ? (h.rot ? 'grab' : this.resizeCursor(h)) : hit ? (hit.k === 'item' || (Ed.sel && Ed.sel.id === hit.id) ? 'move' : 'pointer') : 'default';
         if ((prev && prev.id) !== (hit && hit.id)) this.req();
       }
       return;
@@ -649,6 +680,18 @@ const Plan = {
         m.b = p; this.req(); break;
       }
       case 'move': this.doMove(a, wx, wy, e); break;
+      case 'toggle': { // değiştirici tuşla sürüklenirse: gruba ekle ve hepsini taşı
+        const ids = Ed.multi.length ? [...Ed.multi] : (Ed.sel && Ed.sel.k === 'item' ? [Ed.sel.id] : []);
+        if (!ids.includes(a.hit.id)) ids.push(a.hit.id);
+        Ed.setMulti(ids);
+        const ids2 = Ed.multi.length ? Ed.multi : [a.hit.id];
+        if (!Ed.multi.length) Ed.select(a.hit);
+        this.startGroupMove(ids2, a.w0[0], a.w0[1], a.x, a.y, a.touch);
+        this.act.moved = true; this.doGroupMove(this.act, wx, wy, e);
+        break;
+      }
+      case 'gmove': this.doGroupMove(a, wx, wy, e); break;
+      case 'marquee': a.p1 = [wx, wy]; this.req(); break;
       case 'resize': this.doResize(a, wx, wy); break;
       case 'rotate': {
         const o = Ed.objOf(Ed.sel); if (!o) break;
@@ -657,7 +700,7 @@ const Plan = {
         o.rot = normRot(ang); Ed.live(); break;
       }
     }
-    if (first && (a.type === 'move' || a.type === 'resize' || a.type === 'rotate')) Ctx.place();
+    if (first && (a.type === 'move' || a.type === 'resize' || a.type === 'rotate' || a.type === 'gmove' || a.type === 'toggle')) Ctx.place();
   },
   up(e, cancel) {
     this.ptrs.delete(e.pointerId);
@@ -675,12 +718,23 @@ const Plan = {
         if (a.moved) Ed.commit(a.before);
         else if (a.type === 'move' && !cancel) this.tap(a, true);
         break;
+      case 'toggle': if (!cancel) Ed.toggleMulti(a.hit.id); break;
+      case 'gmove': if (a.moved) Ed.commit(a.before); break;
+      case 'marquee': {
+        if (cancel) break;
+        if (!a.moved) { if (!this.multiMode) Ed.select(null); break; }
+        const x0 = Math.min(a.p0[0], a.p1[0]), x1 = Math.max(a.p0[0], a.p1[0]), y0 = Math.min(a.p0[1], a.p1[1]), y1 = Math.max(a.p0[1], a.p1[1]);
+        const inside = Ed.P.items.filter(it => { const b = itemBox(it); return b.x1 > x0 && b.x0 < x1 && b.y1 > y0 && b.y0 < y1; }).map(it => it.id);
+        const base = Ed.multi.length ? Ed.multi : (Ed.sel && Ed.sel.k === 'item' ? [Ed.sel.id] : []);
+        Ed.setMulti([...new Set([...base, ...inside])]);
+        break;
+      }
     }
     this.req(); Ctx.place();
   },
   finishAct() {
     const a = this.act; if (!a) return;
-    if ((a.type === 'move' || a.type === 'resize' || a.type === 'rotate') && a.moved) Ed.commit(a.before);
+    if ((a.type === 'move' || a.type === 'resize' || a.type === 'rotate' || a.type === 'gmove') && a.moved) Ed.commit(a.before);
     this.act = null; this.guides = [];
   },
   tap(a, onSel) {
@@ -770,6 +824,24 @@ const Plan = {
       if (by) { cy += by.d; this.guides.push({y: by.t}); } else cy = Math.round((cy - hy) / GRID) * GRID + hy;
     }
     o.cx = r3(cx); o.cy = r3(cy);
+    Ed.live();
+  },
+  startGroupMove(ids, wx, wy, x, y, touch) {
+    const items = ids.map(id => Ed.P.items.find(i => i.id === id)).filter(Boolean);
+    const box = items.reduce((b, it) => { const q = itemBox(it); return {x0: Math.min(b.x0, q.x0), y0: Math.min(b.y0, q.y0), x1: Math.max(b.x1, q.x1), y1: Math.max(b.y1, q.y1)}; }, {x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity});
+    this.act = {type: 'gmove', items: items.map(it => ({it, cx: it.cx, cy: it.cy})), box, w0: [wx, wy], before: Ed.snap(), x, y, moved: false, touch};
+    this.collectTargets({k: 'item', id: '__grp'}, ids);
+  },
+  doGroupMove(a, wx, wy, e) {
+    let dx = wx - a.w0[0], dy = wy - a.w0[1];
+    this.guides = [];
+    if (Settings.v.snap && !e.altKey) {
+      const thr = 9 / this.V.s, b = a.box;
+      const bx = this.snapAxis([b.x0 + dx, b.x1 + dx], this.targets.xs, thr), by = this.snapAxis([b.y0 + dy, b.y1 + dy], this.targets.ys, thr);
+      if (bx) { dx += bx.d; this.guides.push({x: bx.t}); } else dx = Math.round((b.x0 + dx) / GRID) * GRID - b.x0;
+      if (by) { dy += by.d; this.guides.push({y: by.t}); } else dy = Math.round((b.y0 + dy) / GRID) * GRID - b.y0;
+    }
+    for (const c of a.items) { c.it.cx = r3(c.cx + dx); c.it.cy = r3(c.cy + dy); }
     Ed.live();
   },
   doResize(a, wx, wy) {

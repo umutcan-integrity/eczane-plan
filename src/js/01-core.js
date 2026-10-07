@@ -50,7 +50,7 @@ const TYPES = {
   zone:    {n: 'Boşluk', color: '#3FA66B'},
 };
 const STYLES = {
-  cabinet: [['drawer', 'İlaç dolabı'], ['otc', 'OTC dolabı'], ['cosmetic', 'Demir kozmetik'], ['open', 'Açık raf'], ['metal', 'Demir raf'], ['closed', 'Kapaklı'], ['gondola', 'Gondol'], ['glass', 'Vitrin'], ['fridge', 'Buzdolabı'], ['kitchen', 'Mutfak tezgâhı']],
+  cabinet: [['drawer', 'İlaç dolabı'], ['otc', 'OTC dolabı'], ['cosmetic', 'Demir kozmetik'], ['open', 'Açık raf'], ['metal', 'Demir raf'], ['closed', 'Kapaklı'], ['gondola', 'Gondol'], ['glass', 'Vitrin'], ['fridge', 'Buzdolabı'], ['kitchen', 'Mutfak tezgâhı'], ['wstand', 'Cam önü stand']],
   fixture: [['toilet', 'Klozet'], ['sink', 'Lavabo']],
   table:   [['rect', 'Dikdörtgen'], ['round', 'Yuvarlak']],
   door:    [['single', 'Tek kanat'], ['double', 'Çift kanat'], ['sliding', 'Sürgülü']],
@@ -72,6 +72,7 @@ const CATALOG = [
     {k: 'drawer', n: 'İlaç dolabı', sub: 'altı çekmece · üstü raf', t: 'cabinet', s: 'drawer', w: 1, d: .5, h: 2.2, clear: 1, rows: 4, cols: 2},
     {k: 'otc', n: 'OTC dolabı', sub: '120 × 45 · ışıklı', t: 'cabinet', s: 'otc', w: 1.2, d: .45, h: 2.2, clear: .9, label: 'OTC', color: '#E9E1D3'},
     {k: 'cosmetic', n: 'Demir kozmetik', sub: '100 × 45 · cam raf', t: 'cabinet', s: 'cosmetic', w: 1, d: .45, h: 2.1, clear: .9, label: 'KOZMETİK', color: '#3E4A52'},
+    {k: 'wstand', n: 'Cam önü stand', sub: 'vitrin camının önüne', t: 'cabinet', s: 'wstand', w: 1.2, d: .45, h: 1.5, color: '#F4F3EF', label: 'SAĞLIĞINIZ İÇİN'},
     {k: 'shelf', n: 'Açık raf', sub: '100 × 40', t: 'cabinet', s: 'open', w: 1, d: .4, h: 2.2, clear: .9},
     {k: 'metal', n: 'Demir raf', sub: '100 × 40 · depo', t: 'cabinet', s: 'metal', w: 1, d: .4, h: 2, clear: .9, color: '#8FA8C0', rows: 5},
     {k: 'gondola', n: 'Gondol', sub: '120 × 80 · orta', t: 'cabinet', s: 'gondola', w: 1.2, d: .8, h: 1.5, clear: .9, clearB: .9},
@@ -79,6 +80,7 @@ const CATALOG = [
     {k: 'base', n: 'Alt dolap', sub: '100 × 60', t: 'cabinet', s: 'closed', w: 1, d: .6, h: .9, clear: .9},
     {k: 'glass', n: 'Vitrin', sub: '100 × 45', t: 'cabinet', s: 'glass', w: 1, d: .45, h: 1.9, clear: .9},
     {k: 'fridge', n: 'Buzdolabı', sub: '60 × 65', t: 'cabinet', s: 'fridge', w: .6, d: .65, h: 1.8, clear: .9},
+    {k: 'recete', n: 'Kırmızı-yeşil reçete dolabı', sub: '60 × 45 · kilitli', t: 'cabinet', s: 'closed', w: .6, d: .45, h: 1.0, color: '#B23A3A'},
   ]},
   {g: 'Mutfak & WC', list: [
     {k: 'kitchen', n: 'Mutfak tezgâhı', sub: '180 × 60 · evyeli', t: 'cabinet', s: 'kitchen', w: 1.8, d: .6, h: .9, clear: .9, rows: 3, color: '#F4F3EF', upper: true},
@@ -120,6 +122,8 @@ function palIcon(k) {
     case 'kitchen': return S(`<rect x="2" y="7" width="40" height="16" fill="#F4F3EF" fill-opacity=".6"/><rect x="7" y="10" width="11" height="9" rx="2" stroke-width="1.3"/><circle cx="12.5" cy="14.5" r="1" fill="currentColor"/><circle cx="31" cy="15" r="3.5" stroke-width="1.2"/><path d="M2 23h40" stroke-width="2.6"/>`);
     case 'toilet': return S(`<rect x="14" y="3" width="16" height="7" rx="1.5" fill="#F4F4F2"/><ellipse cx="22" cy="18" rx="7" ry="9" fill="#F4F4F2"/><ellipse cx="22" cy="19" rx="4" ry="5.5" stroke-width="1"/>`);
     case 'sink': return S(`<rect x="10" y="6" width="24" height="17" rx="4" fill="#F4F4F2"/><ellipse cx="22" cy="15" rx="7.5" ry="5" stroke-width="1"/><circle cx="22" cy="15" r="1.2" fill="currentColor"/><path d="M22 6v4" stroke-width="2"/>`);
+    case 'wstand': return S(`<path d="M2 26h40" stroke="#5AA6DE" stroke-width="2.4"/><rect x="6" y="6" width="32" height="16" fill="#F4F3EF"/><path d="M6 11h32M6 16h32" stroke-width="1"/><path d="M6 6h32" stroke-width="2.6"/>`);
+    case 'recete': return S(`<rect x="12" y="7" width="20" height="16" fill="#B23A3A" fill-opacity=".35"/><path d="M12 7l20 16M32 7L12 23"/><circle cx="22" cy="15" r="3" fill="#fff"/><path d="M12 23h20" stroke-width="2.6"/>`);
     case 'cab': return S(`<rect x="4" y="9" width="36" height="13" fill="#C9A47E" fill-opacity=".35"/><path d="M4 9l36 13M40 9L4 22"/><path d="M4 22h36" stroke-width="2.6"/>`);
     case 'shelf': return S(`<rect x="4" y="10" width="36" height="11" fill="#C9A47E" fill-opacity=".35"/><path d="M12 10v11M20 10v11M28 10v11M36 10v11" stroke-width="1"/><path d="M4 21h36" stroke-width="2.6"/>`);
     case 'drawer': return S(`<rect x="4" y="8" width="36" height="14" fill="#C9A47E" fill-opacity=".35"/><path d="M8 19h6M19 19h6M30 19h6" stroke-width="1.4"/><path d="M4 22h36" stroke-width="2.6"/>`);
