@@ -246,6 +246,60 @@ function importFile(file) {
   rd.readAsText(file);
 }
 
+/* ---------- Video ---------- */
+function videoResult(blob) {
+  const ext = blob.type.includes('mp4') ? 'mp4' : 'webm', name = `${safeFile(Ed.P.name)}-video.${ext}`;
+  const url = URL.createObjectURL(blob);
+  return modal(b => {
+    b.append(h('h2', null, 'Video hazır'));
+    b.append(h('video', {src: url, controls: true, playsinline: true, autoplay: true, muted: true, loop: true, class: 'vprev'}));
+    b.append(h('p', {class: 'tip'}, `${(blob.size / 1048576).toFixed(1).replace('.', ',')} MB · ${ext.toUpperCase()}${ext === 'webm' ? ' (WhatsApp vb. için MP4 gerekirse telefonda Safari/Chrome ile tekrar kaydedebilirsin)' : ''}`));
+    const row = h('div', {class: 'row2'});
+    row.append(h('button', {type: 'button', class: 'btn primary full', onclick: () => download(name, blob)}, 'İndir'));
+    if (navigator.share) row.append(h('button', {type: 'button', class: 'btn full', onclick: async () => { try { const f = new File([blob], name, {type: blob.type}); if (navigator.canShare && navigator.canShare({files: [f]})) await navigator.share({files: [f], title: Ed.P.name}); else download(name, blob); } catch (e) {} }}, 'Paylaş'));
+    b.append(row);
+  }, [{v: null, t: 'Kapat'}]);
+}
+function videoDialog() {
+  if (View3D.videoMime() === null) { toast('Bu tarayıcı video kaydını desteklemiyor', 'err'); return; }
+  const st = {kind: 'walk', res: isMobile() ? '720' : '1080', sec: 15};
+  return modal(b => {
+    b.append(h('h2', null, 'Video al'));
+    b.append(h('p', null, 'Dükkânın 3B videosunu kaydet; indirip paylaşabilirsin.'));
+    const chips = (opts, key) => { const w = h('div', {class: 'chips'}); const draw = () => { w.innerHTML = ''; for (const [v, t] of opts) w.append(h('button', {type: 'button', class: String(st[key]) === String(v) ? 'on' : '', onclick: () => { st[key] = v; draw(); }}, t)); }; draw(); return w; };
+    b.append(h('div', {class: 'fl'}, h('span', null, 'Tür'), chips([['walk', 'Girişten içeri yürüyüş'], ['orbit', '360° dış tur'], ['live', 'Kendin gez (canlı kayıt)']], 'kind')));
+    b.append(h('div', {class: 'fl'}, h('span', null, 'Çözünürlük'), chips([['720', '720p'], ['1080', '1080p']], 'res')));
+    b.append(h('div', {class: 'fl'}, h('span', null, 'Süre (otomatik turlar)'), chips([[10, '10 sn'], [15, '15 sn'], [25, '25 sn']], 'sec')));
+    b.append(h('p', {class: 'tip'}, 'Canlı kayıtta 3B ekranda ne yaparsan (gezinme, döndürme) kaydedilir; bitirince “Durdur”a bas.'));
+    const go = h('button', {type: 'button', class: 'btn primary full', onclick: () => { $('#modal').close(); startVideo(st); }}, 'Kaydı başlat');
+    b.append(go);
+  }, [{v: null, t: 'Vazgeç'}]);
+}
+async function startVideo(st) {
+  if (Ed.view !== '3d') { Ed.setView('3d'); await new Promise(r => setTimeout(r, 400)); }
+  await View3D.ready3d();
+  const bar = $('#recBar'), txt = $('#recText'), stopBtn = $('#recStop');
+  bar.hidden = false;
+  if (st.kind === 'live') {
+    let rec;
+    try { rec = View3D.startLive(); } catch (e) { bar.hidden = true; toast(e.message, 'err'); return; }
+    txt.textContent = 'Kaydediliyor — gez, döndür, sonra Durdur';
+    const t0 = Date.now(), iv = setInterval(() => { const s = Math.floor((Date.now() - t0) / 1000); txt.textContent = `Kaydediliyor ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }, 500);
+    stopBtn.textContent = 'Durdur';
+    stopBtn.onclick = async () => { clearInterval(iv); bar.hidden = true; const blob = await rec.stop(); videoResult(blob); };
+    return;
+  }
+  let cancelled = false;
+  stopBtn.textContent = 'İptal'; stopBtn.onclick = () => { cancelled = true; };
+  $('#stage').classList.add('recording');
+  const [w, h] = st.res === '1080' ? [1920, 1080] : [1280, 720];
+  try {
+    const blob = await View3D.recordTour(st.kind, {w, h, seconds: st.sec, isCancelled: () => cancelled, onProgress: p => { txt.textContent = `Video kaydediliyor %${Math.round(p * 100)}`; }});
+    if (blob) videoResult(blob);
+  } catch (e) { toast('Video alınamadı: ' + (e && e.message || 'hata'), 'err'); }
+  finally { bar.hidden = true; $('#stage').classList.remove('recording'); }
+}
+
 /* ---------- Tema ---------- */
 const Theme = {
   apply() {
@@ -393,6 +447,10 @@ function bindEditor() {
     const b = $(id); b.classList.toggle('on', !!Settings.v[key]);
     b.onclick = () => { Settings.set(key, !Settings.v[key]); b.classList.toggle('on', !!Settings.v[key]); Plan.req(); if (after) after(); };
   };
+  $('#togMulti').onclick = () => {
+    Plan.multiMode = !Plan.multiMode; $('#togMulti').classList.toggle('on', Plan.multiMode);
+    toast(Plan.multiMode ? 'Çoklu seçim: dokunarak ekle/çıkar, boş alanda sürükleyerek alan seç' : 'Çoklu seçim kapalı');
+  };
   tog('#togGrid', 'grid'); tog('#togSnap', 'snap', () => toast(Settings.v.snap ? 'Mıknatıs açık' : 'Mıknatıs kapalı')); tog('#togClear', 'clear', () => View3D.markDirty());
   $$('#ctxbar [data-act]').forEach(b => b.onclick = () => {
     const a = b.dataset.act;
@@ -409,6 +467,8 @@ function bindEditor() {
   $('#camTop').onclick = () => View3D.preset('top');
   $('#camIso').onclick = () => View3D.preset('iso');
   $('#camRender').onclick = () => renderDialog();
+  $('#camVideo').onclick = () => videoDialog();
+  $('#btnKroki').onclick = () => Kroki.dialog();
   const wl = {full: 'Duvar: tam', half: 'Duvar: yarım', none: 'Duvar: yok'};
   $('#camWallsLbl').textContent = wl[Settings.v.walls] || wl.full;
   $('#camWalls').onclick = () => {
@@ -418,6 +478,8 @@ function bindEditor() {
   };
   $('#btnMenu').onclick = () => openMenu($('#btnMenu'), [
     {t: 'Render al (3B görsel)', icon: ICONS.camera, fn: renderDialog},
+    {t: 'Video al (3B tur)', icon: ICONS.video, fn: videoDialog},
+    {t: 'Kroki çizimi al (A4 PDF)', icon: ICONS.kroki, fn: () => Kroki.dialog()},
     {t: 'Sunum paftası (plan + 3B + liste)', icon: ICONS.png, fn: exportSheet},
     {t: 'Ölçülü plan indir (PNG)', icon: ICONS.png, fn: exportPlanPNG},
     navigator.share ? {t: 'Paylaş', icon: ICONS.share, fn: sharePlan} : null,
@@ -440,13 +502,14 @@ function onKey(e) {
   if (mod && (k === 'y' || k === 'Y')) { e.preventDefault(); Ed.redo(); return; }
   if (mod && (k === 's' || k === 'S')) { e.preventDefault(); Ed.save(); return; }
   if (mod && (k === 'd' || k === 'D')) { e.preventDefault(); Ed.duplicate(); return; }
+  if (mod && (k === 'a' || k === 'A') && Ed.view === '2d') { e.preventDefault(); Ed.selectAll(); return; }
   if (mod) return;
   if (k === ' ' && Ed.view === '2d') { Plan.space = true; Plan.cv.style.cursor = 'grab'; e.preventDefault(); return; }
   if (k === '1') return Ed.setView('2d');
   if (k === '2') return Ed.setView('3d');
   if (Ed.view !== '2d') { if (k === 'Escape') Ed.select(null); return; }
   switch (k) {
-    case 'Delete': case 'Backspace': if (Ed.sel) { e.preventDefault(); Ed.remove(); } break;
+    case 'Delete': case 'Backspace': if (Ed.sel || Ed.multi.length) { e.preventDefault(); Ed.remove(); } break;
     case 'Escape': if (Ed.tool !== 'select') Ed.setTool('select'); else { Ed.select(null); Sheets.closeAll(); } break;
     case 'r': case 'R': Ed.rotate(e.shiftKey ? -90 : 90); break;
     case 'v': case 'V': Ed.setTool('select'); break;
@@ -459,7 +522,7 @@ function onKey(e) {
     case '+': case '=': Plan.zoomAt(Plan.w / 2, Plan.h / 2, 1.25); break;
     case '-': Plan.zoomAt(Plan.w / 2, Plan.h / 2, .8); break;
     case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown': {
-      if (!Ed.sel) return;
+      if (!Ed.sel && !Ed.multi.length) return;
       e.preventDefault();
       const st = e.shiftKey ? .01 : .05;
       Ed.nudge(k === 'ArrowLeft' ? -st : k === 'ArrowRight' ? st : 0, k === 'ArrowUp' ? -st : k === 'ArrowDown' ? st : 0);

@@ -122,7 +122,7 @@ const View3D = {
   markDirty() { this.sceneDirty = true; if (Ed.view === '3d' && this.ready) { clearTimeout(this._bt); this._bt = setTimeout(() => { this.build(); this.req(); }, 80); } },
   req() { if (!this.raf && !this.loopOn) this.raf = requestAnimationFrame(() => { this.raf = 0; this.render(); }); },
   render() {
-    if (!this.R || Ed.view !== '3d') return;
+    if (!this.R || Ed.view !== '3d' || this.recording) return;
     this.applyCam();
     this.R.render(this.scene, this.cam);
     if (this.mode === 'walk') this.drawMini();
@@ -756,6 +756,27 @@ const View3D = {
           const gd = this.box(g, w - .02, h - .02, .012, this.mat('#B8D8EA', {transparent: true, opacity: .22, roughness: .05, depthWrite: false}), 0, h / 2, d / 2 - .006); gd.castShadow = false;
           B(.022, Math.min(.6, h * .4), .03, metal, w / 2 - .06, h * .55, d / 2 + .01);
           const l = B(w - .1, .01, .02, led, 0, h - .13, d / 2 - .1); l.castShadow = false;
+        } else if (st === 'wstand') {
+          // Cam önü stand: cama bakan kademeli teşhir + arkada ışıklı afiş panosu
+          const lac = this.mat(c, {roughness: .3}), steps = 3, td = (d - .05) / steps;
+          B(w, .06, d, this.mat('#2F3533'), 0, .03, 0);
+          for (let i = 0; i < steps; i++) {
+            const th = .22 + i * .2, z = d / 2 - td * (i + .5);
+            B(w - .02, th, td, lac, 0, .06 + th / 2, z);
+            this.fillShelf(g, rnd, -w / 2 + .05, w / 2 - .05, .06 + th, z + td / 2 - .02, td - .04, .3, 1, 'cos');
+          }
+          const ph = Math.max(.3, h - .06), pz = -d / 2 + .02;
+          const pt = this.labelTex(it.label || ' ', ACCENTS[Settings.v.accent]?.l || '#1F7A5A', '#FFFFFF');
+          pt.center.set(.5, .5); pt.rotation = 0;
+          const pm = new T.MeshStandardMaterial({map: pt, emissive: 0xffffff, emissiveMap: pt, emissiveIntensity: .45, roughness: .4}); pm._own = true;
+          this.box(g, w, .2, .03, [lac, lac, lac, lac, pm, lac], 0, h - .12, pz + .02);
+          B(w, ph - .2, .025, this.mat(mixHex(c, '#FFFFFF', .2), {roughness: .5}), 0, .06 + (ph - .2) / 2, pz);
+          const gy = .06 + .22 + 2 * .2 + .32;
+          if (h - gy > .35) {
+            const gs = this.box(g, w - .06, .012, .22, this.glass(), 0, gy + (h - gy - .25) / 2, pz + .12); gs.castShadow = false;
+            this.fillShelf(g, rnd, -w / 2 + .06, w / 2 - .06, gy + (h - gy - .25) / 2 + .006, pz + .22, .18, .22, 1, 'cos');
+          }
+          const l = B(w - .1, .012, .03, led, 0, h - .23, pz + .05); l.castShadow = false;
         } else { // kapaklı
           B(w, h, d - .02, m, 0, h / 2, -.01);
           const dh0 = h > 1.2 ? .1 : .06;
@@ -916,6 +937,12 @@ const View3D = {
   updateSel() {
     const T = this.T; if (!T) return;
     if (this.selHelper) { this.scene.remove(this.selHelper); this.selHelper.geometry.dispose(); this.selHelper = null; }
+    if (Ed.multi.length) {
+      const box = new T.Box3(), ids = new Set(Ed.multi);
+      for (const c of this.root.children) if (c.userData.pick && ids.has(c.userData.pick.id)) box.expandByObject(c);
+      if (!box.isEmpty()) { box.expandByScalar(.03); this.selHelper = new T.Box3Helper(box, new T.Color(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim())); this.scene.add(this.selHelper); }
+      this.req(); return;
+    }
     const sel = Ed.sel; if (!sel) { this.req(); return; }
     let obj = null;
     this.root.traverse(n => { if (!obj && n.userData.pick && n.userData.pick.id === sel.id && (sel.k === 'item' || n.userData.floor)) obj = n; });
@@ -1350,6 +1377,102 @@ const View3D = {
       if (c[2] > 1) continue;
       pill(c[0], c[1], [r.name, `${fmtM(r.w)} × ${fmtM(r.d)} m · ${fmtA(r.w * r.d)} m²`], 0, false);
     }
+  },
+  /* ---------- Video kaydı ---------- */
+  videoMime() {
+    if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) return null;
+    for (const m of ['video/mp4;codecs=avc1.42E01E', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']) if (MediaRecorder.isTypeSupported(m)) return m;
+    return '';
+  },
+  /* Kameraya bakan dış duvarları 1 m'de keser; geri alma listesi döndürür */
+  cutFacing(hideFn) {
+    const cp = this.cam.position, P = Ed.P, cutH = 1.0, list = [];
+    const facing = sg => sg && sg.outer && (sg.h ? (sg.c < 0 ? cp.z < 0 : cp.z > P.shop.d) : (sg.c < 0 ? cp.x < 0 : cp.x > P.shop.w));
+    for (const c of this.root.children) {
+      if (c.userData.wall && facing(c.userData.seg)) {
+        const y0 = c.userData.y0 || 0, hh = c.geometry.parameters.height, nh = Math.min(hh, cutH - y0);
+        list.push([c, c.scale.y, c.position.y, c.visible]);
+        if (nh <= .01) c.visible = false; else { c.scale.y = nh / hh; c.position.y = y0 + nh / 2; }
+      } else if ((c.userData.signSeg && facing(c.userData.signSeg)) || (c.userData.pick && c.userData.pick.k === 'item' && (() => { const it = P.items.find(i => i.id === c.userData.pick.id); return it && isOpening(it) && facing(wallOf(it, Ed.segs)); })())) {
+        list.push([c, c.scale.y, c.position.y, c.visible]); c.visible = false;
+      }
+    }
+    return list;
+  },
+  uncut(list) { for (const [c, sy, py, v] of list) { c.scale.y = sy; c.position.y = py; c.visible = v; } },
+  /* Otomatik tur: kind = 'orbit' (360°) | 'walk' (girişten içeri) */
+  async recordTour(kind, {w, h, seconds, onProgress, isCancelled}) {
+    await this.ready3d();
+    const mime = this.videoMime(); if (mime === null) throw new Error('Bu tarayıcı video kaydını desteklemiyor');
+    const T = this.T, R = this.R, P = Ed.P;
+    const saved = {mode: this.mode, orb: this.orb ? {...this.orb} : null, wk: {...this.wk}, pr: R.getPixelRatio()};
+    this.recording = true; this.stopLoop();
+    const hidden = [];
+    R.setPixelRatio(1); R.setSize(w, h, false); this.cam.aspect = w / h; this.cam.updateProjectionMatrix();
+    this.mode = kind === 'walk' ? 'walk' : 'orbit'; this.lightMode();
+    if (this.selHelper) { hidden.push(this.selHelper); this.selHelper.visible = false; }
+    for (const c of this.root.children) if (c.userData.clearZone || c.userData.zoneItem || c.userData.label) { if (c.visible) { hidden.push(c); c.visible = false; } }
+    // Yol
+    const base = this.fitOrbit(w / h, 'iso');
+    const ent = this.entrancePose();
+    const ix = Math.sin(ent.yaw), iz = -Math.cos(ent.yaw);
+    const door = [ent.x - ix * .7, ent.z - iz * .7];
+    const depth = Math.abs(ix) > .5 ? P.shop.w : P.shop.d;
+    const p0 = [door[0] - ix * 4, door[1] - iz * 4], p2 = [door[0] + ix * Math.min(depth * .5, 4.5), door[1] + iz * Math.min(depth * .5, 4.5)];
+    const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    const pose = p => {
+      if (kind === 'orbit') {
+        this.orb = Object.assign({}, base, {theta: base.theta + Math.PI * 2 * p, phi: .88 + Math.sin(p * Math.PI * 2) * .1});
+        return;
+      }
+      const k = this.wk;
+      if (p < .45) { const t = ease(p / .45); k.x = p0[0] + (p2[0] - p0[0]) * t; k.z = p0[1] + (p2[1] - p0[1]) * t; k.yaw = ent.yaw; k.pitch = .12 - .2 * t; k.bob = t * 40; }
+      else { const t = (p - .45) / .55; k.x = p2[0]; k.z = p2[1]; k.yaw = ent.yaw + Math.sin(t * Math.PI * 2) * 1.05; k.pitch = -.08; k.bob = 0; }
+    };
+    const stream = this.cv.captureStream(30);
+    const rec = new MediaRecorder(stream, mime ? {mimeType: mime, videoBitsPerSecond: Math.round(w * h * 30 * .14)} : undefined);
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    const done = new Promise(r => { rec.onstop = r; });
+    let cut = [];
+    try {
+      rec.start(500);
+      const t0 = performance.now();
+      await new Promise(resolve => {
+        const step = () => {
+          const p = Math.min(1, (performance.now() - t0) / 1000 / seconds);
+          pose(p); this.uncut(cut); this.applyCam();
+          if (kind === 'orbit') cut = this.cutFacing();
+          R.render(this.scene, this.cam);
+          if (onProgress) onProgress(p);
+          if (p >= 1 || (isCancelled && isCancelled())) resolve(); else requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      });
+      rec.stop(); await done;
+    } finally {
+      this.uncut(cut);
+      hidden.forEach(n => { n.visible = true; });
+      this.mode = saved.mode; this.orb = saved.orb; Object.assign(this.wk, saved.wk);
+      R.setPixelRatio(saved.pr); this.resize(); this.lightMode();
+      this.recording = false; this.req();
+    }
+    if (isCancelled && isCancelled()) return null;
+    return new Blob(chunks, {type: (mime || 'video/webm').split(';')[0]});
+  },
+  /* Canlı kayıt: kullanıcı gezerken ekrandaki 3B görüntüyü kaydeder */
+  startLive() {
+    const mime = this.videoMime(); if (mime === null) throw new Error('Bu tarayıcı video kaydını desteklemiyor');
+    const stream = this.cv.captureStream(30);
+    const rec = new MediaRecorder(stream, mime ? {mimeType: mime, videoBitsPerSecond: 6e6} : undefined);
+    const chunks = []; rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    const done = new Promise(r => { rec.onstop = r; });
+    rec.start(500);
+    // görüntü değişmese de kare üretmek için sürekli çiz
+    this.liveRec = true;
+    const tick = () => { if (!this.liveRec) return; this.render(); requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+    return {stop: async () => { this.liveRec = false; try { rec.requestData(); } catch (e) {} await new Promise(r => setTimeout(r, 300)); rec.stop(); await done; return new Blob(chunks, {type: (mime || 'video/webm').split(';')[0]}); }};
   },
   snapshot() { this.render(); return this.cv.toDataURL('image/png'); },
 };
