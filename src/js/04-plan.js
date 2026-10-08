@@ -24,6 +24,18 @@ function drawPlan(ctx, P, V, o) {
   const ftint = k => { const F = FLOOR_BY_KEY[k]; return F ? mixHex(C.floor.startsWith('#') ? C.floor : '#FFFFFF', F.base, C.dark ? .16 : .4) : null; };
   ctx.fillStyle = ftint(P.floor) || C.floor; ctx.fillRect(0, 0, W, D);
   for (const r of P.rooms) if (r.floor) { ctx.fillStyle = ftint(r.floor); ctx.fillRect(r.x, r.y, r.w, r.d); }
+  const drawVoids = () => {
+    for (const v of P.voids || []) {
+      const x0 = clamp(v.x, 0, W), y0 = clamp(v.y, 0, D), x1 = clamp(v.x + v.w, 0, W), y1 = clamp(v.y + v.d, 0, D);
+      if (x1 - x0 < .001 || y1 - y0 < .001) continue;
+      ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, x1 - x0, y1 - y0); ctx.clip();
+      ctx.fillStyle = C.bg; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+      ctx.beginPath(); const st = Math.max(.12, 9 / s);
+      for (let k = x0 - (y1 - y0); k < x1; k += st) { ctx.moveTo(k, y1); ctx.lineTo(k + (y1 - y0), y0); }
+      ctx.strokeStyle = rgba(C.muted.startsWith('#') ? C.muted : '#6F7974', .35); ctx.lineWidth = px; ctx.stroke();
+      ctx.restore();
+    }
+  };
 
   // Izgara
   if (o.grid) {
@@ -43,6 +55,7 @@ function drawPlan(ctx, P, V, o) {
     ctx.fillStyle = rgba(r.color, C.dark ? 0.2 : 0.14);
     ctx.fillRect(r.x, r.y, r.w, r.d);
   }
+  drawVoids();
 
   // İnsan boşlukları (eşyaların önü / arkası)
   if (o.clear) {
@@ -161,21 +174,11 @@ function drawPlan(ctx, P, V, o) {
     const off = OUTER_T * s + 18 * F, gap = 24 * F;
     if (o.chains) {
       ctx.font = `600 ${10.5 * F}px ${getMono()}`;
-      for (const side of ['t', 'b', 'l', 'r']) {
-        const horiz = side === 't' || side === 'b', L = horiz ? W : D;
-        const pts = new Set([0, L]);
-        for (const sg of segs) {
-          if (sg.outer) {
-            const on = horiz ? (sg.h && (side === 't' ? sg.c < 0 : sg.c > D)) : (!sg.h && (side === 'l' ? sg.c < 0 : sg.c > W));
-            if (on) for (const op of sg.open) { pts.add(r3(clamp(op.a, 0, L))); pts.add(r3(clamp(op.b, 0, L))); }
-          } else if (horiz ? !sg.h : sg.h) {
-            const touches = side === 't' || side === 'l' ? sg.a <= INNER_T : sg.b >= (horiz ? D : W) - INNER_T;
-            if (touches) pts.add(r3(sg.c));
-          }
-        }
-        const arr = [...pts].sort((a, b) => a - b);
-        if (arr.length < 3) continue;
-        chainLine(ctx, arr, side, W, D, s, V, off, C, F);
+      for (const sg of segs) {
+        if (!sg.outer) continue;
+        const pts = segChain(sg, segs);
+        if (pts.length < 3 && (sg.h ? Math.abs(sg.eb - sg.ea - W) < .01 : Math.abs(sg.eb - sg.ea - D) < .01)) continue; // toplam ölçü zaten var
+        chainSeg(ctx, sg, pts, V, s, off, C, F);
       }
     }
     ctx.font = `600 ${12 * F}px ${getMono()}`;
@@ -184,25 +187,23 @@ function drawPlan(ctx, P, V, o) {
     dimLine(ctx, sx(0) - o2, sy(0), sx(0) - o2, sy(D), fmtM(D) + ' m', C, true, F);
   }
 }
-/* Bir dış kenar boyunca zincir ölçü */
-function chainLine(ctx, arr, side, W, D, s, V, off, C, F) {
-  const horiz = side === 't' || side === 'b';
-  const fixed = side === 't' ? V.oy - off : side === 'b' ? D * s + V.oy + off : side === 'l' ? V.ox - off : W * s + V.ox + off;
+/* Bir dış duvar boyunca zincir ölçü (cm) */
+function chainSeg(ctx, sg, arr, V, s, off, C, F) {
+  const horiz = !!sg.h, fixedW = sg.e + sg.n * OUTER_T;
+  const fixed = (horiz ? fixedW * s + V.oy : fixedW * s + V.ox) + sg.n * off;
   const P = v => horiz ? [v * s + V.ox, fixed] : [fixed, v * s + V.oy];
   ctx.beginPath();
   const [a0, b0] = P(arr[0]), [a1, b1] = P(arr[arr.length - 1]);
   ctx.moveTo(a0, b0); ctx.lineTo(a1, b1);
-  for (const v of arr) { const [x, y] = P(v); if (horiz) { ctx.moveTo(x - 3 * F, y + 3 * F); ctx.lineTo(x + 3 * F, y - 3 * F); ctx.moveTo(x, y - 5 * F); ctx.lineTo(x, y + 5 * F); } else { ctx.moveTo(x - 3 * F, y + 3 * F); ctx.lineTo(x + 3 * F, y - 3 * F); ctx.moveTo(x - 5 * F, y); ctx.lineTo(x + 5 * F, y); } }
+  for (const v of arr) { const [x, y] = P(v); ctx.moveTo(x - 3 * F, y + 3 * F); ctx.lineTo(x + 3 * F, y - 3 * F); if (horiz) { ctx.moveTo(x, y - 5 * F); ctx.lineTo(x, y + 5 * F); } else { ctx.moveTo(x - 5 * F, y); ctx.lineTo(x + 5 * F, y); } }
   ctx.stroke();
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = C.muted;
   for (let i = 0; i < arr.length - 1; i++) {
     const len = arr[i + 1] - arr[i]; if (len < .02) continue;
     const t = fmtCm(len), [x0, y0] = P(arr[i]), [x1, y1] = P(arr[i + 1]);
-    const px = Math.hypot(x1 - x0, y1 - y0), tw = ctx.measureText(t).width;
-    if (px < tw + 6 * F) continue;
+    if (Math.hypot(x1 - x0, y1 - y0) < ctx.measureText(t).width + 6 * F) continue;
     ctx.save(); ctx.translate((x0 + x1) / 2, (y0 + y1) / 2); if (!horiz) ctx.rotate(-Math.PI / 2);
-    const dy = (side === 't' || side === 'l') ? -7 * F : 8 * F;
-    ctx.fillText(t, 0, dy); ctx.restore();
+    ctx.fillText(t, 0, sg.n * 7.5 * F); ctx.restore();
   }
 }
 function getFont() { return 'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; }
@@ -434,7 +435,12 @@ const Plan = {
       // Mesafeler
       if (!(this.act && this.act.type === 'pan')) this.drawGaps(ctx, sel, o);
       ctx.strokeStyle = C.accent; ctx.lineWidth = 2; this.outline(ctx, sel, o); ctx.stroke();
-      if (sel.k === 'room') {
+      if (sel.k === 'wall') {
+        ctx.font = `700 12px ${getMono()}`;
+        const [x0, y0] = S(o.x1, o.y1), [x1, y1] = S(o.x2, o.y2);
+        this.pill(ctx, (x0 + x1) / 2, (y0 + y1) / 2 - 18, `${fmtCm(Math.hypot(o.x2 - o.x1, o.y2 - o.y1))} cm · ${fmtCm(o.t)} cm kalınlık`, C.accent);
+      }
+      if (sel.k === 'room' || sel.k === 'void') {
         ctx.font = `700 12px ${getMono()}`;
         ctx.strokeStyle = C.accent; ctx.lineWidth = 1;
         const [x0, y0] = S(o.x, o.y), [x1, y1] = S(o.x + o.w, o.y + o.d);
@@ -466,6 +472,33 @@ const Plan = {
         ctx.stroke();
       }
       ctx.restore();
+    }
+    // Duvar çizimi önizleme
+    if (this.act && this.act.type === 'wdraw') {
+      const [x0, y0] = S(...this.act.p0), [x1, y1] = S(...this.act.p1), L = Math.hypot(this.act.p1[0] - this.act.p0[0], this.act.p1[1] - this.act.p0[1]);
+      ctx.strokeStyle = C.accent; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(4, (Settings.v.wallT || INNER_T) * this.V.s); ctx.globalAlpha = .7;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); ctx.globalAlpha = 1; ctx.lineCap = 'butt';
+      if (L > .02) { ctx.font = `700 12px ${getMono()}`; this.pill(ctx, (x0 + x1) / 2, (y0 + y1) / 2 - 20, fmtCm(L) + ' cm', C.accent); }
+    }
+    if (this.act && this.act.type === 'shape' && this.act.moved) {
+      const m = this.act, er = m.mode === 'erase', col = er ? C.danger : C.ok;
+      const [a0, b0] = S(Math.min(m.p0[0], m.p1[0]), Math.min(m.p0[1], m.p1[1])), [a1, b1] = S(Math.max(m.p0[0], m.p1[0]), Math.max(m.p0[1], m.p1[1]));
+      ctx.fillStyle = rgba(col.startsWith('#') ? col : '#C23A2B', .16); ctx.fillRect(a0, b0, a1 - a0, b1 - b0);
+      ctx.setLineDash([6, 4]); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.strokeRect(a0, b0, a1 - a0, b1 - b0); ctx.setLineDash([]);
+      ctx.font = `700 12px ${getMono()}`;
+      this.pill(ctx, (a0 + a1) / 2, (b0 + b1) / 2, `${er ? 'Kes' : 'Ekle'} · ${fmtCm(Math.abs(m.p1[0] - m.p0[0]))} × ${fmtCm(Math.abs(m.p1[1] - m.p0[1]))} cm`, col);
+    } else if ((Ed.tool === 'erase' || Ed.tool === 'addarea') && this.hoverPt && !this.act) {
+      const [hx, hy] = this.hoverPt, P = Ed.P;
+      const vd = (P.voids || []).find(v => hx > v.x && hx < v.x + v.w && hy > v.y && hy < v.y + v.d);
+      let rects = null, col, label;
+      if (vd) { rects = [vd]; col = C.ok; label = 'Dokun: dükkâna geri ekle'; }
+      else if (Ed.tool === 'erase') { const rg = regionAt(P, Ed.segs, hx, hy); if (rg) { rects = rg.rects; col = C.danger; label = `Dokun: bu alanı sil · ${fmtA(rg.area)} m²`; } }
+      if (rects) {
+        ctx.fillStyle = rgba(col.startsWith('#') ? col : '#C23A2B', .18);
+        let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity;
+        for (const r of rects) { const [a0, b0] = S(r.x, r.y), [a1, b1] = S(r.x + r.w, r.y + r.d); ctx.fillRect(a0, b0, a1 - a0, b1 - b0); bx0 = Math.min(bx0, a0); by0 = Math.min(by0, b0); bx1 = Math.max(bx1, a1); }
+        ctx.font = `700 12px ${getFont()}`; this.pill(ctx, (bx0 + bx1) / 2, by0 + 16, label, col);
+      }
     }
     // Oda çizimi
     if (this.act && this.act.type === 'draw' && this.act.r) {
@@ -502,7 +535,8 @@ const Plan = {
   },
   outline(ctx, sel, o) {
     ctx.beginPath();
-    if (sel.k === 'room') { const [x0, y0] = this.toS(o.x, o.y); ctx.rect(x0, y0, o.w * this.V.s, o.d * this.V.s); return; }
+    if (sel.k === 'room' || sel.k === 'void') { const [x0, y0] = this.toS(o.x, o.y); ctx.rect(x0, y0, o.w * this.V.s, o.d * this.V.s); return; }
+    if (sel.k === 'wall') { const b = wallBox(o), [x0, y0] = this.toS(b.x0, b.y0), [x1, y1] = this.toS(b.x1, b.y1); ctx.rect(x0 - 2, y0 - 2, x1 - x0 + 4, y1 - y0 + 4); return; }
     const pts = isRound(o) ? itemPoly(o) : localPoly(o, -o.w / 2, -o.d / 2, o.w / 2, o.d / 2);
     pts.forEach(([x, y], i) => { const [a, b] = this.toS(x, y); i ? ctx.lineTo(a, b) : ctx.moveTo(a, b); });
     ctx.closePath();
@@ -534,7 +568,8 @@ const Plan = {
   },
   handles(sel, o) {
     const out = [];
-    if (sel.k === 'room') {
+    if (sel.k === 'wall') { for (const e of [1, 2]) { const [x, y] = this.toS(o['x' + e], o['y' + e]); out.push({end: e, x, y}); } return out; }
+    if (sel.k === 'room' || sel.k === 'void') {
       for (const hx of [-1, 0, 1]) for (const hy of [-1, 0, 1]) {
         if (!hx && !hy) continue;
         const [x, y] = this.toS(o.x + o.w / 2 + hx * o.w / 2, o.y + o.d / 2 + hy * o.d / 2);
@@ -582,6 +617,9 @@ const Plan = {
       cand.sort((a, b) => a.pri - b.pri || a.a - b.a);
       return {k: 'item', id: cand[0].it.id};
     }
+    for (const w of P.walls || []) { const b = wallBox(w); if (wx >= b.x0 - pad && wx <= b.x1 + pad && wy >= b.y0 - pad && wy <= b.y1 + pad) return {k: 'wall', id: w.id}; }
+    const vd = (P.voids || []).find(v => wx > v.x && wx < v.x + v.w && wy > v.y && wy < v.y + v.d);
+    if (vd) return {k: 'void', id: vd.id};
     const rooms = P.rooms.filter(r => wx >= r.x && wx <= r.x + r.w && wy >= r.y && wy <= r.y + r.d).sort((a, b) => a.w * a.d - b.w * b.d);
     if (rooms.length) return {k: 'room', id: rooms[0].id};
     return null;
@@ -605,6 +643,8 @@ const Plan = {
     const [wx, wy] = this.toW(x, y);
     if (e.button === 1 || e.button === 2 || this.space) { this.act = {type: 'pan', x, y, V0: {...this.V}, moved: true}; this.cv.style.cursor = 'grabbing'; return; }
     if (Ed.tool === 'room') { const p = this.snapPt(wx, wy); this.act = {type: 'draw', p0: p, r: null, x, y}; return; }
+    if (Ed.tool === 'wall') { const p = this.snapWallPt(wx, wy); this.act = {type: 'wdraw', p0: p, p1: p, x, y, moved: false, touch}; return; }
+    if (Ed.tool === 'erase' || Ed.tool === 'addarea') { const p = this.snapPt(wx, wy, true); this.act = {type: 'shape', mode: Ed.tool, p0: p, p1: p, w: [wx, wy], x, y, moved: false, touch}; return; }
     if (Ed.tool === 'measure') { const p = this.snapPt(wx, wy, true); this.measure = {a: p, b: p}; this.act = {type: 'measure', x, y}; this.req(); return; }
     const add = e.ctrlKey || e.metaKey || e.shiftKey || this.multiMode;
     if (add) {
@@ -619,7 +659,7 @@ const Plan = {
     const h = this.hitHandle(x, y, touch);
     if (h) {
       const o = Ed.objOf(Ed.sel);
-      this.act = {type: h.rot ? 'rotate' : 'resize', h, o0: {...o}, before: Ed.snap(), x, y, moved: false, touch};
+      this.act = {type: h.end ? 'wend' : h.rot ? 'rotate' : 'resize', h, o0: {...o}, before: Ed.snap(), x, y, moved: false, touch};
       this.collectTargets(Ed.sel);
       return;
     }
@@ -628,6 +668,7 @@ const Plan = {
     if (hit && (hit.k === 'item' || isSel)) {
       if (!isSel) Ed.select(hit);
       const o = Ed.objOf(hit);
+      if (hit.k === 'wall') { this.act = {type: 'move', sel: hit, o0: {...o}, w0: [wx, wy], before: Ed.snap(), x, y, moved: false, carry: [], touch}; this.collectTargets({k: 'room', id: '__w'}); return; }
       const carry = hit.k === 'room' ? Ed.P.items.filter(it => it.cx >= o.x - .06 && it.cx <= o.x + o.w + .06 && it.cy >= o.y - .06 && it.cy <= o.y + o.d + .06).map(it => ({it, cx: it.cx, cy: it.cy})) : [];
       this.act = {type: 'move', sel: hit, o0: {...o}, w0: [wx, wy], before: Ed.snap(), x, y, moved: false, carry, touch};
       this.collectTargets(hit, carry.map(c => c.it.id));
@@ -640,6 +681,7 @@ const Plan = {
     if (this.ptrs.has(e.pointerId)) this.ptrs.set(e.pointerId, {x, y});
     const a = this.act;
     if (!a) { // üzerine gelme
+      if (e.pointerType === 'mouse' && Ed.P && (Ed.tool === 'erase' || Ed.tool === 'addarea')) { const [wx, wy] = this.toW(x, y); this.cv.style.cursor = 'crosshair'; this.hoverPt = [wx, wy]; this.req(); return; }
       if (e.pointerType === 'mouse' && Ed.P) {
         const [wx, wy] = this.toW(x, y);
         const h = Ed.tool === 'select' ? this.hitHandle(x, y, false) : null;
@@ -691,6 +733,19 @@ const Plan = {
         break;
       }
       case 'gmove': this.doGroupMove(a, wx, wy, e); break;
+      case 'wdraw': {
+        let p = this.snapWallPt(wx, wy);
+        if (Math.abs(p[0] - a.p0[0]) >= Math.abs(p[1] - a.p0[1])) p = [p[0], a.p0[1]]; else p = [a.p0[0], p[1]];
+        a.p1 = p; this.req(); break;
+      }
+      case 'shape': a.p1 = this.snapPt(wx, wy, true); this.req(); break;
+      case 'wend': {
+        const o = Ed.objOf(Ed.sel); if (!o) break;
+        const e2 = a.h.end, other = e2 === 1 ? 2 : 1, horiz = Math.abs(a.o0.y1 - a.o0.y2) < .001;
+        const p = this.snapWallPt(wx, wy);
+        if (horiz) { o['x' + e2] = p[0]; o['y' + e2] = a.o0['y' + other]; } else { o['y' + e2] = p[1]; o['x' + e2] = a.o0['x' + other]; }
+        Ed.live(); break;
+      }
       case 'marquee': a.p1 = [wx, wy]; this.req(); break;
       case 'resize': this.doResize(a, wx, wy); break;
       case 'rotate': {
@@ -715,11 +770,25 @@ const Plan = {
         else if (!cancel) toast('Oda çizmek için parmağını/fareyi sürükle');
         break;
       case 'move': case 'resize': case 'rotate':
+        if (a.moved && Ed.sel && Ed.sel.k === 'void') reseatOpenings(Ed.P);
         if (a.moved) Ed.commit(a.before);
         else if (a.type === 'move' && !cancel) this.tap(a, true);
         break;
       case 'toggle': if (!cancel) Ed.toggleMulti(a.hit.id); break;
-      case 'gmove': if (a.moved) Ed.commit(a.before); break;
+      case 'gmove': case 'wend': if (a.moved) Ed.commit(a.before); break;
+      case 'wdraw': {
+        if (cancel) break;
+        const L = Math.hypot(a.p1[0] - a.p0[0], a.p1[1] - a.p0[1]);
+        if (L >= .2) Ed.addWall(a.p0, a.p1); else toast('Duvar çizmek için iki nokta arasında sürükle');
+        break;
+      }
+      case 'shape': {
+        if (cancel) break;
+        const r = {x: Math.min(a.p0[0], a.p1[0]), y: Math.min(a.p0[1], a.p1[1]), w: Math.abs(a.p1[0] - a.p0[0]), d: Math.abs(a.p1[1] - a.p0[1])};
+        if (a.moved && r.w >= .1 && r.d >= .1) { if (a.mode === 'erase') Ed.cutArea(r); else Ed.addArea(r); }
+        else if (!a.moved) { if (a.mode === 'erase') Ed.eraseAt(a.w[0], a.w[1]); else Ed.restoreVoidAt(a.w[0], a.w[1]); }
+        break;
+      }
       case 'marquee': {
         if (cancel) break;
         if (!a.moved) { if (!this.multiMode) Ed.select(null); break; }
@@ -734,7 +803,7 @@ const Plan = {
   },
   finishAct() {
     const a = this.act; if (!a) return;
-    if ((a.type === 'move' || a.type === 'resize' || a.type === 'rotate' || a.type === 'gmove') && a.moved) Ed.commit(a.before);
+    if ((a.type === 'move' || a.type === 'resize' || a.type === 'rotate' || a.type === 'gmove' || a.type === 'wend') && a.moved) Ed.commit(a.before);
     this.act = null; this.guides = [];
   },
   tap(a, onSel) {
@@ -755,7 +824,7 @@ const Plan = {
     this.zoomAt(x, y, Math.exp(-e.deltaY * k * (e.deltaMode === 1 ? 16 : 1)));
   },
   resizeCursor(h) {
-    const o = Ed.objOf(Ed.sel); const rot = Ed.sel.k === 'room' ? 0 : o.rot;
+    const o = Ed.objOf(Ed.sel); const rot = Ed.sel.k === 'item' ? o.rot : 0;
     const [dx, dy] = rotPt(h.hx, h.hy, rot); const ang = ((Math.atan2(dy, dx) / D2R) + 360) % 180;
     return ang < 22.5 || ang >= 157.5 ? 'ew-resize' : ang < 67.5 ? 'nwse-resize' : ang < 112.5 ? 'ns-resize' : 'nesw-resize';
   },
@@ -763,9 +832,11 @@ const Plan = {
   /* ---------- Yapışma ---------- */
   collectTargets(sel, skipIds = []) {
     const xs = [], ys = [], P = Ed.P, skip = new Set(skipIds);
-    if (sel.k === 'room') {
+    if (sel.k === 'room' || sel.k === 'void') {
       xs.push(0, P.shop.w); ys.push(0, P.shop.d);
       for (const r of P.rooms) if (r.id !== sel.id) { xs.push(r.x, r.x + r.w); ys.push(r.y, r.y + r.d); }
+      for (const v of P.voids || []) if (v.id !== sel.id) { xs.push(v.x, v.x + v.w); ys.push(v.y, v.y + v.d); }
+      for (const w of P.walls || []) { xs.push(w.x1, w.x2); ys.push(w.y1, w.y2); }
     } else {
       for (const r of wallPieces(Ed.segs)) { xs.push(r.x0, r.x1); ys.push(r.y0, r.y1); }
       for (const it of P.items) if (it.id !== sel.id && !skip.has(it.id) && (isSolid(it) || it.type === 'zone')) { const b = itemBox(it); xs.push(b.x0, b.x1, it.cx); ys.push(b.y0, b.y1, it.cy); }
@@ -782,7 +853,20 @@ const Plan = {
     const P = Ed.P, thr = 10 / this.V.s;
     const xs = [0, P.shop.w], ys = [0, P.shop.d];
     for (const r of P.rooms) { xs.push(r.x, r.x + r.w); ys.push(r.y, r.y + r.d); }
+    for (const v of P.voids || []) { xs.push(v.x, v.x + v.w); ys.push(v.y, v.y + v.d); }
+    for (const w of P.walls || []) { xs.push(w.x1, w.x2); ys.push(w.y1, w.y2); }
     if (fine) { for (const r of wallPieces(Ed.segs)) { xs.push(r.x0, r.x1); ys.push(r.y0, r.y1); } for (const it of P.items) if (isSolid(it)) { const b = itemBox(it); xs.push(b.x0, b.x1); ys.push(b.y0, b.y1); } }
+    const bx = this.snapAxis([wx], xs, thr), by = this.snapAxis([wy], ys, thr);
+    return [r3(bx ? bx.t : Math.round(wx / GRID) * GRID), r3(by ? by.t : Math.round(wy / GRID) * GRID)];
+  },
+  /* Duvar uçları: oda kenarları, duvar eksenleri, dükkân sınırı, ızgara */
+  snapWallPt(wx, wy) {
+    if (!Settings.v.snap) return [r3(wx), r3(wy)];
+    const P = Ed.P, thr = 12 / this.V.s, xs = [0, P.shop.w], ys = [0, P.shop.d];
+    for (const r of P.rooms) { xs.push(r.x, r.x + r.w); ys.push(r.y, r.y + r.d); }
+    for (const v of P.voids || []) { xs.push(v.x, v.x + v.w); ys.push(v.y, v.y + v.d); }
+    for (const sg of Ed.segs) { if (sg.outer) (sg.h ? ys : xs).push(sg.e); else { (sg.h ? ys : xs).push(sg.c); } }
+    for (const w of P.walls || []) { xs.push(w.x1, w.x2); ys.push(w.y1, w.y2); }
     const bx = this.snapAxis([wx], xs, thr), by = this.snapAxis([wy], ys, thr);
     return [r3(bx ? bx.t : Math.round(wx / GRID) * GRID), r3(by ? by.t : Math.round(wy / GRID) * GRID)];
   },
@@ -791,7 +875,17 @@ const Plan = {
     const snap = Settings.v.snap && !e.altKey, thr = 9 / this.V.s;
     const o = Ed.objOf(a.sel); if (!o) return;
     this.guides = [];
-    if (a.sel.k === 'room') {
+    if (a.sel.k === 'wall') {
+      const horiz = Math.abs(a.o0.y1 - a.o0.y2) < .001;
+      let mx = dx, my = dy;
+      if (snap) {
+        const p = this.snapWallPt(a.o0.x1 + dx, a.o0.y1 + dy);
+        mx = p[0] - a.o0.x1; my = p[1] - a.o0.y1;
+      }
+      o.x1 = r3(a.o0.x1 + mx); o.x2 = r3(a.o0.x2 + mx); o.y1 = r3(a.o0.y1 + my); o.y2 = r3(a.o0.y2 + my);
+      Ed.live(); return;
+    }
+    if (a.sel.k === 'room' || a.sel.k === 'void') {
       let x = a.o0.x + dx, y = a.o0.y + dy;
       if (snap) {
         const bx = this.snapAxis([x, x + o.w], this.targets.xs, thr), by = this.snapAxis([y, y + o.d], this.targets.ys, thr);
@@ -848,7 +942,7 @@ const Plan = {
     const o = Ed.objOf(Ed.sel), o0 = a.o0, {hx, hy} = a.h; if (!o) return;
     const snap = Settings.v.snap, thr = 9 / this.V.s;
     this.guides = [];
-    if (Ed.sel.k === 'room') {
+    if (Ed.sel.k === 'room' || Ed.sel.k === 'void') {
       let x0 = o0.x, y0 = o0.y, x1 = o0.x + o0.w, y1 = o0.y + o0.d;
       const sn = (v, T, g) => { if (!snap) return r3(v); const b = this.snapAxis([v], T, thr); if (b) { this.guides.push(g(b.t)); return b.t; } return Math.round(v / GRID) * GRID; };
       if (hx < 0) x0 = Math.min(sn(wx, this.targets.xs, t => ({x: t})), x1 - MIN_ROOM);

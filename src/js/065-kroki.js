@@ -24,6 +24,7 @@ const Kroki = {
     const rooms = P.rooms.map((r, i) => ({r, i})).sort((a, b) => b.r.w * b.r.d - a.r.w * a.r.d);
     for (const {r, i} of rooms) fill(r.x, r.y, r.x + r.w, r.y + r.d, i + 1);
     for (const w of wallPieces(segs, () => false)) fill(w.x0, w.y0, w.x1, w.y1, -1);
+    for (const v of P.voids || []) fill(v.x - .05, v.y - .05, v.x + v.w + .05, v.y + v.d + .05, -1);
     for (const it of P.items) if (it.type === 'column') { const b = itemBox(it); fill(b.x0, b.y0, b.x1, b.y1, -1); }
     const cnt = new Float64Array(P.rooms.length + 1);
     for (let k = 0; k < g.length; k++) if (g[k] >= 0) cnt[g[k]]++;
@@ -52,7 +53,7 @@ const Kroki = {
     }
     const roomAreas = P.rooms.map((r, i) => ({r, a: cnt[i + 1] * a}));
     const sales = cnt[0] * a;
-    return {sales, rooms: roomAreas, useful: sales + roomAreas.reduce((s, x) => s + x.a, 0), net: W * D, pole};
+    return {sales, rooms: roomAreas, useful: sales + roomAreas.reduce((s, x) => s + x.a, 0), net: shopArea(P), pole};
   },
 
   /* Etiket yerleri: her bölgede duvar ve eşyalardan en uzak nokta (5 cm ızgara) */
@@ -65,6 +66,7 @@ const Kroki = {
     };
     P.rooms.map((r, i) => ({r, i})).sort((a, b) => b.r.w * b.r.d - a.r.w * a.r.d).forEach(({r, i}) => fill(r.x, r.y, r.x + r.w, r.y + r.d, i + 1));
     for (const w of wallPieces(segs, () => false)) fill(w.x0, w.y0, w.x1, w.y1, -1);
+    for (const v of P.voids || []) fill(v.x - .05, v.y - .05, v.x + v.w + .05, v.y + v.d + .05, -1);
     for (const it of P.items) if (it.type !== 'zone' && it.type !== 'human') { const b = itemBox(it); fill(b.x0 - .05, b.y0 - .05, b.x1 + .05, b.y1 + .05, -1); }
     const out = [];
     const d = new Float32Array(nx * ny);
@@ -97,7 +99,7 @@ const Kroki = {
     doors.sort((a, b) => (b.it.style === 'double') - (a.it.style === 'double') || b.it.w - a.it.w);
     if (!doors.length) return null;
     const {it, s} = doors[0];
-    const side = s.h ? (s.c < 0 ? 't' : 'b') : (s.c < 0 ? 'l' : 'r');
+    const side = s.h ? (s.n < 0 ? 't' : 'b') : (s.n < 0 ? 'l' : 'r');
     const out = {t: [0, -1], b: [0, 1], l: [-1, 0], r: [1, 0]}[side];
     return {it, s, side, out};
   },
@@ -290,7 +292,7 @@ const Kroki = {
       const lp = LP[0], pos = lp ? [lp.x, lp.y] : A.pole;
       if (pos) {
         const [px, py] = toPage(...pos), free = lp ? lp.r * k * 2 : 40;
-        roomText([o.salesName || 'ECZANE SATIŞ ALANI', `A = ${fm2(A.sales)} m2`, `H = ${fm2(H)} m`], px, py, Math.max(free * 1.6, 30), Math.max(free * 1.2, 10), 3.0);
+        roomText([o.salesName || 'ECZANE SATIŞ ALANI', `A = ${fm2(A.sales)} m2`, `H = ${fm2(H)} m`], px, py, Math.min(Math.max(free * 1.6, 18), Math.min(W, D) * k * 1.1), Math.max(free * 1.2, 10), 3.0);
       }
     }
 
@@ -320,17 +322,14 @@ const Kroki = {
       if ((x1 - x0) * k > 8) dim([x0, y0], [x1, y0], [0, 1], 2.4, fmtCm(x1 - x0), false);
       if ((y1 - y0) * k > 8) dim([x0, y0], [x0, y1], [1, 0], 2.4, fmtCm(y1 - y0), false);
     }
-    // dış ölçüler: girişin olmadığı kenarlarda parça + toplam
-    const sides = ['t', 'b', 'l', 'r'];
-    const outN = {t: [0, -1], b: [0, 1], l: [-1, 0], r: [1, 0]};
-    for (const sd of sides) {
-      const [nx, ny] = R(...outN[sd]);
-      if (ny > .5) continue; // sayfanın altı (giriş tarafı) boş kalsın
-      const horiz = sd === 't' || sd === 'b', c0 = sd === 't' ? -OUTER_T : sd === 'b' ? D + OUTER_T : sd === 'l' ? -OUTER_T : W + OUTER_T;
-      const P2 = v => horiz ? [v, c0] : [c0, v];
-      const pts = this.chainPts(segs, sd, W, D);
-      if (pts.length > 2) for (let i = 0; i < pts.length - 1; i++) dim(P2(pts[i]), P2(pts[i + 1]), outN[sd], 3.5, fmtCm(pts[i + 1] - pts[i]), i === 0);
-      dim(P2(0), P2(horiz ? W : D), outN[sd], pts.length > 2 ? 7.5 : 3.5, fmtCm(horiz ? W : D));
+    // dış ölçüler: her dış duvar parçası boyunca parça + toplam (giriş duvarı hariç)
+    for (const sg of segs) {
+      if (!sg.outer || (ent && ent.s === sg)) continue;
+      const nrm = sg.h ? [0, sg.n] : [sg.n, 0], c0 = sg.e + sg.n * OUTER_T;
+      const P2 = v => sg.h ? [v, c0] : [c0, v];
+      const pts = segChain(sg, segs);
+      if (pts.length > 2) for (let i = 0; i < pts.length - 1; i++) dim(P2(pts[i]), P2(pts[i + 1]), nrm, 3.5, fmtCm(pts[i + 1] - pts[i]), i === 0);
+      dim(P2(sg.ea), P2(sg.eb), nrm, pts.length > 2 ? 7.5 : 3.5, fmtCm(sg.eb - sg.ea));
     }
 
     // Giriş oku

@@ -319,3 +319,10 @@ dialog.modal.wide{width:min(960px,calc(100vw - 28px))}
 .inp.ta{min-height:80px;padding:10px 12px;font-size:15px;resize:vertical;line-height:1.35}
 @media (max-width:760px){.kgrid{grid-template-columns:1fr}.kgrid .kcol:last-child{order:-1}}
 .walkhint,.recbar,.hintpill{-webkit-user-select:none;user-select:none}
+.shapes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.shapes .btn{flex-direction:column;gap:2px;padding:6px 2px;min-height:62px;font-size:12px}
+.shapes .btn svg{width:34px;height:28px}
+@media (min-width:901px) and (max-width:1560px){ #tools2d .tog .lbl{display:none} }
+.shapes .btn.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent) inset;color:var(--accent)}
+.shapes .btn span{color:var(--ink)}
+.toast{border-radius:16px}

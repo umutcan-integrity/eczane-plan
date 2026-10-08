@@ -41,6 +41,7 @@
           <label class="fl"><span>Genişlik (m)</span><input class="inp" id="newW" inputmode="decimal" value="13,65"></label>
           <label class="fl"><span>Derinlik (m)</span><input class="inp" id="newD" inputmode="decimal" value="6,95"></label>
         </div>
+        <div class="fl" id="newShapeWrap"><span>Dükkân şekli</span><div class="shapes" id="newShape"></div></div>
         <div class="tpl" id="newTpl">
           <button type="button" data-v="empty" class="on"><b>Boş dükkân</b><small>Sadece dış duvarlar</small></button>
           <button type="button" data-v="sample"><b>Örnek eczane</b><small>Odalar, banko ve dolaplar hazır</small></button>
@@ -91,6 +92,9 @@
       <div class="float tools" id="tools2d">
         <button class="tb on" data-tool="select" title="Seç ve taşı (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 3l14 8-6.5 1.6L9.5 19z"/></svg><span class="lbl">Seç</span></button>
         <button class="tb" data-tool="room" title="Oda çiz (O)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="4.5" width="17" height="15" rx="1"/><path d="M12 4.5v8h8.5"/></svg><span class="lbl">Oda çiz</span></button>
+        <button class="tb" data-tool="wall" title="Duvar çiz (D)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9h18M3 15h18M7 9v6M12 9v6M17 9v6"/></svg><span class="lbl">Duvar</span></button>
+        <button class="tb" data-tool="erase" title="Silgi: alanı dükkândan çıkar (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M14 4l6 6-9 9H6l-3-3z"/><path d="M9 9l6 6M6 19h14"/></svg><span class="lbl">Silgi</span></button>
+        <button class="tb" data-tool="addarea" title="Alan ekle: dükkânı büyüt (A)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h10v6h6v10H4z"/><path d="M17 3v6M14 6h6" stroke-width="2.2"/></svg><span class="lbl">Alan ekle</span></button>
         <button class="tb" data-tool="measure" title="Ölç (M)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 16L16 3l5 5L8 21z"/><path d="M7 12l2 2M10 9l2 2M13 6l2 2"/></svg><span class="lbl">Ölç</span></button>
         <button class="tb tog" id="togMulti" title="Çoklu seçim (veya Ctrl/Shift + tıkla)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/><path d="M13 7h4a1 1 0 011 1v3M11 17H7a1 1 0 01-1-1v-3" stroke-dasharray="2 2"/></svg><span class="lbl">Çoklu</span></button>
         <span class="tsep hide-m"></span>

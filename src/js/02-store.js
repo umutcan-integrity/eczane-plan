@@ -52,7 +52,7 @@ const Store = {
 function newProject(name, w, d) {
   const now = Date.now();
   return {v: 2, id: uid(), name: name || 'Yeni proje', created: now, updated: now,
-    shop: {w: r3(w), d: r3(d), h: 2.8}, floor: 'seramik', rooms: [], items: [], seq: 1};
+    shop: {w: r3(w), d: r3(d), h: 2.8}, floor: 'seramik', rooms: [], items: [], voids: [], walls: [], seq: 1};
 }
 function makeItem(e, cx, cy, extra = {}) {
   const t = TYPES[e.t];
@@ -75,6 +75,9 @@ function normalizeProject(o) {
     rooms: [], items: [], seq: num(o.seq, 1, 0, 1e9),
   };
   if (typeof o.sign === 'string') p.sign = o.sign.slice(0, 60);
+  p.voids = (Array.isArray(o.voids) ? o.voids : []).filter(v => v && typeof v === 'object').map(v => ({id: typeof v.id === 'string' ? v.id : uid(), x: num(v.x, 0), y: num(v.y, 0), w: num(v.w, 1, .05, 200), d: num(v.d, 1, .05, 200)}));
+  p.walls = (Array.isArray(o.walls) ? o.walls : []).filter(v => v && typeof v === 'object').map(v => ({id: typeof v.id === 'string' ? v.id : uid(), x1: num(v.x1, 0), y1: num(v.y1, 0), x2: num(v.x2, 1), y2: num(v.y2, 0), t: num(v.t, INNER_T, .05, .6)}))
+    .filter(w => Math.abs(w.x1 - w.x2) < .001 || Math.abs(w.y1 - w.y2) < .001);
   p.floor = FLOOR_BY_KEY[o.floor] ? o.floor : 'seramik';
   if (o.kroki && typeof o.kroki === 'object') {
     const k = o.kroki, str = (v, n) => typeof v === 'string' ? v.slice(0, n) : undefined;
@@ -194,4 +197,21 @@ function migrateOldData() {
     const p = migrateV1(JSON.parse(raw)); if (!p) return;
     Store.save(p, '');
   } catch (e) {}
+}
+
+/* Hazır dükkân şekilleri: boşluk dikdörtgenleri */
+const SHAPES = [['rect', 'Dikdörtgen'], ['L', 'L'], ['U', 'U'], ['T', 'T']];
+function shapeVoids(shape, W, D) {
+  const g = v => Math.round(v / GRID) * GRID;
+  switch (shape) {
+    case 'L': return [{id: uid(), x: r3(g(W * .55)), y: 0, w: r3(W - g(W * .55)), d: r3(g(D * .45))}];
+    case 'U': { const a = g(W * .35), b = g(W * .65); return [{id: uid(), x: r3(a), y: 0, w: r3(b - a), d: r3(g(D * .4))}]; }
+    case 'T': { const a = g(W * .3), b = g(W * .7), y = g(D * .55); return [{id: uid(), x: 0, y: r3(y), w: r3(a), d: r3(D - y)}, {id: uid(), x: r3(b), y: r3(y), w: r3(W - b), d: r3(D - y)}]; }
+  }
+  return [];
+}
+/* Şekil simgesi (SVG) */
+function shapeIcon(shape) {
+  const path = {rect: 'M4 6h28v20H4z', L: 'M4 6h15v9h13v11H4z', U: 'M4 6h9v8h10V6h9v20H4z', T: 'M4 6h28v11h-8v9H12v-9H4z'}[shape];
+  return `<svg viewBox="0 0 36 32" fill="currentColor" fill-opacity=".15" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="${path}"/></svg>`;
 }

@@ -39,10 +39,10 @@ const Ed = {
     this.P = null; this.sel = null;
     return true;
   },
-  snap() { const P = this.P; return JSON.stringify({name: P.name, sign: P.sign, floor: P.floor, kroki: P.kroki, shop: P.shop, rooms: P.rooms, items: P.items}); },
+  snap() { const P = this.P; return JSON.stringify({name: P.name, sign: P.sign, floor: P.floor, kroki: P.kroki, shop: P.shop, rooms: P.rooms, items: P.items, voids: P.voids, walls: P.walls}); },
   restore(str) {
     const o = JSON.parse(str);
-    Object.assign(this.P, {name: o.name, floor: o.floor, shop: o.shop, rooms: o.rooms, items: o.items});
+    Object.assign(this.P, {name: o.name, floor: o.floor, shop: o.shop, rooms: o.rooms, items: o.items, voids: o.voids || [], walls: o.walls || []});
     if (o.kroki) this.P.kroki = o.kroki; else delete this.P.kroki;
     if (o.sign === undefined) delete this.P.sign; else this.P.sign = o.sign;
     if (this.sel && !this.objOf(this.sel)) this.sel = null;
@@ -98,7 +98,8 @@ const Ed = {
 
   objOf(sel) {
     if (!sel || !this.P) return null;
-    return sel.k === 'room' ? this.P.rooms.find(r => r.id === sel.id) : this.P.items.find(i => i.id === sel.id);
+    const list = sel.k === 'room' ? this.P.rooms : sel.k === 'void' ? this.P.voids : sel.k === 'wall' ? this.P.walls : this.P.items;
+    return (list || []).find(o => o.id === sel.id) || null;
   },
   selObj() { return this.objOf(this.sel); },
   select(sel) {
@@ -150,8 +151,12 @@ const Ed = {
     $$('#tools2d [data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
     $$('#dock [data-dock]').forEach(b => b.classList.toggle('on', b.dataset.dock === t));
     if (t !== 'measure') Plan.measure = null;
+    Plan.hoverPt = null;
     const pill = $('#hintPill');
     if (t === 'room') { $('#hintText').textContent = 'Oda çizmek için köşeden köşeye sürükle'; pill.hidden = false; }
+    else if (t === 'wall') { $('#hintText').textContent = 'Duvar çizmek için iki nokta arasında sürükle (yatay/dikey)'; pill.hidden = false; }
+    else if (t === 'erase') { $('#hintText').textContent = 'Silgi: kapalı alana dokun ya da sürükleyerek kes'; pill.hidden = false; }
+    else if (t === 'addarea') { $('#hintText').textContent = 'Alan ekle: sürükleyerek dükkânı büyüt ya da boşluğa dokun'; pill.hidden = false; }
     else if (t === 'measure') { $('#hintText').textContent = 'Ölçmek için iki nokta arasında sürükle'; pill.hidden = false; }
     else pill.hidden = true;
     if (t !== 'select') { this.select(null); Sheets.closeAll(); }
@@ -210,7 +215,7 @@ const Ed = {
     if (!wins.length) return false;
     wins.sort((a, b) => Math.hypot(a.i.cx - x, a.i.cy - y) - Math.hypot(b.i.cx - x, b.i.cy - y));
     const {i: win, s} = wins[0];
-    let inward = s.outer ? (s.c < 0 ? 1 : -1) : ((s.h ? y : x) > s.c ? 1 : -1);
+    let inward = s.outer ? -s.n : ((s.h ? y : x) > s.c ? 1 : -1);
     it.w = r3(clamp(win.w - .1, .6, 3));
     const off = s.t / 2 + .1 + it.d / 2;
     if (s.h) { it.cx = win.cx; it.cy = r3(s.c + inward * off); it.rot = inward > 0 ? 180 : 0; }
@@ -222,6 +227,88 @@ const Ed = {
     const room = {id: nextId(P, 'r'), name: 'Oda ' + (n + 1), x: r3(r.x), y: r3(r.y), w: r3(r.w), d: r3(r.d), color: ROOM_COLORS[n % ROOM_COLORS.length]};
     this.change(() => P.rooms.push(room));
     this.select({k: 'room', id: room.id});
+  },
+
+  /* ---------- Dükkân şekli: duvar, silgi, alan ekle ---------- */
+  addWall(p0, p1) {
+    const P = this.P, w = {id: nextId(P, 'w'), x1: r3(p0[0]), y1: r3(p0[1]), x2: r3(p1[0]), y2: r3(p1[1]), t: Settings.v.wallT || INNER_T};
+    this.change(() => P.walls.push(w));
+    toast(`Duvar eklendi · ${fmtCm(Math.hypot(w.x2 - w.x1, w.y2 - w.y1))} cm`);
+  },
+  /* Alanı dükkândan çıkar: içindeki eşyalar varsa sor */
+  async removeRegion(rects, label) {
+    const P = this.P;
+    const inside = P.items.filter(it => inRects(rects, it.cx, it.cy) && !(isOpening(it) && wallOf(it, this.segs) && wallOf(it, this.segs).outer));
+    if (inside.length) {
+      const names = [...new Set(inside.map(i => i.name || TYPES[i.type].n))].slice(0, 5).join(', ');
+      const r = await choose('Alanın içinde eşya var', `${label} içinde ${inside.length} öğe var: ${names}${inside.length > 5 ? '…' : ''}. Önce bunları kaldırabilir ya da alanla birlikte silebilirsin.`,
+        [{v: 'cancel', t: 'Vazgeç'}, {v: 'del', t: 'Eşyalarla birlikte sil', danger: 1}]);
+      if (r !== 'del') return false;
+    }
+    const ids = new Set(inside.map(i => i.id));
+    const cover = r => { let a = 0; for (const q of rects) { const w = Math.min(r.x + r.w, q.x + q.w) - Math.max(r.x, q.x), d = Math.min(r.y + r.d, q.y + q.d) - Math.max(r.y, q.y); if (w > 0 && d > 0) a += w * d; } return a / (r.w * r.d); };
+    this.change(() => {
+      P.items = P.items.filter(i => !ids.has(i.id));
+      P.rooms = P.rooms.filter(r => cover(r) < .6);
+      P.walls = P.walls.filter(w => !inRects(rects, (w.x1 + w.x2) / 2, (w.y1 + w.y2) / 2));
+      for (const q of rects) P.voids.push({id: nextId(P, 'v'), x: r3(q.x), y: r3(q.y), w: r3(q.w), d: r3(q.d)});
+      reseatOpenings(P);
+    });
+    this.select(null);
+    toast(`${label} dükkândan çıkarıldı · geri almak için ↶`);
+    return true;
+  },
+  eraseAt(x, y) {
+    const P = this.P;
+    if ((P.voids || []).some(v => x > v.x && x < v.x + v.w && y > v.y && y < v.y + v.d)) return this.restoreVoidAt(x, y);
+    const rg = regionAt(P, this.segs, x, y);
+    if (!rg) { toast('Burası duvar ya da dükkânın dışı'); return; }
+    if (rg.area > shopArea(P) * .8) { toast('Bu alan dükkânın tamamı; silmek için önce Duvar çiz ile bölün', 'err'); return; }
+    const room = P.rooms.find(r => x > r.x && x < r.x + r.w && y > r.y && y < r.y + r.d);
+    this.removeRegion(rg.rects, room ? `“${room.name}”` : 'Seçilen alan');
+  },
+  cutArea(r) {
+    const P = this.P, W = P.shop.w, D = P.shop.d;
+    const x0 = clamp(r.x, 0, W), y0 = clamp(r.y, 0, D), x1 = clamp(r.x + r.w, 0, W), y1 = clamp(r.y + r.d, 0, D);
+    if (x1 - x0 < .05 || y1 - y0 < .05) { toast('Kesilecek alan dükkânın içinde olmalı'); return; }
+    const rect = {x: x0, y: y0, w: x1 - x0, d: y1 - y0};
+    if (rect.w * rect.d > shopArea(P) * .8) { toast('Dükkânın neredeyse tamamı kesilemez', 'err'); return; }
+    this.removeRegion([rect], 'Kesilen alan');
+  },
+  restoreVoidAt(x, y) {
+    const P = this.P, v = (P.voids || []).find(q => x > q.x && x < q.x + q.w && y > q.y && y < q.y + q.d);
+    if (!v) { toast(this.tool === 'addarea' ? 'Dükkânı büyütmek için dışarıya doğru sürükle' : 'Burada bina boşluğu yok'); return; }
+    this.change(() => { P.voids = P.voids.filter(q => q !== v); reseatOpenings(P); });
+    toast('Alan dükkâna geri eklendi');
+  },
+  /* Dikdörtgeni dükkâna kat: içerideyse boşluklardan düş, dışarıdaysa sınırı büyüt */
+  addArea(r) {
+    const P = this.P;
+    this.change(() => {
+      let W = P.shop.w, D = P.shop.d;
+      const nx0 = Math.min(0, r.x), ny0 = Math.min(0, r.y), nx1 = Math.max(W, r.x + r.w), ny1 = Math.max(D, r.y + r.d);
+      const dx = r3(-nx0), dy = r3(-ny0);
+      if (dx || dy) { // her şeyi kaydır
+        for (const q of P.rooms) { q.x = r3(q.x + dx); q.y = r3(q.y + dy); }
+        for (const q of P.voids) { q.x = r3(q.x + dx); q.y = r3(q.y + dy); }
+        for (const q of P.walls) { q.x1 = r3(q.x1 + dx); q.x2 = r3(q.x2 + dx); q.y1 = r3(q.y1 + dy); q.y2 = r3(q.y2 + dy); }
+        for (const q of P.items) { q.cx = r3(q.cx + dx); q.cy = r3(q.cy + dy); }
+        Plan.V.ox -= dx * Plan.V.s; Plan.V.oy -= dy * Plan.V.s;
+      }
+      const rr = {x: r.x + dx, y: r.y + dy, w: r.w, d: r.d}, old = {x: dx, y: dy, w: W, d: D};
+      const NW = r3(nx1 - nx0), ND = r3(ny1 - ny0);
+      let voids = P.voids.flatMap(v => rectMinus(v, [rr]).map(q => Object.assign(q, {id: v.id + (q.x !== v.x || q.y !== v.y ? 'b' : '')})));
+      if (NW > W + 1e-6 || ND > D + 1e-6) voids = voids.concat(rectMinus({x: 0, y: 0, w: NW, d: ND}, [old, rr]).map(q => Object.assign(q, {id: nextId(P, 'v')})));
+      const seen = new Set(); for (const v of voids) { if (seen.has(v.id)) v.id = nextId(P, 'v'); seen.add(v.id); }
+      P.voids = voids; P.shop.w = NW; P.shop.d = ND;
+      reseatOpenings(P);
+    });
+    toast(`Alan eklendi · dükkân ${fmtA(shopArea(P))} m²`);
+  },
+  setShape(shape) {
+    const P = this.P;
+    this.change(() => { P.voids = shapeVoids(shape, P.shop.w, P.shop.d); reseatOpenings(P); });
+    Plan.fit();
   },
 
   /* ---------- Seçim komutları ---------- */
@@ -237,6 +324,12 @@ const Ed = {
     }
     const o = this.selObj(); if (!o) return;
     const P = this.P;
+    if (this.sel.k === 'void') return;
+    if (this.sel.k === 'wall') {
+      const horiz = Math.abs(o.y1 - o.y2) < .001, w = Object.assign({}, o, {id: nextId(P, 'w')});
+      if (horiz) { w.y1 = w.y2 = r3(o.y1 + .6); } else { w.x1 = w.x2 = r3(o.x1 + .6); }
+      this.change(() => P.walls.push(w)); this.select({k: 'wall', id: w.id}); return;
+    }
     if (this.sel.k === 'room') {
       const r = Object.assign({}, o, {id: nextId(P, 'r'), name: o.name + ' 2'});
       r.x = r3(o.x + o.w <= P.shop.w - o.w ? o.x + o.w : o.x); r.y = r3(r.x === o.x ? o.y + o.d : o.y);
@@ -261,9 +354,14 @@ const Ed = {
     }
     const o = this.selObj(); if (!o) return;
     const k = this.sel.k;
-    this.change(() => { if (k === 'room') this.P.rooms = this.P.rooms.filter(r => r !== o); else this.P.items = this.P.items.filter(i => i !== o); });
+    this.change(() => {
+      if (k === 'room') this.P.rooms = this.P.rooms.filter(r => r !== o);
+      else if (k === 'void') { this.P.voids = this.P.voids.filter(r => r !== o); reseatOpenings(this.P); }
+      else if (k === 'wall') this.P.walls = this.P.walls.filter(r => r !== o);
+      else this.P.items = this.P.items.filter(i => i !== o);
+    });
     this.select(null);
-    toast(`${o.name || 'Öğe'} silindi · geri almak için ↶`);
+    toast(k === 'void' ? 'Alan dükkâna geri eklendi · geri almak için ↶' : `${o.name || (k === 'wall' ? 'Duvar' : 'Öğe')} silindi · geri almak için ↶`);
   },
   rotate(delta = 90) {
     if (this.multi.length) { // grubu merkezi etrafında döndür
@@ -271,7 +369,12 @@ const Ed = {
       this.change(() => { for (const it of its) { const [x, y] = rotPt(it.cx - cx, it.cy - cy, delta); it.cx = r3(cx + x); it.cy = r3(cy + y); it.rot = normRot(it.rot + delta); } });
       return;
     }
-    const o = this.selObj(); if (!o || this.sel.k === 'room') return;
+    const o = this.selObj(); if (!o || this.sel.k === 'room' || this.sel.k === 'void') return;
+    if (this.sel.k === 'wall') { // orta noktası etrafında 90°
+      const mx = (o.x1 + o.x2) / 2, my = (o.y1 + o.y2) / 2, hl = Math.hypot(o.x2 - o.x1, o.y2 - o.y1) / 2, horiz = Math.abs(o.y1 - o.y2) < .001;
+      this.change(() => { if (horiz) { o.x1 = o.x2 = r3(mx); o.y1 = r3(my - hl); o.y2 = r3(my + hl); } else { o.y1 = o.y2 = r3(my); o.x1 = r3(mx - hl); o.x2 = r3(mx + hl); } });
+      return;
+    }
     if (isOpening(o) && wallOf(o, this.segs)) { this.cycleSwing(); return; }
     this.change(() => { o.rot = normRot(o.rot + delta); });
   },
@@ -289,7 +392,8 @@ const Ed = {
     if (this.multi.length) { const its = this.multiObjs(); this.change(() => { for (const it of its) { it.cx = r3(it.cx + dx); it.cy = r3(it.cy + dy); } }, 'nudge'); return; }
     const o = this.selObj(); if (!o) return;
     this.change(() => {
-      if (this.sel.k === 'room') { o.x = r3(o.x + dx); o.y = r3(o.y + dy); }
+      if (this.sel.k === 'room' || this.sel.k === 'void') { o.x = r3(o.x + dx); o.y = r3(o.y + dy); }
+      else if (this.sel.k === 'wall') { o.x1 = r3(o.x1 + dx); o.x2 = r3(o.x2 + dx); o.y1 = r3(o.y1 + dy); o.y2 = r3(o.y2 + dy); }
       else { o.cx = r3(o.cx + dx); o.cy = r3(o.cy + dy); }
     }, 'nudge');
   },
@@ -322,6 +426,7 @@ const Ctx = {
     if (Ed.multi.length && Ed.view === '2d' && !act) {
       const B = Ed.groupBox(Ed.multiObjs());
       const rotBtn = bar.querySelector('[data-act=rotate]'); rotBtn.hidden = false; rotBtn.querySelector('.lbl').textContent = 'Döndür';
+      bar.querySelector('[data-act=dup]').hidden = false; bar.querySelector('[data-act=del] .lbl').textContent = 'Sil';
       bar.hidden = false;
       const [x0, y0] = Plan.toS(B.x0, B.y0), [x1, y1] = Plan.toS(B.x1, B.y1), bw = bar.offsetWidth, bh = bar.offsetHeight;
       let top = y0 - bh - 18; if (top < 58) top = y1 + 34;
@@ -330,19 +435,21 @@ const Ctx = {
       return;
     }
     if (!o || Ed.view !== '2d' || act) { bar.hidden = true; return; }
-    const isRoom = Ed.sel.k === 'room';
+    const isRoom = Ed.sel.k === 'room' || Ed.sel.k === 'void', isWall = Ed.sel.k === 'wall';
     const rotBtn = bar.querySelector('[data-act=rotate]');
     rotBtn.hidden = isRoom;
-    const door = !isRoom && isOpening(o) && wallOf(o, Ed.segs);
+    bar.querySelector('[data-act=dup]').hidden = Ed.sel.k === 'void';
+    bar.querySelector('[data-act=del] .lbl').textContent = Ed.sel.k === 'void' ? 'Geri ekle' : 'Sil';
+    const door = !isRoom && !isWall && isOpening(o) && wallOf(o, Ed.segs);
     rotBtn.querySelector('.lbl').textContent = door ? 'Yönü çevir' : 'Döndür';
     rotBtn.title = door ? 'Açılış yönünü çevir (R)' : '90° döndür (R)';
     bar.hidden = false;
     let box;
-    if (isRoom) box = roomBox(o); else box = polyBox(itemPoly(o));
+    if (isRoom) box = roomBox(o); else if (isWall) box = wallBox(o); else box = polyBox(itemPoly(o));
     const [x0, y0] = Plan.toS(box.x0, box.y0), [x1, y1] = Plan.toS(box.x1, box.y1);
     const bw = bar.offsetWidth, bh = bar.offsetHeight;
     let top = y0 - bh - 16;
-    if (!isRoom && Ed.sel && !isRound(o) && !isOpening(o)) top -= 26; // döndürme tutamağı
+    if (!isRoom && !isWall && Ed.sel && !isRound(o) && !isOpening(o)) top -= 26; // döndürme tutamağı
     if (top < 58) top = y1 + 16;
     if (top + bh > Plan.h - 8) top = Math.max(58, Math.min(Plan.h - bh - 8, (y0 + y1) / 2 - bh / 2));
     const left = clamp((x0 + x1) / 2 - bw / 2, 8, Plan.w - bw - 8);
@@ -404,6 +511,8 @@ const Props = {
     if (Ed.multi.length) { $('#propsTitle').textContent = `${Ed.multi.length} öğe seçili`; this.multiPanel(root); }
     else if (!o) { $('#propsTitle').textContent = 'Proje'; this.project(root); }
     else if (Ed.sel.k === 'room') { $('#propsTitle').textContent = 'Oda'; this.room(root, o); }
+    else if (Ed.sel.k === 'void') { $('#propsTitle').textContent = 'Bina boşluğu'; this.voidPanel(root, o); }
+    else if (Ed.sel.k === 'wall') { $('#propsTitle').textContent = 'Duvar'; this.wallPanel(root, o); }
     else { $('#propsTitle').textContent = TYPES[o.type].n + (o.type === 'cabinet' && o.style ? ' · ' + STYLES.cabinet.find(s => s[0] === o.style)[1] : ''); this.item(root, o); }
   },
   sync() { for (const f of this.syncers) f(); for (const f of this.liveFns) f(); },
@@ -453,7 +562,7 @@ const Props = {
   project(root) {
     const P = Ed.P;
     const areaEl = h('div', {class: 'big-area'});
-    const drawArea = () => { areaEl.innerHTML = `<b>${fmtA(P.shop.w * P.shop.d)}</b><span>m² dükkân alanı</span>`; };
+    const drawArea = () => { areaEl.innerHTML = `<b>${fmtA(shopArea(P))}</b><span>m² dükkân alanı</span>`; };
     drawArea(); this.liveFns.push(drawArea);
     root.append(this.grp('Dükkân',
       this.text('Proje adı', () => P.name, v => { P.name = v.slice(0, 60); $('#pnameText').textContent = P.name || 'Proje'; }, 'pname'),
@@ -475,9 +584,10 @@ const Props = {
       for (const r of P.rooms) list.append(h('button', {class: 'ritem', type: 'button', onclick: () => { Ed.select({k: 'room', id: r.id}); Ed.openProps(); }},
         h('i', {style: `background:${r.color}`}), h('span', {class: 't'}, h('b', null, r.name), h('small', null, `${fmtM(r.w)} × ${fmtM(r.d)} m`)), h('span', {class: 'a'}, fmtA(r.w * r.d) + ' m²')));
       const roomsA = P.rooms.reduce((s, r) => s + r.w * r.d, 0);
-      if (P.rooms.length) list.append(h('div', {class: 'kv', style: 'margin-top:4px'}, h('span', null, 'Odalar toplamı'), h('b', null, fmtA(roomsA) + ' m²'), h('span', null, 'Satış / açık alan'), h('b', null, fmtA(Math.max(0, P.shop.w * P.shop.d - roomsA)) + ' m²')));
+      if (P.rooms.length) list.append(h('div', {class: 'kv', style: 'margin-top:4px'}, h('span', null, 'Odalar toplamı'), h('b', null, fmtA(roomsA) + ' m²'), h('span', null, 'Satış / açık alan'), h('b', null, fmtA(Math.max(0, shopArea(P) - roomsA)) + ' m²')));
     };
     drawRooms(); this.liveFns.push(drawRooms);
+    root.append(this.shapeGroup());
     root.append(this.grp('Zemin', this.floorPicker(() => P.floor, k => { P.floor = k; })));
     root.append(this.grp('Odalar', list));
 
@@ -506,7 +616,7 @@ const Props = {
       kv.append(h('span', null, 'Dolap / raf'), h('b', null, `${cnt} adet`),
         h('span', null, 'Dolap cephesi'), h('b', null, fmtM(cab) + ' m'),
         h('span', null, 'Banko uzunluğu'), h('b', null, fmtM(counter) + ' m'),
-        h('span', null, 'Boş zemin (yaklaşık)'), h('b', null, fmtA(Math.max(0, P.shop.w * P.shop.d - foot)) + ' m²'));
+        h('span', null, 'Boş zemin (yaklaşık)'), h('b', null, fmtA(Math.max(0, shopArea(P) - foot)) + ' m²'));
     };
     drawSum(); this.liveFns.push(drawSum);
     root.append(this.grp('Özet', kv));
@@ -624,6 +734,47 @@ const Props = {
     root.append(this.grp(null, this.actions([['Kopyala', () => Ed.duplicate(), '', ICONS.dup], ['Sil', () => Ed.remove(), 'danger', ICONS.del], ['Bitti', () => { Ed.select(null); Sheets.closeAll(); }, '', ICONS.ok]])));
   },
 
+  /* Dükkân şekli: hazır şablonlar + boşluklar + araçlar */
+  shapeGroup() {
+    const P = Ed.P, g = this.grp('Dükkân şekli');
+    const row = h('div', {class: 'shapes'});
+    for (const [k, t] of SHAPES) row.append(h('button', {type: 'button', class: 'btn', title: t + ' şekli', onclick: async () => {
+      if (P.voids.length && !await confirmBox('Şekil değiştirilsin mi?', 'Mevcut bina boşlukları bu şablonla değiştirilecek. Geri almak için ↶ kullanabilirsin.', 'Uygula')) return;
+      Ed.setShape(k); Props.render();
+    }, html: shapeIcon(k) + `<span>${t}</span>`}));
+    g.append(row);
+    const tools = h('div', {class: 'acts'});
+    for (const [t, tool, icon] of [['Duvar çiz', 'wall', ICONS.wallT], ['Silgi', 'erase', ICONS.eraser], ['Alan ekle', 'addarea', ICONS.addArea]]) tools.append(h('button', {type: 'button', class: 'btn', onclick: () => { Sheets.closeAll(); Ed.setTool(tool); }, html: icon + `<span>${t}</span>`}));
+    g.append(tools);
+    const live = h('div', {class: 'kv'});
+    const draw = () => {
+      live.innerHTML = '';
+      const va = (P.voids || []).reduce((a, v) => a + v.w * v.d, 0);
+      live.append(h('span', null, 'Kullanılabilir alan'), h('b', null, fmtA(shopArea(P)) + ' m²'));
+      if (P.voids.length) live.append(h('span', null, `Bina boşluğu (${P.voids.length})`), h('b', null, fmtA(Math.max(0, P.shop.w * P.shop.d - shopArea(P))) + ' m²'));
+      if ((P.walls || []).length) live.append(h('span', null, 'Serbest duvar'), h('b', null, P.walls.length + ' adet'));
+    };
+    draw(); this.liveFns.push(draw);
+    g.append(live, h('p', {class: 'tip', html: '<b>Silgi</b> ile odaya ya da duvarla kapanan alana dokun → dükkândan çıkar (L, U şekli). Sürükleyerek köşe/çentik kesebilirsin. <b>Alan ekle</b> ile dışarı doğru sürükleyip dükkânı büyüt. <b>Duvar çiz</b> ile alanı böl.'}));
+    return g;
+  },
+  voidPanel(root, v) {
+    root.append(this.grp(null,
+      h('p', {class: 'tip'}, 'Bu alan dükkâna dahil değil (bina boşluğu, komşu, ışıklık…). Çevresine dış duvar çizilir; alan hesabına girmez.'),
+      h('div', {class: 'prow'}, this.num('Genişlik', () => v.w, x => { v.w = x; }, {unit: 'm', min: .1, max: 200, key: 'vw'}), this.num('Derinlik', () => v.d, x => { v.d = x; }, {unit: 'm', min: .1, max: 200, key: 'vd'})),
+      h('div', {class: 'prow'}, this.num('Sol kenar (X)', () => v.x, x => { v.x = x; }, {unit: 'm', min: -50, max: 200, key: 'vx'}), this.num('Üst kenar (Y)', () => v.y, x => { v.y = x; }, {unit: 'm', min: -50, max: 200, key: 'vy'}))));
+    root.append(this.grp(null, h('button', {type: 'button', class: 'btn full primary', onclick: () => Ed.remove()}, 'Dükkâna geri ekle'),
+      h('button', {type: 'button', class: 'btn full', style: 'margin-top:6px', onclick: () => { Ed.select(null); Sheets.closeAll(); }}, 'Bitti')));
+  },
+  wallPanel(root, w) {
+    const horiz = () => Math.abs(w.y1 - w.y2) < .001;
+    const len = () => Math.hypot(w.x2 - w.x1, w.y2 - w.y1);
+    root.append(this.grp(null,
+      this.num('Uzunluk', len, L => { if (horiz()) w.x2 = r3(w.x1 + Math.sign(w.x2 - w.x1 || 1) * L); else w.y2 = r3(w.y1 + Math.sign(w.y2 - w.y1 || 1) * L); }, {min: .1, max: 100, key: 'wl'}),
+      h('div', {class: 'pf'}, h('label', null, 'Kalınlık (cm)'), this.chips([[.1, '10'], [.15, '15'], [.2, '20'], [.25, '25']], () => w.t, t => { Ed.change(() => { w.t = t; }); Settings.set('wallT', t); })),
+      h('p', {class: 'tip'}, `${horiz() ? 'Yatay' : 'Dikey'} duvar. Uçlarındaki tutamaçlarla uzat/kısalt, gövdesinden sürükleyerek taşı. Kapı ve pencereler bu duvara da oturur.`)));
+    root.append(this.grp(null, this.actions([['Döndür', () => Ed.rotate(90), '', ICONS.rotR], ['Kopyala', () => Ed.duplicate(), '', ICONS.dup], ['Sil', () => Ed.remove(), 'danger', ICONS.del]])));
+  },
   /* Çoklu seçim paneli: hizala, dağıt, döndür, kopyala, sil */
   multiPanel(root) {
     const its = Ed.multiObjs();
@@ -732,6 +883,9 @@ const ICONS = {
   camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>',
   video: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg>',
   kroki: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M9 9h6v8H9zM12 9v4h3"/></svg>',
+  wallT: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9h18M3 15h18M7 9v6M12 9v6M17 9v6"/></svg>',
+  eraser: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M14 4l6 6-9 9H6l-3-3z"/><path d="M9 9l6 6M6 19h14"/></svg>',
+  addArea: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h10v6h6v10H4z"/><path d="M17 3v6M14 6h6" stroke-width="2.2"/></svg>',
   png: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>',
   json: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 4v12m0 0l-5-5m5 5l5-5"/><path d="M4 18v2h16v-2"/></svg>',
   share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.3M8.2 13.2l7.6 4.3"/></svg>',
