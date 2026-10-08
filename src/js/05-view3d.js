@@ -234,8 +234,16 @@ const View3D = {
     for (const [x, z, w, d] of [[W / 2, -SW - .05, W + SW * 2 + .1, .1], [W / 2, D + SW + .05, W + SW * 2 + .1, .1], [-SW - .05, D / 2, .1, D + SW * 2], [W + SW + .05, D / 2, .1, D + SW * 2]]) this.box(root, w, .04, d, curb, x, -.01, z);
 
     // İç zemin (seramik)
-    const floor = new T.Mesh(new T.PlaneGeometry(W, D), this.floorMat(P.floor, W, D, 0, 0));
-    floor.rotation.x = -Math.PI / 2; floor.position.set(W / 2, 0, D / 2); floor.receiveShadow = true; floor.userData.floor = 1; root.add(floor);
+    for (const fr of shopRects(P)) { // dükkân şekline göre zemin parçaları
+      const floor = new T.Mesh(new T.PlaneGeometry(fr.w, fr.d), this.floorMat(P.floor, fr.w, fr.d, fr.x, fr.y));
+      floor.rotation.x = -Math.PI / 2; floor.position.set(fr.x + fr.w / 2, 0, fr.y + fr.d / 2); floor.receiveShadow = true; floor.userData.floor = 1; root.add(floor);
+    }
+    for (const v of P.voids || []) { // bina boşluğu: koyu, taralı olmayan düz zemin
+      const x0 = clamp(v.x, 0, W), y0 = clamp(v.y, 0, D), x1 = clamp(v.x + v.w, 0, W), y1 = clamp(v.y + v.d, 0, D);
+      if (x1 - x0 < .01 || y1 - y0 < .01) continue;
+      const vm = new T.Mesh(new T.PlaneGeometry(x1 - x0, y1 - y0), this.mat(dark ? '#3A403D' : '#B9BAB5', {roughness: .95}));
+      vm.rotation.x = -Math.PI / 2; vm.position.set((x0 + x1) / 2, -.006, (y0 + y1) / 2); vm.receiveShadow = true; root.add(vm);
+    }
 
     // Oda zeminleri + etiketleri
     for (const r of P.rooms) {
@@ -262,7 +270,7 @@ const View3D = {
       if (b - a < 0.005 || y1 - y0 < 0.005) return;
       const len = b - a, mid = (a + b) / 2, hh = y1 - y0 - dz;
       const mats = [side, side, cap, side, side, side];
-      if (s.outer) mats[s.h ? (s.c < 0 ? 5 : 4) : (s.c < 0 ? 1 : 0)] = facade;
+      if (s.outer) mats[s.h ? (s.n < 0 ? 5 : 4) : (s.n < 0 ? 1 : 0)] = facade;
       const m = s.h ? this.box(root, len, hh, s.t, mats, mid, y0 + hh / 2, s.c) : this.box(root, s.t, hh, len, mats, s.c, y0 + hh / 2, mid);
       m.userData.wall = 1; m.userData.seg = s; m.userData.y0 = y0;
       if (y0 < .01) this.wallAo(root, s, a, b);
@@ -339,11 +347,14 @@ const View3D = {
   buildCeiling(P, H) {
     const T = this.T, W = P.shop.w, D = P.shop.d, g = new T.Group();
     const cm = this.mat('#F5F4F0', {roughness: .95, side: T.DoubleSide, emissive: '#F2F0EA', emissiveIntensity: .62});
-    const c = new T.Mesh(new T.PlaneGeometry(W, D), cm);
-    c.rotation.x = Math.PI / 2; c.position.set(W / 2, H - .002, D / 2); c.receiveShadow = false; c.castShadow = false; g.add(c);
+    for (const fr of shopRects(P)) {
+      const c = new T.Mesh(new T.PlaneGeometry(fr.w, fr.d), cm);
+      c.rotation.x = Math.PI / 2; c.position.set(fr.x + fr.w / 2, H - .002, fr.y + fr.d / 2); c.receiveShadow = false; c.castShadow = false; g.add(c);
+    }
     const lamp = this.mat('#FFFFFF', {emissive: '#FFFFFF', emissiveIntensity: 2.2, roughness: .4});
     const nx = Math.max(1, Math.round(W / 2.4)), nz = Math.max(1, Math.round(D / 2.4));
     for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) {
+      if (!inShop(P, (i + .5) * W / nx, (j + .5) * D / nz)) continue;
       const l = this.box(g, .6, .02, .6, lamp, (i + .5) * W / nx, H - .012, (j + .5) * D / nz); l.castShadow = false; l.receiveShadow = false;
     }
     g.visible = this.mode === 'walk';
@@ -362,9 +373,9 @@ const View3D = {
     doors.sort((a, b) => (b.it.style === 'double') - (a.it.style === 'double') || b.it.w - a.it.w);
     let s, along, doorTop = 2.2;
     if (doors.length) { s = doors[0].s; along = s.h ? doors[0].it.cx : doors[0].it.cy; doorTop = doors[0].it.h; }
-    else { s = Ed.segs.find(q => q.outer && q.h && q.c > 0); along = P.shop.w / 2; }
+    else { s = Ed.segs.filter(q => q.outer && q.h && q.n > 0).sort((a, b) => (b.eb - b.ea) - (a.eb - a.ea))[0] || Ed.segs.find(q => q.outer); along = (s.ea + s.eb) / 2; }
     const [lo, hi] = segRange(s);
-    const out = s.c < 0 ? -1 : 1;              // dışa doğru yön
+    const out = s.n;                            // dışa doğru yön
     const face = s.c + out * s.t / 2;           // dış yüz hattı
     const tex = this.signTex(text);
     const sh = .62, sl = clamp(sh * tex.aspect, 2.2, Math.max(2.2, hi - lo - .4));
@@ -1023,7 +1034,7 @@ const View3D = {
     if (outerDoors.length) {
       const dr = outerDoors[0], s = wallOf(dr, Ed.segs);
       let ix = 0, iz = 0;
-      if (s.h) iz = s.c < 0 ? 1 : -1; else ix = s.c < 0 ? 1 : -1;
+      if (s.h) iz = -s.n; else ix = -s.n;
       // Kaldırımda, tabelanın tamamı görünecek uzaklıkta başla
       const si = this.signInfo, aspect = this.w / Math.max(1, this.h);
       const htan = Math.tan(35 * D2R) * aspect;
@@ -1272,7 +1283,7 @@ const View3D = {
     doors.sort((a, b) => (b.it.style === 'double') - (a.it.style === 'double') || b.it.w - a.it.w);
     if (!doors.length) return {x: P.shop.w / 2, z: P.shop.d - .6, yaw: 0, pitch: -.06};
     const {it, s} = doors[0]; let ix = 0, iz = 0;
-    if (s.h) iz = s.c < 0 ? 1 : -1; else ix = s.c < 0 ? 1 : -1;
+    if (s.h) iz = -s.n; else ix = -s.n;
     return {x: it.cx + ix * .7, z: it.cy + iz * .7, yaw: Math.atan2(ix, -iz), pitch: -.08};
   },
   async renderImage(o) {
@@ -1300,7 +1311,7 @@ const View3D = {
       if (o.cut && o.view !== 'walk' && o.view !== 'top') {
         // Kameraya bakan dış duvarları 1 m'de kes
         const cp = this.cam.position, P = Ed.P, cutH = 1.0;
-        const facing = sg => sg && sg.outer && (sg.h ? (sg.c < 0 ? cp.z < 0 : cp.z > P.shop.d) : (sg.c < 0 ? cp.x < 0 : cp.x > P.shop.w));
+        const facing = sg => sg && sg.outer && (sg.h ? (sg.n < 0 ? cp.z < sg.c : cp.z > sg.c) : (sg.n < 0 ? cp.x < sg.c : cp.x > sg.c));
         for (const c of this.root.children) {
           if (c.userData.wall && facing(c.userData.seg)) {
             const y0 = c.userData.y0 || 0, hh = c.geometry.parameters.height, nh = Math.min(hh, cutH - y0);
@@ -1387,7 +1398,7 @@ const View3D = {
   /* Kameraya bakan dış duvarları 1 m'de keser; geri alma listesi döndürür */
   cutFacing(hideFn) {
     const cp = this.cam.position, P = Ed.P, cutH = 1.0, list = [];
-    const facing = sg => sg && sg.outer && (sg.h ? (sg.c < 0 ? cp.z < 0 : cp.z > P.shop.d) : (sg.c < 0 ? cp.x < 0 : cp.x > P.shop.w));
+    const facing = sg => sg && sg.outer && (sg.h ? (sg.n < 0 ? cp.z < sg.c : cp.z > sg.c) : (sg.n < 0 ? cp.x < sg.c : cp.x > sg.c));
     for (const c of this.root.children) {
       if (c.userData.wall && facing(c.userData.seg)) {
         const y0 = c.userData.y0 || 0, hh = c.geometry.parameters.height, nh = Math.min(hh, cutH - y0);

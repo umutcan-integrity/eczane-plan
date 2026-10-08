@@ -14,6 +14,10 @@ bilgisayarda çalışır, kurulum gerektirmez; projeler cihazın tarayıcısınd
 - **2B çizim:** Oda çiz / taşı / boyutlandır (içindekiler odayla birlikte taşınır), duvarlar oda
   kenarlarından otomatik oluşur. Öğeler: kapı, pencere, kolon; dolap (kapaklı, açık raf, çekmeceli,
   gondol, vitrin, buzdolabı); banko; masa; insan, tekerlekli sandalye ve geçiş/dönüş alanları.
+- **Dükkân şekli:** Dikdörtgen, L, U, T şablonları. **Silgi** ile odaya ya da duvarla kapanan alana dokununca
+  alan dükkândan çıkar (içinde eşya varsa sorar); sürükleyerek köşe/çentik kesilir. **Alan ekle** ile dükkân
+  dışarı doğru büyütülür ya da boşluk geri eklenir. **Duvar çiz** ile serbest bölme duvarı (10–25 cm).
+  Dış duvarlar şeklin çevresinden otomatik çizilir; alanlar, 3B, kroki ve ölçüler şekli takip eder.
 - **Ekipmanlar:** İlaç dolabı (altı çekmece, üstü raf; çekmece sırası/yan yana sayısı ve çekmece bölümü
   yüksekliği seçilebilir), OTC dolabı (ışıklı başlık), demir kozmetik standı (cam raf, ayna), demir raf (depo),
   cam önü stand (vitrin camının önüne kendiliğinden yerleşir), kırmızı-yeşil reçete dolabı, açık raf, gondol, vitrin, buzdolabı, mutfak tezgâhı (evye, çekmece, üst dolap), klozet, lavabo, banko, masa.

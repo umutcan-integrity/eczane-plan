@@ -104,7 +104,7 @@ function sheetTitle(g, P, x, y, w, sub) {
   g.textAlign = 'left'; g.textBaseline = 'alphabetic';
   g.fillStyle = '#1B211F'; g.font = `800 50px ${getFont()}`; g.fillText(P.name, x + L + 28, y + 50);
   g.fillStyle = '#626C67'; g.font = `500 26px ${getFont()}`;
-  g.fillText(`${sub} · ${fmtM(P.shop.w)} × ${fmtM(P.shop.d)} m · ${fmtA(P.shop.w * P.shop.d)} m² · tavan ${fmtM(P.shop.h)} m · ${new Date().toLocaleDateString('tr-TR')}`, x + L + 28, y + 88);
+  g.fillText(`${sub} · ${fmtM(P.shop.w)} × ${fmtM(P.shop.d)} m · ${fmtA(shopArea(P))} m² · tavan ${fmtM(P.shop.h)} m · ${new Date().toLocaleDateString('tr-TR')}`, x + L + 28, y + 88);
   g.textAlign = 'right'; g.fillStyle = '#98A09B'; g.font = `600 22px ${getFont()}`;
   g.fillText('Ölçüler: toplam m · parçalar cm', x + w, y + 50);
   g.fillText('Eczane Plan', x + w, y + 84);
@@ -355,10 +355,14 @@ const Home = {
   tpl: 'empty',
   init() {
     const form = $('#newForm');
+    this.shape = 'rect';
+    const sh = $('#newShape');
+    for (const [k, t] of SHAPES) sh.append(h('button', {type: 'button', class: 'btn' + (k === 'rect' ? ' on' : ''), 'data-v': k, title: t + ' şekli', html: shapeIcon(k) + `<span>${t}</span>`, onclick: e => { this.shape = k; $$('#newShape button').forEach(x => x.classList.toggle('on', x.dataset.v === k)); }}));
     $$('#newTpl button').forEach(b => b.onclick = () => {
       this.tpl = b.dataset.v;
       $$('#newTpl button').forEach(x => x.classList.toggle('on', x === b));
       const s = this.tpl === 'sample';
+      $('#newShapeWrap').hidden = s;
       $('#newW').disabled = $('#newD').disabled = s;
       if (s) { $('#newW').value = '13,65'; $('#newD').value = '6,95'; }
     });
@@ -370,6 +374,7 @@ const Home = {
       const w = parseNum($('#newW').value), d = parseNum($('#newD').value);
       if (!(w >= 2 && w <= 150 && d >= 2 && d <= 150)) { toast('Ölçüler 2–150 m arasında olmalı', 'err'); return; }
       const p = this.tpl === 'sample' ? sampleProject(name) : newProject(name, w, d);
+      if (this.tpl !== 'sample' && this.shape !== 'rect') p.voids = shapeVoids(this.shape, p.shop.w, p.shop.d);
       if (this.tpl !== 'sample') { Settings.set('lastW', w); Settings.set('lastD', d); }
       try { Store.save(p, makeThumb(p)); } catch (err) { toast('Depolama dolu; eski projelerden birini sil', 'err'); return; }
       $('#newName').value = '';
@@ -515,6 +520,9 @@ function onKey(e) {
     case 'v': case 'V': Ed.setTool('select'); break;
     case 'o': case 'O': Ed.setTool('room'); break;
     case 'm': case 'M': Ed.setTool('measure'); break;
+    case 'd': case 'D': Ed.setTool('wall'); break;
+    case 'e': case 'E': Ed.setTool('erase'); break;
+    case 'a': case 'A': Ed.setTool('addarea'); break;
     case 'f': case 'F': Plan.fit(); break;
     case 'g': case 'G': $('#togGrid').click(); break;
     case 's': case 'S': $('#togSnap').click(); break;
