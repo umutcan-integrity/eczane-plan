@@ -69,7 +69,7 @@ function makeThumb(P) {
     const segs = computeWalls(P);
     const dark = document.documentElement.dataset.mode === 'dark';
     const C = dark ? planColors() : LIGHT_PLAN;
-    drawPlan(c.getContext('2d'), P, V, {w: cw, h: ch, dpr: 1, C: Object.assign({}, C, {bg: dark ? C.bg : '#F1F3EF'}), segs, A: analyze(P, segs), grid: false, clear: false, labels: false, dims: false});
+    drawPlan(c.getContext('2d'), P, V, {w: cw, h: ch, dpr: 1, C: Object.assign({}, C, {bg: dark ? (C.glass ? '#121B31' : C.bg) : '#F1F3EF', glass: false}), segs, A: analyze(P, segs), grid: false, clear: false, labels: false, dims: false});
     return c.toDataURL('image/jpeg', .82);
   } catch (e) { return ''; }
 }
@@ -304,21 +304,23 @@ async function startVideo(st) {
 const Theme = {
   apply() {
     const v = Settings.v, root = document.documentElement;
-    const mode = v.mode === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : v.mode;
+    const glass = v.mode === 'glass';
+    const mode = glass ? 'dark' : v.mode === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : v.mode;
     root.dataset.mode = mode;
+    if (glass) root.dataset.glass = '1'; else delete root.dataset.glass;
     const a = ACCENTS[v.accent] || ACCENTS.yesil;
     const col = mode === 'dark' ? a.d : a.l;
     root.style.setProperty('--accent', col);
     root.style.setProperty('--accent-ink', mode === 'dark' ? '#0E1512' : '#FFFFFF');
-    const meta = $('meta[name=theme-color]'); if (meta) meta.content = mode === 'dark' ? '#1B201E' : '#FFFFFF';
+    const meta = $('meta[name=theme-color]'); if (meta) meta.content = glass ? '#0A1020' : mode === 'dark' ? '#1B201E' : '#FFFFFF';
     if (Ed.P) { Plan.req(); View3D.markDirty(); View3D.miniDirty = true; Props.render(); }
   },
   dialog() {
     return modal(b => {
       b.append(h('h2', null, 'Görünüm'));
-      const modes = [['auto', 'Sistem'], ['light', 'Açık'], ['dark', 'Koyu']];
+      const modes = [['auto', 'Sistem'], ['light', 'Açık'], ['dark', 'Koyu'], ['glass', 'Şeffaf']];
       const seg = h('div', {class: 'seg', style: 'width:100%'});
-      const drawSeg = () => { seg.innerHTML = ''; for (const [k, t] of modes) seg.append(h('button', {type: 'button', class: Settings.v.mode === k ? 'on' : '', style: 'flex:1', onclick: () => { Settings.set('mode', k); Theme.apply(); drawSeg(); }}, t)); };
+      const drawSeg = () => { seg.innerHTML = ''; for (const [k, t] of modes) seg.append(h('button', {type: 'button', class: Settings.v.mode === k ? 'on' : '', style: 'flex:1;padding:0 6px', onclick: () => { Settings.set('mode', k); Theme.apply(); drawSeg(); drawAcc(); }}, t)); };
       drawSeg();
       b.append(h('div', {class: 'fl'}, h('span', null, 'Tema'), seg));
       const acc = h('div', {class: 'accents'});

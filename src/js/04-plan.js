@@ -7,7 +7,7 @@ const LIGHT_PLAN = {bg: '#FFFFFF', floor: '#FFFFFF', grid: '#EEF0EC', grid2: '#D
 function planColors() {
   const cs = getComputedStyle(document.documentElement), g = n => cs.getPropertyValue(n).trim();
   return {bg: g('--plan-bg'), floor: g('--plan-floor'), grid: g('--plan-grid'), grid2: g('--plan-grid2'), wall: g('--plan-wall'), ink: g('--plan-ink'),
-    muted: g('--plan-muted'), accent: g('--accent'), danger: g('--danger'), warn: g('--warn'), ok: g('--ok'), dark: document.documentElement.dataset.mode === 'dark'};
+    muted: g('--plan-muted'), accent: g('--accent'), danger: g('--danger'), warn: g('--warn'), ok: g('--ok'), dark: document.documentElement.dataset.mode === 'dark', glass: !!document.documentElement.dataset.glass};
 }
 
 /* ---------- Çizim (ekrana, küçük resme ve PNG'ye ortak) ---------- */
@@ -19,7 +19,8 @@ function drawPlan(ctx, P, V, o) {
   const px = 1 / s;
   const sx = x => x * s + V.ox, sy = y => y * s + V.oy;
   ST();
-  ctx.fillStyle = C.bg; ctx.fillRect(0, 0, o.w, o.h);
+  // Şeffaf temada sahne arkası (renk geçişi) görünsün diye tuval temizlenir
+  if (C.glass) ctx.clearRect(0, 0, o.w, o.h); else { ctx.fillStyle = C.bg; ctx.fillRect(0, 0, o.w, o.h); }
   WT();
   const ftint = k => { const F = FLOOR_BY_KEY[k]; return F ? mixHex(C.floor.startsWith('#') ? C.floor : '#FFFFFF', F.base, C.dark ? .16 : .4) : null; };
   ctx.fillStyle = ftint(P.floor) || C.floor; ctx.fillRect(0, 0, W, D);
