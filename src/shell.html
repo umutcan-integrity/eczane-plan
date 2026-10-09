@@ -15,7 +15,7 @@
 <title>Eczane Plan</title>
 <script>
 /* Tema, ilk boyamadan önce uygulanır (yanıp sönmeyi önler) */
-(function(){try{var s=JSON.parse(localStorage.getItem('eczplan.v2.settings')||'{}');var m=s.mode||'auto';if(m==='auto')m=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.mode=m;}catch(e){}})();
+(function(){try{var s=JSON.parse(localStorage.getItem('eczplan.v2.settings')||'{}');var m=s.mode||'auto';var r=document.documentElement;if(m==='glass'){r.dataset.glass='1';m='dark';}if(m==='auto')m=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';r.dataset.mode=m;}catch(e){}})();
 </script>
 <style>
 /*@CSS@*/

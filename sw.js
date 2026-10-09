@@ -1,5 +1,5 @@
 /* Eczane Plan — çevrimdışı çalışma için önbellek */
-const CACHE = 'eczplan-57ae05082f';
+const CACHE = 'eczplan-916c6d6a25';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './vendor/three.module.min.js'];
 
 self.addEventListener('install', e => {

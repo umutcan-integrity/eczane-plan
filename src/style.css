@@ -55,7 +55,7 @@ svg{flex:none}
 .icon-btn:disabled{opacity:.35;cursor:default;background:transparent}
 .icon-btn svg{width:20px;height:20px}
 .seg{display:inline-flex;background:var(--surface-3);border-radius:var(--r-sm);padding:3px;gap:2px}
-.seg button{border:0;background:transparent;border-radius:calc(var(--r-sm) - 3px);padding:0 14px;min-height:32px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.seg button{justify-content:center;border:0;background:transparent;border-radius:calc(var(--r-sm) - 3px);padding:0 14px;min-height:32px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
 .seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
 .seg button svg{width:16px;height:16px}
 
@@ -188,6 +188,7 @@ svg{flex:none}
 .chips button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
 .acts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .acts .btn{min-height:40px;padding:0 8px;font-size:13px}
+.acts.stack .btn{flex-direction:column;gap:3px;min-height:54px;padding:4px;font-size:12.5px;min-width:0}
 .kv{display:grid;grid-template-columns:1fr auto;gap:5px 10px;font-size:13.5px}
 .kv span{color:var(--muted)}
 .kv b{font:600 13.5px/1.35 var(--mono);text-align:right;font-variant-numeric:tabular-nums}
@@ -326,3 +327,113 @@ dialog.modal.wide{width:min(960px,calc(100vw - 28px))}
 .shapes .btn.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent) inset;color:var(--accent)}
 .shapes .btn span{color:var(--ink)}
 .toast{border-radius:16px}
+
+/* =====================================================================
+   Şeffaf tema (glassmorphism): renkli arka plan üzerinde buzlu cam yüzeyler
+   ===================================================================== */
+:root[data-glass]{
+  --bg:#0A1020;
+  --surface:rgba(255,255,255,.075); --surface-2:rgba(255,255,255,.11); --surface-3:rgba(255,255,255,.15);
+  --line:rgba(255,255,255,.13); --line-2:rgba(255,255,255,.22);
+  --ink:#F3F6FC; --muted:rgba(226,233,245,.72); --faint:rgba(226,233,245,.46);
+  --danger:#FF7A6B; --warn:#F5B95A; --ok:#4ADE9A;
+  --plan-bg:rgba(10,16,32,.8); --plan-floor:#141E36; --plan-grid:#1B2743; --plan-grid2:#28385E;
+  --plan-wall:#DCE5F4; --plan-ink:#F3F6FC; --plan-muted:#94A3BF;
+  --scene-bg:#0C1324;
+  --glass:linear-gradient(155deg,rgba(255,255,255,.14),rgba(255,255,255,.04) 60%);
+  --glass-tint:rgba(18,26,48,.42);
+  --glass-blur:blur(24px) saturate(170%);
+  --glass-edge:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 1px rgba(255,255,255,.04);
+  --shadow:0 10px 30px rgba(0,0,0,.28);
+  --shadow-lg:0 24px 60px rgba(0,0,0,.45);
+  --r:22px; --r-sm:14px; --r-xs:11px;
+}
+:root[data-glass] body{background:var(--bg)}
+:root[data-glass] body::before{content:"";position:fixed;inset:-10%;z-index:-1;pointer-events:none;background:
+  radial-gradient(38% 34% at 10% 6%,color-mix(in srgb,var(--accent) 40%,transparent),transparent 72%),
+  radial-gradient(42% 38% at 94% 14%,rgba(99,102,241,.40),transparent 72%),
+  radial-gradient(48% 42% at 80% 94%,rgba(217,70,239,.24),transparent 72%),
+  radial-gradient(44% 40% at 6% 90%,rgba(14,165,233,.28),transparent 72%),
+  linear-gradient(180deg,#0C1426,#090E1B)}
+:root[data-glass] .editor,:root[data-glass] .stage{background:transparent}
+:root[data-glass] .stage.is3d{background:var(--scene-bg)}
+
+/* cam yüzeyler */
+:root[data-glass] :is(.card,.bar,.side,.float,.menu,.dock,dialog.modal,.walkhint,.hintpill,.toast,.joy){
+  background:var(--glass),var(--glass-tint);border:1px solid var(--line);
+  -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+  box-shadow:var(--shadow),var(--glass-edge)}
+:root[data-glass] .card{border-radius:24px}
+:root[data-glass] .proj:hover{box-shadow:var(--shadow-lg),var(--glass-edge);border-color:var(--line-2)}
+:root[data-glass] .proj .th{background:rgba(8,13,26,.35)}
+:root[data-glass] .float{border-radius:18px}
+:root[data-glass] .hintpill,:root[data-glass] .toast{color:var(--ink)}
+:root[data-glass] .toast.err{background:color-mix(in srgb,var(--danger) 72%,transparent);color:#fff;border-color:color-mix(in srgb,var(--danger) 80%,#fff)}
+:root[data-glass] dialog.modal{background:var(--glass),rgba(16,24,44,.62);border-radius:26px}
+:root[data-glass] dialog.modal::backdrop{background:rgba(4,8,18,.45);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+:root[data-glass] .menu{background:var(--glass),rgba(16,24,44,.6);border-radius:20px}
+:root[data-glass] .menu button:hover{background:rgba(255,255,255,.1)}
+:root[data-glass] .walkhint{color:var(--ink)}
+:root[data-glass] .stage canvas.minimap{border-radius:16px;border-color:var(--line-2);box-shadow:var(--shadow),var(--glass-edge)}
+:root[data-glass] .kprev{border-radius:14px}
+
+/* düzenleyici: yüzen paneller */
+:root[data-glass] .bar{margin:10px 10px 0;border-radius:22px}
+:root[data-glass] .side{overflow:hidden;border-radius:24px}
+:root[data-glass] .side-l{margin:10px 0 10px 10px}
+:root[data-glass] .side-r{margin:10px 10px 10px 0}
+:root[data-glass] .stage{margin:10px;border-radius:24px}
+:root[data-glass] .pname:hover{background:rgba(255,255,255,.1)}
+
+/* butonlar */
+:root[data-glass] .btn{border-radius:999px;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+:root[data-glass] .btn:hover{background:rgba(255,255,255,.15)}
+:root[data-glass] .btn.primary{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 80%,#fff),var(--accent));border-color:color-mix(in srgb,var(--accent) 65%,#fff);color:var(--accent-ink);box-shadow:0 8px 22px color-mix(in srgb,var(--accent) 38%,transparent),inset 0 1px 0 rgba(255,255,255,.45)}
+:root[data-glass] .btn.primary:hover{filter:brightness(1.07)}
+:root[data-glass] .btn.ghost{background:transparent;border-color:transparent;box-shadow:none}
+:root[data-glass] .btn.ghost:hover{background:rgba(255,255,255,.1)}
+:root[data-glass] .btn.danger{background:color-mix(in srgb,var(--danger) 16%,transparent);border-color:color-mix(in srgb,var(--danger) 42%,transparent);color:var(--danger)}
+:root[data-glass] .btn.danger:hover{background:color-mix(in srgb,var(--danger) 26%,transparent)}
+:root[data-glass] :is(.shapes,.aligns,.acts) .btn{border-radius:var(--r-sm)}
+:root[data-glass] .icon-btn{border-radius:50%;border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+:root[data-glass] .icon-btn:hover{background:rgba(255,255,255,.15)}
+:root[data-glass] .icon-btn:disabled{background:rgba(255,255,255,.03)}
+:root[data-glass] .seg{background:rgba(0,0,0,.24);border-radius:999px;box-shadow:inset 0 1px 2px rgba(0,0,0,.3),inset 0 0 0 1px rgba(255,255,255,.07)}
+:root[data-glass] .seg button{border-radius:999px}
+:root[data-glass] .seg button.on{background:rgba(255,255,255,.2);color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 4px 12px rgba(0,0,0,.25)}
+:root[data-glass] .tb{border-radius:12px}
+:root[data-glass] .tb:hover{background:rgba(255,255,255,.12)}
+:root[data-glass] .tb.on{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 80%,#fff),var(--accent));color:var(--accent-ink);box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 36%,transparent),inset 0 1px 0 rgba(255,255,255,.4)}
+:root[data-glass] .tb.tog.on{background:color-mix(in srgb,var(--accent) 24%,transparent);color:var(--ink);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 60%,transparent)}
+:root[data-glass] .hintpill button,:root[data-glass] .dock button.main{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 80%,#fff),var(--accent));color:var(--accent-ink);box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 36%,transparent),inset 0 1px 0 rgba(255,255,255,.4)}
+:root[data-glass] .logo i{border-radius:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 65%,#fff),var(--accent) 55%,color-mix(in srgb,var(--accent) 55%,#7C3AED));box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.45)}
+
+/* seçim kutuları, listeler */
+:root[data-glass] :is(.tpl,.floors,.swing,.chips) button.on,:root[data-glass] .shapes .btn.on{background:color-mix(in srgb,var(--accent) 22%,transparent);border-color:color-mix(in srgb,var(--accent) 75%,#fff)}
+:root[data-glass] .pal button{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+:root[data-glass] .pal button:hover{background:color-mix(in srgb,var(--accent) 16%,transparent);border-color:color-mix(in srgb,var(--accent) 55%,transparent)}
+:root[data-glass] .ritem{background:rgba(255,255,255,.06)}
+:root[data-glass] .ritem:hover{background:rgba(255,255,255,.12)}
+:root[data-glass] .issue{background:color-mix(in srgb,var(--danger) 16%,transparent)}
+:root[data-glass] .issue.w{background:color-mix(in srgb,var(--warn) 16%,transparent)}
+:root[data-glass] .accents button{border-color:rgba(10,16,32,.9)}
+
+/* giriş alanları */
+:root[data-glass] :is(.inp,.num,.pf input[type=text]){background:rgba(0,0,0,.2);border-color:rgba(255,255,255,.16);box-shadow:inset 0 1px 2px rgba(0,0,0,.22)}
+:root[data-glass] :is(.inp,.pf input[type=text]):focus,:root[data-glass] .num:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
+:root[data-glass] .num input,:root[data-glass] .pf .num input[type=text],:root[data-glass] .pf .num input[type=text]:focus{background:transparent;border:0;box-shadow:none}
+:root[data-glass] .num button{background:rgba(255,255,255,.06)}
+:root[data-glass] .num button:hover{background:rgba(255,255,255,.14)}
+:root[data-glass] .switch input{background:rgba(255,255,255,.18);box-shadow:inset 0 1px 2px rgba(0,0,0,.3)}
+:root[data-glass] .switch input:checked{background:var(--accent)}
+
+@media (max-width:900px){
+  :root[data-glass] .bar{margin:6px 6px 0;border-radius:20px}
+  :root[data-glass] .stage{margin:6px 0 0;border-radius:0}
+  :root[data-glass] .side,:root[data-glass] .side-l,:root[data-glass] .side-r{margin:0;border-radius:26px 26px 0 0;border-bottom:0;background:var(--glass),rgba(14,20,38,.8)}
+  :root[data-glass] .dock{margin:6px 8px calc(8px + env(safe-area-inset-bottom));padding:6px;border-radius:24px}
+  :root[data-glass] .dock button{border-radius:18px}
+}
+@media (prefers-reduced-transparency:reduce){
+  :root[data-glass] :is(.card,.bar,.side,.float,.menu,.dock,dialog.modal,.walkhint,.hintpill,.toast,.joy){background:#152038}
+}

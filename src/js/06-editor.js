@@ -743,7 +743,7 @@ const Props = {
       Ed.setShape(k); Props.render();
     }, html: shapeIcon(k) + `<span>${t}</span>`}));
     g.append(row);
-    const tools = h('div', {class: 'acts'});
+    const tools = h('div', {class: 'acts stack'});
     for (const [t, tool, icon] of [['Duvar çiz', 'wall', ICONS.wallT], ['Silgi', 'erase', ICONS.eraser], ['Alan ekle', 'addarea', ICONS.addArea]]) tools.append(h('button', {type: 'button', class: 'btn', onclick: () => { Sheets.closeAll(); Ed.setTool(tool); }, html: icon + `<span>${t}</span>`}));
     g.append(tools);
     const live = h('div', {class: 'kv'});

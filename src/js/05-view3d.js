@@ -1155,7 +1155,7 @@ const View3D = {
       const s = cw / W, V = {s, ox: .6 * s, oy: .6 * s};
       const off = document.createElement('canvas'); off.width = cv.width; off.height = cv.height;
       const C = planColors();
-      drawPlan(off.getContext('2d'), P, V, {w: cw, h: ch, dpr, C: Object.assign({}, C, {bg: C.floor}), segs: Ed.segs, A: Ed.A, grid: false, clear: false, labels: false, dims: false});
+      drawPlan(off.getContext('2d'), P, V, {w: cw, h: ch, dpr, C: Object.assign({}, C, {bg: C.floor, glass: false}), segs: Ed.segs, A: Ed.A, grid: false, clear: false, labels: false, dims: false});
       this.mini = {cw, ch, V, off}; this.miniDirty = false;
     }
     const m = this.mini, g = cv.getContext('2d'), k = this.wk;
