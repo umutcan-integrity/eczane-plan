@@ -6,7 +6,7 @@ function rotPt(x, y, deg) { const a = deg * D2R, c = Math.cos(a), s = Math.sin(a
 function toWorld(it, lx, ly) { const [x, y] = rotPt(lx, ly, it.rot || 0); return [it.cx + x, it.cy + y]; }
 function toLocal(it, wx, wy) { return rotPt(wx - it.cx, wy - it.cy, -(it.rot || 0)); }
 function localPoly(it, x0, y0, x1, y1) { return [toWorld(it, x0, y0), toWorld(it, x1, y0), toWorld(it, x1, y1), toWorld(it, x0, y1)]; }
-const isRound = it => (it.type === 'table' && it.style === 'round') || (it.type === 'zone' && it.style === 'circle');
+const isRound = it => (it.type === 'table' && it.style === 'round') || (it.type === 'zone' && it.style === 'circle') || (it.type === 'light' && it.style === 'pendant');
 const isSolid = it => !!TYPES[it.type]?.solid;
 const isOpening = it => it.type === 'door' || it.type === 'window';
 function itemPoly(it) {
@@ -440,4 +440,46 @@ function reseatOpenings(P) {
     if (s) { const q = quarter(it.rot), keepRot = it.rot, keepFlip = it.flip; seatOnWall(it, s, s.h ? it.cx : it.cy); if (q >= 0 && (q % 2 === 0) === !!s.h) { it.rot = keepRot; it.flip = keepFlip; } it.cx = r3(it.cx); it.cy = r3(it.cy); return true; }
     return inShop(P, it.cx, it.cy);
   });
+}
+
+/* Aydınlık hesabı (çalışma düzlemi 0,75 m). Noktasal kaynak modeli: I(α) = I0·cosᵐα;
+   oda duvarları ışığı keser (aynı bölgedeki kaynaklar sayılır) + bölge başına yaklaşık dolaylı bileşen. */
+let _luxCache = null;
+function luxGrid(P) {
+  const L = P.items.filter(isLight); if (!L.length) return null;
+  const key = JSON.stringify([P.shop, P.voids, P.rooms.map(r => [r.x, r.y, r.w, r.d]), L.map(i => [i.style, i.cx, i.cy, i.w, i.rot, i.cnt, i.sp, i.watt, i.mount, i.drop])]);
+  if (_luxCache && _luxCache.key === key) return _luxCache.v;
+  const W = P.shop.w, D = P.shop.d, H = P.shop.h || 2.8, WP = .75, MF = .8;
+  const st = clamp(Math.sqrt(W * D / 2600), .1, .4), nx = Math.ceil(W / st), ny = Math.ceil(D / st);
+  const rooms = [...P.rooms].sort((a, b) => a.w * a.d - b.w * b.d);
+  const region = (x, y) => { for (let i = 0; i < rooms.length; i++) { const r = rooms[i]; if (x > r.x && x < r.x + r.w && y > r.y && y < r.y + r.d) return i; } return -1; };
+  const src = [], flux = new Map();
+  const add = (x, z, y, lm, m) => { const rg = region(x, z); src.push({x, z, h: Math.max(.3, y - WP), rg, I0: lm * (m + 1) / (2 * Math.PI), m}); flux.set(rg, (flux.get(rg) || 0) + lm); };
+  for (const it of L) {
+    const lm = lightLm(it) * MF;
+    const y = H - lightDepth(it);
+    if (it.style === 'spot') { const n = it.cnt || 1, m = Math.log(.5) / Math.log(Math.cos(28 * D2R)); for (let i = 0; i < n; i++) { const [x, z] = toWorld(it, n > 1 ? -it.w / 2 + .05 + i * it.sp : 0, 0); add(x, z, y, lm / n, m); } }
+    else if (it.style === 'linear') { const k = Math.max(1, Math.round(it.w / .3)); for (let i = 0; i < k; i++) { const [x, z] = toWorld(it, -it.w / 2 + (i + .5) * it.w / k, 0); add(x, z, y, lm / k, 1.2); } }
+    else add(it.cx, it.cy, y, lm * .75, 1);
+  }
+  const area = new Map(); let open = shopArea(P);
+  rooms.forEach((r, i) => { area.set(i, r.w * r.d); open -= r.w * r.d; }); area.set(-1, Math.max(1, open));
+  const E = new Float32Array(nx * ny);
+  let sum = 0, n = 0, mn = Infinity, mx = 0, sSum = 0, sN = 0;
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    const x = (i + .5) * st, z = (j + .5) * st, k = j * nx + i;
+    if (!inShop(P, x, z)) { E[k] = -1; continue; }
+    const rg = region(x, z);
+    let e = (flux.get(rg) || 0) * .06 / (area.get(rg) || 1); // dolaylı (yansıyan) bileşen
+    for (const s of src) {
+      if (s.rg !== rg) continue;
+      const dx = x - s.x, dz = z - s.z, d2 = dx * dx + dz * dz + s.h * s.h, c = s.h / Math.sqrt(d2);
+      e += s.I0 * Math.pow(c, s.m + 3) / (s.h * s.h) * .62; // duvar/tavan kayıpları (≈ kullanım faktörü)
+    }
+    E[k] = e; sum += e; n++; mn = Math.min(mn, e); mx = Math.max(mx, e);
+    if (rg === -1) { sSum += e; sN++; }
+  }
+  const v = {nx, ny, st, E, avg: n ? sum / n : 0, min: n ? mn : 0, max: mx, sales: sN ? sSum / sN : 0};
+  _luxCache = {key, v};
+  return v;
 }

@@ -95,6 +95,18 @@ function drawPlan(ctx, P, V, o) {
     withItem(ctx, it, () => drawSolid(ctx, it, C, px, A.bad.has(it.id)));
   }
 
+  // Tavan katmanı: zemin soluklaşır, tavan deseni ve aydınlık haritası çizilir
+  const ceilL = o.layer === 'ceil';
+  if (ceilL) {
+    const rects = shopRects(P);
+    ctx.fillStyle = rgba(C.floor.startsWith('#') ? C.floor : '#FFFFFF', C.dark ? .74 : .68);
+    for (const fr of rects) ctx.fillRect(fr.x, fr.y, fr.w, fr.d);
+    ctx.save(); ctx.beginPath(); for (const fr of rects) ctx.rect(fr.x, fr.y, fr.w, fr.d); ctx.clip();
+    if (o.lux) drawLuxMap(ctx, P, o.lux);
+    drawCeilPattern(ctx, P, C, px, W, D);
+    ctx.restore();
+  }
+
   // Duvarlar
   ctx.fillStyle = C.wall;
   for (const r of wallPieces(segs)) ctx.fillRect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0);
@@ -106,7 +118,10 @@ function drawPlan(ctx, P, V, o) {
   }
 
   // İnsanlar
-  for (const it of P.items) if (it.type === 'human') withItem(ctx, it, () => drawHuman(ctx, it, C, px));
+  if (!ceilL) for (const it of P.items) if (it.type === 'human') withItem(ctx, it, () => drawHuman(ctx, it, C, px));
+
+  // Armatürler: tavan katmanında belirgin, zemin katmanında soluk; dışa aktarımda yok
+  if (o.layer) for (const it of P.items) if (isLight(it)) withItem(ctx, it, () => drawLight(ctx, it, C, px, ceilL ? 1 : .28));
 
   // ---- Ekran uzayı: yazılar
   ST();
@@ -133,8 +148,18 @@ function drawPlan(ctx, P, V, o) {
     }
     const fItem = `600 ${10.5 * F}px ${getFont()}`;
     ctx.font = fItem;
+    if (ceilL) { // armatür etiketleri
+      ctx.font = `600 ${10 * F}px ${getMono()}`;
+      for (const it of P.items) {
+        if (!isLight(it) || s < 22 || (it.style === 'spot' && (it.cnt || 1) < 2)) continue;
+        const t = lightTag(it), [hx, hy] = halfExt(it);
+        ctx.fillStyle = C.dark ? '#F3E3A6' : '#6B5200';
+        halo(t, sx(it.cx), sy(it.cy + hy) + 9 * F);
+      }
+      ctx.font = fItem;
+    }
     for (const it of P.items) {
-      if (!(isSolid(it) || it.type === 'zone') || it.type === 'column') continue;
+      if (ceilL || !(isSolid(it) || it.type === 'zone') || it.type === 'column') continue;
       let t = it.type === 'zone' ? (it.style === 'circle' ? 'Ø ' + fmtCm(it.w) : fmtCm(Math.min(it.w, it.d)) + ' cm') : it.name;
       if (!t) continue;
       const long = it.w >= it.d, L = (long ? it.w : it.d) * s, Sh = (long ? it.d : it.w) * s;
@@ -288,6 +313,64 @@ function drawSolid(ctx, it, C, px, bad) {
   }
 }
 
+/* Armatür sembolleri (tavan planı) */
+function lightTag(it) {
+  if (it.style === 'linear') return `L${fmtCm(it.w)}` + (it.mount === 'suspended' ? ' sarkıt' : '');
+  if (it.style === 'spot') return (it.cnt > 1 ? it.cnt + '× ' : '') + 'spot';
+  return 'Avize · ' + (PENDANT_MODELS.find(m => m[0] === it.model) || PENDANT_MODELS[0])[1].toLowerCase();
+}
+function drawLight(ctx, it, C, px, a) {
+  const glow = '#F2C94C', ink = C.dark ? '#F3E3A6' : '#6B5200';
+  ctx.save(); ctx.globalAlpha = a;
+  ctx.lineWidth = 1.3 * px; ctx.strokeStyle = ink; ctx.lineJoin = 'round';
+  if (it.style === 'linear') {
+    const w = it.w, d = Math.max(it.d, 5 * px);
+    ctx.beginPath(); ctx.rect(-w / 2, -d / 2, w, d); ctx.fillStyle = rgba(glow, .8); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-w / 2 + .03, 0); ctx.lineTo(w / 2 - .03, 0); ctx.setLineDash([3 * px, 2 * px]); ctx.lineWidth = px; ctx.stroke(); ctx.setLineDash([]);
+    if (it.mount === 'suspended') for (const x of [-w / 2 + .1, w / 2 - .1]) { ctx.beginPath(); ctx.arc(x, 0, 2.4 * px, 0, 7); ctx.fillStyle = ink; ctx.fill(); }
+    if (it.mount === 'surface') { ctx.beginPath(); ctx.rect(-w / 2 - 2 * px, -d / 2 - 2 * px, w + 4 * px, d + 4 * px); ctx.lineWidth = px; ctx.stroke(); }
+  } else if (it.style === 'spot') {
+    const n = it.cnt || 1, r = Math.max(.05, 5 * px);
+    if (n > 1) { ctx.beginPath(); ctx.moveTo(-it.w / 2 + .05, 0); ctx.lineTo(it.w / 2 - .05, 0); ctx.setLineDash([2 * px, 3 * px]); ctx.lineWidth = px; ctx.stroke(); ctx.setLineDash([]); }
+    for (let i = 0; i < n; i++) {
+      const x = n > 1 ? -it.w / 2 + .05 + i * it.sp : 0, k = r * .62;
+      ctx.lineWidth = 1.3 * px;
+      ctx.beginPath(); ctx.arc(x, 0, r, 0, Math.PI * 2); ctx.fillStyle = rgba(glow, .85); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x - k, -k); ctx.lineTo(x + k, k); ctx.moveTo(x + k, -k); ctx.lineTo(x - k, k); ctx.lineWidth = px; ctx.stroke();
+      if (it.mount === 'surface') { ctx.beginPath(); ctx.arc(x, 0, r + 2.5 * px, 0, 7); ctx.stroke(); }
+    }
+  } else {
+    const R = it.w / 2;
+    ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fillStyle = rgba(glow, .2); ctx.fill();
+    ctx.setLineDash([4 * px, 3 * px]); ctx.lineWidth = px; ctx.stroke(); ctx.setLineDash([]);
+    ctx.lineWidth = 1.6 * px;
+    if (it.model === 'ring') { ctx.beginPath(); ctx.arc(0, 0, R * .92, 0, 7); ctx.lineWidth = Math.max(.03, 3 * px); ctx.strokeStyle = rgba(glow, 1); ctx.stroke(); ctx.lineWidth = px; ctx.strokeStyle = ink; ctx.stroke(); for (let i = 0; i < 3; i++) { const t = i * 2.094 - 1.571; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(t) * R * .92, Math.sin(t) * R * .92); ctx.stroke(); } }
+    else if (it.model === 'globe') { ctx.beginPath(); ctx.arc(0, 0, R * .7, 0, 7); ctx.fillStyle = rgba(glow, .7); ctx.fill(); ctx.stroke(); }
+    else { ctx.beginPath(); ctx.arc(0, 0, R * .92, 0, 7); ctx.fillStyle = rgba(C.dark ? '#555' : '#333', .35); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, R * .35, 0, 7); ctx.fillStyle = rgba(glow, .95); ctx.fill(); }
+    ctx.beginPath(); ctx.arc(0, 0, Math.max(.035, 3 * px), 0, 7); ctx.fillStyle = ink; ctx.fill();
+  }
+  ctx.restore();
+}
+/* Tavan deseni: asma tavan karoları / ahşap çıtalar */
+function drawCeilPattern(ctx, P, C, px, W, D) {
+  const c = ceilOf(P); if (c.type !== 'grid' && c.type !== 'wood') return;
+  const st = c.type === 'grid' ? .6 : .1;
+  if (st * (1 / px) < 4) return;
+  ctx.beginPath();
+  for (let y = st; y < D; y += st) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  if (c.type === 'grid') for (let x = st; x < W; x += st) { ctx.moveTo(x, 0); ctx.lineTo(x, D); }
+  ctx.strokeStyle = rgba(C.muted.startsWith('#') ? C.muted : '#6F7974', c.type === 'grid' ? .32 : .2); ctx.lineWidth = px; ctx.stroke();
+}
+/* Aydınlık (lx) haritası: ısı renkleri */
+function drawLuxMap(ctx, P, L) {
+  const ramp = [[0, [40, 60, 160]], [150, [40, 120, 220]], [300, [40, 180, 120]], [500, [240, 200, 40]], [750, [240, 120, 40]], [1100, [220, 40, 40]]];
+  const col = v => { for (let i = 1; i < ramp.length; i++) if (v <= ramp[i][0]) { const [a, ca] = ramp[i - 1], [b, cb] = ramp[i], t = (v - a) / (b - a); return ca.map((q, k) => Math.round(q + (cb[k] - q) * t)); } return ramp[ramp.length - 1][1]; };
+  for (let j = 0; j < L.ny; j++) for (let i = 0; i < L.nx; i++) {
+    const v = L.E[j * L.nx + i]; if (v < 0) continue;
+    const [r, g, b] = col(v); ctx.fillStyle = `rgba(${r},${g},${b},.34)`;
+    ctx.fillRect(i * L.st, j * L.st, L.st + .002, L.st + .002);
+  }
+}
 function drawDoor(ctx, it, C, px, onWall, bad) {
   const w = it.w, d = it.d, y = d / 2;
   const col = bad ? C.danger : C.ink;
@@ -396,7 +479,8 @@ const Plan = {
     this.C = planColors();
     const ctx = this.ctx;
     drawPlan(ctx, P, this.V, {w: this.w, h: this.h, dpr: this.dpr, C: this.C, segs: Ed.segs, A: Ed.A,
-      grid: Settings.v.grid, clear: Settings.v.clear, labels: true, dims: true});
+      grid: Settings.v.grid, clear: Settings.v.clear, labels: true, dims: true, layer: Ed.layer,
+      lux: Ed.layer === 'ceil' && Settings.v.luxMap ? luxGrid(P) : null});
     this.overlay(ctx);
     Ctx.place();
   },
@@ -549,7 +633,7 @@ const Plan = {
     if (sel.k === 'item' && isOpening(o)) gaps = doorGaps(o, Ed.segs);
     else if (sel.k === 'item') {
       const obs = [];
-      for (const it of P.items) if (it.id !== o.id && isSolid(it)) obs.push(itemBox(it));
+      for (const it of P.items) if (it.id !== o.id && (isLight(o) ? isLight(it) : isSolid(it))) obs.push(itemBox(it));
       for (const r of wallPieces(Ed.segs, op => op.type === 'door')) obs.push(r);
       gaps = gapsAround(itemBox(o), obs, 12);
     } else return;
@@ -557,7 +641,7 @@ const Plan = {
     for (const g of gaps) {
       const [x0, y0] = this.toS(g.x0, g.y0), [x1, y1] = this.toS(g.x1, g.y1);
       const L = Math.hypot(x1 - x0, y1 - y0); if (L < 4) continue;
-      const cm = gapComment(g.d), col = o.type === 'human' || o.type === 'zone' || isOpening(o) || isSolid(o) ? (cm.c === 'bad' ? C.danger : cm.c === 'warn' ? C.warn : C.ok) : C.muted;
+      const cm = gapComment(g.d), col = !isLight(o) && (o.type === 'human' || o.type === 'zone' || isOpening(o) || isSolid(o)) ? (cm.c === 'bad' ? C.danger : cm.c === 'warn' ? C.warn : C.ok) : C.muted;
       const colUse = isOpening(o) ? C.accent : col;
       ctx.strokeStyle = colUse; ctx.lineWidth = 1.3; ctx.setLineDash([]);
       ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
@@ -578,7 +662,8 @@ const Plan = {
       }
       return out;
     }
-    const canW = o.type !== 'human', canD = !['human', 'door', 'window'].includes(o.type);
+    const lt = isLight(o) ? o.style : '';
+    const canW = o.type !== 'human' && !(lt === 'spot' && (o.cnt || 1) < 2), canD = !['human', 'door', 'window'].includes(o.type) && lt !== 'linear' && lt !== 'spot';
     for (const hx of [-1, 0, 1]) for (const hy of [-1, 0, 1]) {
       if (!hx && !hy) continue;
       if ((hx && !canW) || (hy && !canD)) continue;
@@ -605,8 +690,10 @@ const Plan = {
   hitTest(wx, wy, touch) {
     const P = Ed.P, pad = (touch ? 12 : 6) / this.V.s;
     const cand = [];
+    const ceil = Ed.layer === 'ceil';
     for (let i = P.items.length - 1; i >= 0; i--) {
       const it = P.items[i];
+      if (isLight(it) !== ceil) continue; // katman: tavanda yalnız armatürler, zeminde armatürler hariç
       const [lx, ly] = toLocal(it, wx, wy);
       const hw = Math.max(it.w / 2, pad), hd = Math.max(it.d / 2, pad);
       let inside;
@@ -618,6 +705,7 @@ const Plan = {
       cand.sort((a, b) => a.pri - b.pri || a.a - b.a);
       return {k: 'item', id: cand[0].it.id};
     }
+    if (ceil) return null;
     for (const w of P.walls || []) { const b = wallBox(w); if (wx >= b.x0 - pad && wx <= b.x1 + pad && wy >= b.y0 - pad && wy <= b.y1 + pad) return {k: 'wall', id: w.id}; }
     const vd = (P.voids || []).find(v => wx > v.x && wx < v.x + v.w && wy > v.y && wy < v.y + v.d);
     if (vd) return {k: 'void', id: vd.id};
@@ -794,7 +882,7 @@ const Plan = {
         if (cancel) break;
         if (!a.moved) { if (!this.multiMode) Ed.select(null); break; }
         const x0 = Math.min(a.p0[0], a.p1[0]), x1 = Math.max(a.p0[0], a.p1[0]), y0 = Math.min(a.p0[1], a.p1[1]), y1 = Math.max(a.p0[1], a.p1[1]);
-        const inside = Ed.P.items.filter(it => { const b = itemBox(it); return b.x1 > x0 && b.x0 < x1 && b.y1 > y0 && b.y0 < y1; }).map(it => it.id);
+        const inside = Ed.P.items.filter(it => { if (isLight(it) !== (Ed.layer === 'ceil')) return false; const b = itemBox(it); return b.x1 > x0 && b.x0 < x1 && b.y1 > y0 && b.y0 < y1; }).map(it => it.id);
         const base = Ed.multi.length ? Ed.multi : (Ed.sel && Ed.sel.k === 'item' ? [Ed.sel.id] : []);
         Ed.setMulti([...new Set([...base, ...inside])]);
         break;
@@ -840,7 +928,9 @@ const Plan = {
       for (const w of P.walls || []) { xs.push(w.x1, w.x2); ys.push(w.y1, w.y2); }
     } else {
       for (const r of wallPieces(Ed.segs)) { xs.push(r.x0, r.x1); ys.push(r.y0, r.y1); }
-      for (const it of P.items) if (it.id !== sel.id && !skip.has(it.id) && (isSolid(it) || it.type === 'zone')) { const b = itemBox(it); xs.push(b.x0, b.x1, it.cx); ys.push(b.y0, b.y1, it.cy); }
+      const so = sel.k === 'item' && P.items.find(i => i.id === sel.id), lightSel = so ? isLight(so) : Ed.layer === 'ceil';
+      for (const it of P.items) if (it.id !== sel.id && !skip.has(it.id) && (lightSel ? isLight(it) : (isSolid(it) || it.type === 'zone'))) { const b = itemBox(it); xs.push(b.x0, b.x1, it.cx); ys.push(b.y0, b.y1, it.cy); }
+      if (lightSel) { for (const r of P.rooms) { xs.push(r.x, r.x + r.w, r.x + r.w / 2); ys.push(r.y, r.y + r.d, r.y + r.d / 2); } xs.push(P.shop.w / 2); ys.push(P.shop.d / 2); }
     }
     this.targets = {xs, ys};
   },
@@ -975,6 +1065,10 @@ const Plan = {
     const [dx, dy] = rotPt(ccx, ccy, o0.rot);
     o.w = r3(w); o.d = r3(d); o.cx = r3(o0.cx + dx); o.cy = r3(o0.cy + dy);
     if (isOpening(o)) { const s = wallOf(o0, Ed.segs); if (s) o.d = o0.d; }
+    if (isLight(o)) {
+      if (o.style === 'spot' && o.cnt > 1) { o.sp = r3(Math.max(.2, (o.w - .1) / (o.cnt - 1))); const cx0 = -hx * o0.w / 2; lightFix(o); const [ex, ey] = rotPt(cx0 + hx * o.w / 2, 0, o0.rot); o.cx = r3(o0.cx + ex); o.cy = r3(o0.cy + ey); }
+      else lightFix(o);
+    }
     Ed.live();
   },
 };

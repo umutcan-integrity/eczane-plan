@@ -60,7 +60,7 @@ function makeItem(e, cx, cy, extra = {}) {
     id: '', type: e.t, style: e.s || '', name: e.n, cx: r3(cx), cy: r3(cy), w: e.w, d: e.d, h: e.h, rot: 0,
     color: e.color || t.color, clear: e.clear || 0, clearB: e.clearB || 0, elev: e.elev || 0, flip: false,
     rows: e.rows || 0, cols: e.cols || 0, split: 0, label: e.label || '', upper: !!e.upper,
-  }, extra);
+  }, e.t === 'light' ? {mount: e.mount || 'recessed', watt: e.watt || 10, cnt: 1, sp: .9, cct: 4000, model: e.model || 'ring', drop: e.drop || 0} : {}, extra);
 }
 function nextId(p, pre) { p.seq = (p.seq || 1) + 1; return pre + p.seq.toString(36) + Math.random().toString(36).slice(2, 4); }
 
@@ -79,6 +79,10 @@ function normalizeProject(o) {
   p.walls = (Array.isArray(o.walls) ? o.walls : []).filter(v => v && typeof v === 'object').map(v => ({id: typeof v.id === 'string' ? v.id : uid(), x1: num(v.x1, 0), y1: num(v.y1, 0), x2: num(v.x2, 1), y2: num(v.y2, 0), t: num(v.t, INNER_T, .05, .6)}))
     .filter(w => Math.abs(w.x1 - w.x2) < .001 || Math.abs(w.y1 - w.y2) < .001);
   p.floor = FLOOR_BY_KEY[o.floor] ? o.floor : 'seramik';
+  if (o.ceil && typeof o.ceil === 'object') {
+    const t = CEILINGS.some(c => c[0] === o.ceil.type) ? o.ceil.type : 'grid';
+    p.ceil = {type: t, color: /^#[0-9a-f]{6}$/i.test(o.ceil.color) ? o.ceil.color : CEIL_COLORS[t][0]};
+  }
   if (o.kroki && typeof o.kroki === 'object') {
     const k = o.kroki, str = (v, n) => typeof v === 'string' ? v.slice(0, n) : undefined;
     p.kroki = {title: str(k.title, 60), name: str(k.name, 80), pharmacist: str(k.pharmacist, 80), address: str(k.address, 400), salesName: str(k.salesName, 60),
@@ -98,7 +102,7 @@ function normalizeProject(o) {
     if (!it || typeof it !== 'object' || !TYPES[it.type]) continue;
     let id = typeof it.id === 'string' && it.id && !ids.has(it.id) ? it.id : fresh('i'); ids.add(id);
     const styles = STYLES[it.type];
-    p.items.push({
+    const n = {
       id, type: it.type, style: styles ? (styles.some(s => s[0] === it.style) ? it.style : styles[0][0]) : '',
       name: String(it.name ?? TYPES[it.type].n).slice(0, 60),
       cx: num(it.cx, 1), cy: num(it.cy, 1), w: num(it.w, 1, MIN_ITEM, 100), d: num(it.d, .5, 0.02, 100), h: num(it.h, 1, 0, 10),
@@ -106,9 +110,47 @@ function normalizeProject(o) {
       clear: num(it.clear, 0, 0, 5), clearB: num(it.clearB, 0, 0, 5), elev: num(it.elev, 0, 0, 5), flip: !!it.flip,
       rows: Math.round(num(it.rows, 0, 0, 16)), cols: Math.round(num(it.cols, 0, 0, 8)), split: num(it.split, 0, 0, 3),
       label: String(it.label ?? '').slice(0, 30), upper: !!it.upper,
-    });
+    };
+    if (n.type === 'light') {
+      const mounts = LIGHT_MOUNTS[n.style];
+      Object.assign(n, {mount: mounts ? (mounts.some(m => m[0] === it.mount) ? it.mount : mounts[0][0]) : '', watt: num(it.watt, 10, 1, 500),
+        cnt: Math.round(num(it.cnt, 1, 1, 12)), sp: num(it.sp, .9, .2, 5), cct: CCTS.some(c => c[0] === +it.cct) ? +it.cct : 4000,
+        model: PENDANT_MODELS.some(m => m[0] === it.model) ? it.model : 'ring', drop: num(it.drop, 0, 0, 3)});
+      lightFix(n);
+    }
+    p.items.push(n);
   }
   return p;
+}
+
+/* Aydınlatma ölçü tutarlılığı: spot sırası genişliği, avize daire */
+function lightFix(it) {
+  if (it.style === 'spot') { it.cnt = clamp(Math.round(it.cnt || 1), 1, 12); it.d = .1; it.w = r3(it.cnt > 1 ? (it.cnt - 1) * it.sp + .1 : .1); }
+  else if (it.style === 'pendant') { it.d = it.w = r3(clamp(it.w, .2, 3)); if (!(it.drop > 0)) it.drop = .5; }
+  else if (it.style === 'linear') { it.d = r3(clamp(it.d, .03, .3)); if (it.mount === 'suspended' && !(it.drop > 0)) it.drop = .5; }
+  return it;
+}
+/* Armatürün tavandan aşağı uzandığı mesafe (alt ucu) */
+function lightDepth(it) {
+  if (it.style === 'pendant') return (it.drop || .7) + (it.model === 'globe' ? it.w : it.model === 'dome' ? it.w * .375 : .03);
+  if (it.style === 'linear') return it.mount === 'suspended' ? (it.drop || .5) + .07 : it.mount === 'surface' ? .07 : .01;
+  return it.mount === 'surface' ? .11 : .01;
+}
+/* Armatür ışık akısı (lm) ve gücü (W) — yaklaşık */
+function lightWatt(it) { return it.style === 'linear' ? it.watt * it.w : it.style === 'spot' ? it.watt * (it.cnt || 1) : it.watt; }
+function lightLm(it) { return lightWatt(it) * LM_PER_W; }
+function lightStats(P) {
+  const L = P.items.filter(isLight), A = Math.max(1, shopArea(P));
+  const st = {spot: 0, spots: 0, linear: 0, linM: 0, pendant: 0, W: 0, lm: 0, n: L.length};
+  for (const it of L) {
+    if (it.style === 'spot') { st.spot++; st.spots += it.cnt || 1; }
+    else if (it.style === 'linear') { st.linear++; st.linM += it.w; }
+    else st.pendant++;
+    st.W += lightWatt(it); st.lm += lightLm(it);
+  }
+  st.lux = st.lm * .44 / A;   // kullanım (0,55) × bakım (0,8) faktörü
+  st.wpm = st.W / A;
+  return st;
 }
 
 /* Örnek eczane yerleşimi (13,65 × 6,95 m) */

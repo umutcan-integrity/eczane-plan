@@ -15,6 +15,7 @@ bilgisayarda çalışır, kurulum gerektirmez; projeler cihazın tarayıcısınd
   kenarlarından otomatik oluşur. Öğeler: kapı, pencere, kolon; dolap (kapaklı, açık raf, çekmeceli,
   gondol, vitrin, buzdolabı); banko; masa; insan, tekerlekli sandalye ve geçiş/dönüş alanları.
 - **Dükkân şekli:** Dikdörtgen, L, U, T şablonları. **Silgi** ile odaya ya da duvarla kapanan alana dokununca
+- **Tavan & aydınlatma:** Asma tavan (60×60), düz alçıpan, ahşap çıta ya da açık tavan; renk seçimi. **Lineer LED** (gömme / sıva üstü / sarkıt), **spot** (tek ya da sıra) ve **avize** (halka, küre, çan) armatürleri; ışık rengi 3000K / 4000K / 6500K. **Tavan planı (T)** katmanında yalnızca armatürler düzenlenir, aydınlık haritası (lx) ve satış alanı ortalaması görünür; tek tıkla spot ızgarası ya da lineer sıralar ~500 lx hedefiyle yerleşir. 3B'de **Akşam** modu yalnızca armatür ışıklarını gösterir.
   alan dükkândan çıkar (içinde eşya varsa sorar); sürükleyerek köşe/çentik kesilir. **Alan ekle** ile dükkân
   dışarı doğru büyütülür ya da boşluk geri eklenir. **Duvar çiz** ile serbest bölme duvarı (10–25 cm).
   Dış duvarlar şeklin çevresinden otomatik çizilir; alanlar, 3B, kroki ve ölçüler şekli takip eder.
