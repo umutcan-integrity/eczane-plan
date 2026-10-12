@@ -437,3 +437,21 @@ dialog.modal.wide{width:min(960px,calc(100vw - 28px))}
 @media (prefers-reduced-transparency:reduce){
   :root[data-glass] :is(.card,.bar,.side,.float,.menu,.dock,dialog.modal,.walkhint,.hintpill,.toast,.joy){background:#152038}
 }
+
+/* ---------- Tavan & aydınlatma ---------- */
+
+.luxbar{display:flex;flex-direction:column;gap:6px}
+.luxv{display:flex;align-items:baseline;gap:8px}
+.luxv b{font:700 24px/1 var(--font);letter-spacing:-.02em}
+.luxv span{color:var(--muted);font-size:12.5px}
+.luxv.ok b{color:var(--ok)} .luxv.w b{color:var(--warn)} .luxv.bad b{color:var(--danger)}
+.luxmeter{position:relative;height:8px;border-radius:99px;background:var(--surface-3);overflow:visible;margin:2px 0 12px}
+.luxmeter i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--ok)}
+.luxmeter i.w{background:var(--warn)} .luxmeter i.bad{background:var(--danger)}
+.luxmeter em{position:absolute;top:10px;transform:translateX(-50%);font:600 10px/1 var(--mono);font-style:normal;color:var(--muted)}
+.luxmeter em::before{content:"";position:absolute;left:50%;top:-12px;width:1.5px;height:10px;background:var(--ink);opacity:.45}
+.acts.stack .btn svg{width:30px;height:22px}
+.shapes.ceils{grid-template-columns:1fr 1fr}
+.shapes.ceils .btn{flex-direction:row;justify-content:flex-start;gap:8px;min-height:44px;padding:4px 10px;font-size:12.5px;white-space:normal;text-align:left;line-height:1.15}
+.shapes.ceils .btn svg{width:30px;height:24px}
+.kv .kv-full{grid-column:1/-1;font-size:12.5px;line-height:1.35}

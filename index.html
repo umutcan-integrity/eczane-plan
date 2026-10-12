@@ -458,6 +458,24 @@ dialog.modal.wide{width:min(960px,calc(100vw - 28px))}
   :root[data-glass] :is(.card,.bar,.side,.float,.menu,.dock,dialog.modal,.walkhint,.hintpill,.toast,.joy){background:#152038}
 }
 
+/* ---------- Tavan & aydınlatma ---------- */
+
+.luxbar{display:flex;flex-direction:column;gap:6px}
+.luxv{display:flex;align-items:baseline;gap:8px}
+.luxv b{font:700 24px/1 var(--font);letter-spacing:-.02em}
+.luxv span{color:var(--muted);font-size:12.5px}
+.luxv.ok b{color:var(--ok)} .luxv.w b{color:var(--warn)} .luxv.bad b{color:var(--danger)}
+.luxmeter{position:relative;height:8px;border-radius:99px;background:var(--surface-3);overflow:visible;margin:2px 0 12px}
+.luxmeter i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--ok)}
+.luxmeter i.w{background:var(--warn)} .luxmeter i.bad{background:var(--danger)}
+.luxmeter em{position:absolute;top:10px;transform:translateX(-50%);font:600 10px/1 var(--mono);font-style:normal;color:var(--muted)}
+.luxmeter em::before{content:"";position:absolute;left:50%;top:-12px;width:1.5px;height:10px;background:var(--ink);opacity:.45}
+.acts.stack .btn svg{width:30px;height:22px}
+.shapes.ceils{grid-template-columns:1fr 1fr}
+.shapes.ceils .btn{flex-direction:row;justify-content:flex-start;gap:8px;min-height:44px;padding:4px 10px;font-size:12.5px;white-space:normal;text-align:left;line-height:1.15}
+.shapes.ceils .btn svg{width:30px;height:24px}
+.kv .kv-full{grid-column:1/-1;font-size:12.5px;line-height:1.35}
+
 </style>
 </head>
 <body>
@@ -530,11 +548,12 @@ dialog.modal.wide{width:min(960px,calc(100vw - 28px))}
 
       <div class="float tools" id="tools2d">
         <button class="tb on" data-tool="select" title="Seç ve taşı (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 3l14 8-6.5 1.6L9.5 19z"/></svg><span class="lbl">Seç</span></button>
-        <button class="tb" data-tool="room" title="Oda çiz (O)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="4.5" width="17" height="15" rx="1"/><path d="M12 4.5v8h8.5"/></svg><span class="lbl">Oda çiz</span></button>
+        <button class="tb hide-m" data-tool="room" title="Oda çiz (O)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="4.5" width="17" height="15" rx="1"/><path d="M12 4.5v8h8.5"/></svg><span class="lbl">Oda çiz</span></button>
         <button class="tb" data-tool="wall" title="Duvar çiz (D)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9h18M3 15h18M7 9v6M12 9v6M17 9v6"/></svg><span class="lbl">Duvar</span></button>
         <button class="tb" data-tool="erase" title="Silgi: alanı dükkândan çıkar (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M14 4l6 6-9 9H6l-3-3z"/><path d="M9 9l6 6M6 19h14"/></svg><span class="lbl">Silgi</span></button>
         <button class="tb" data-tool="addarea" title="Alan ekle: dükkânı büyüt (A)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h10v6h6v10H4z"/><path d="M17 3v6M14 6h6" stroke-width="2.2"/></svg><span class="lbl">Alan ekle</span></button>
-        <button class="tb" data-tool="measure" title="Ölç (M)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 16L16 3l5 5L8 21z"/><path d="M7 12l2 2M10 9l2 2M13 6l2 2"/></svg><span class="lbl">Ölç</span></button>
+        <button class="tb hide-m" data-tool="measure" title="Ölç (M)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 16L16 3l5 5L8 21z"/><path d="M7 12l2 2M10 9l2 2M13 6l2 2"/></svg><span class="lbl">Ölç</span></button>
+        <button class="tb tog" id="togCeil" title="Tavan planı: aydınlatma (T)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 4h18M12 4v4"/><path d="M7 13a5 5 0 0110 0z"/><path d="M8 17l-1.5 3M12 17.5V21M16 17l1.5 3"/></svg><span class="lbl">Tavan</span></button>
         <button class="tb tog" id="togMulti" title="Çoklu seçim (veya Ctrl/Shift + tıkla)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/><path d="M13 7h4a1 1 0 011 1v3M11 17H7a1 1 0 01-1-1v-3" stroke-dasharray="2 2"/></svg><span class="lbl">Çoklu</span></button>
         <span class="tsep hide-m"></span>
         <button class="tb tog on hide-m" id="togGrid" title="Izgara (G)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg><span class="lbl">Izgara</span></button>
@@ -552,6 +571,8 @@ dialog.modal.wide{width:min(960px,calc(100vw - 28px))}
         <button class="tb orbit-only" id="camIso" title="Açılı bak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg><span class="lbl">Açılı</span></button>
         <button class="tb" id="camRender" title="Render al (yüksek kaliteli görsel)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg><span class="lbl">Render</span></button>
         <button class="tb" id="camVideo" title="Video al"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg><span class="lbl">Video</span></button>
+        <button class="tb tog" id="camCeil" title="Tavanı ve armatürleri göster"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 4h18M12 4v4"/><path d="M7 13a5 5 0 0110 0z"/><path d="M8 17l-1.5 3M12 17.5V21M16 17l1.5 3"/></svg><span class="lbl">Tavan</span></button>
+        <button class="tb tog" id="camNight" title="Akşam: dış ışığı kapat, yalnızca armatürler"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg><span class="lbl">Akşam</span></button>
         <button class="tb" id="camWalls" title="Duvar yüksekliği"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18M5 20V9h6v11M13 20v-7h6v7"/></svg><span class="lbl" id="camWallsLbl">Duvar: tam</span></button>
       </div>
 
@@ -647,6 +668,7 @@ const TYPES = {
   fixture: {n: 'Islak hacim', solid: 1, color: '#F4F4F2', front: 1},
   human:   {n: 'İnsan', color: '#E07A5F'},
   zone:    {n: 'Boşluk', color: '#3FA66B'},
+  light:   {n: 'Aydınlatma', color: '#F2C94C'},
 };
 const STYLES = {
   cabinet: [['drawer', 'İlaç dolabı'], ['otc', 'OTC dolabı'], ['cosmetic', 'Demir kozmetik'], ['open', 'Açık raf'], ['metal', 'Demir raf'], ['closed', 'Kapaklı'], ['gondola', 'Gondol'], ['glass', 'Vitrin'], ['fridge', 'Buzdolabı'], ['kitchen', 'Mutfak tezgâhı'], ['wstand', 'Cam önü stand']],
@@ -655,7 +677,18 @@ const STYLES = {
   door:    [['single', 'Tek kanat'], ['double', 'Çift kanat'], ['sliding', 'Sürgülü']],
   human:   [['stand', 'Ayakta'], ['wheelchair', 'Tekerlekli sandalye']],
   zone:    [['rect', 'Şerit'], ['circle', 'Daire']],
+  light:   [['linear', 'Lineer'], ['spot', 'Spot'], ['pendant', 'Avize']],
 };
+/* Aydınlatma: montaj, avize modeli, ışık rengi */
+const LIGHT_MOUNTS = {linear: [['recessed', 'Gömme'], ['surface', 'Sıva üstü'], ['suspended', 'Sarkıt']], spot: [['recessed', 'Gömme'], ['surface', 'Sıva üstü']]};
+const PENDANT_MODELS = [['ring', 'Halka'], ['globe', 'Küre'], ['dome', 'Çan']];
+const CCTS = [[3000, '3000K sıcak'], [4000, '4000K doğal'], [6500, '6500K soğuk']];
+const CCT_COLOR = {3000: '#FFD7A1', 4000: '#FFF0DA', 6500: '#E2ECFF'};
+const LM_PER_W = 100;        // LED verimi (lm/W), yaklaşık
+const CEILINGS = [['grid', 'Asma tavan', '60 × 60 karo'], ['flat', 'Düz alçıpan', 'boyalı'], ['wood', 'Ahşap çıta', 'lineer'], ['none', 'Tavan yok', 'açık / brüt']];
+const CEIL_COLORS = {grid: ['#F4F3EF', '#FFFFFF', '#E6E1D7', '#CFD3D6', '#3A3F44'], flat: ['#F4F3EF', '#FFFFFF', '#E9E2D4', '#D6DBDF', '#3A3F44'], wood: ['#C79C6E', '#A8774A', '#7A5536', '#E2C9A1', '#3E3833'], none: ['#4A4F54', '#2E3236', '#D9D9D6']};
+const ceilOf = P => P.ceil || {type: 'grid', color: '#F4F3EF'};
+const isLight = it => it.type === 'light';
 
 /* Eklenebilir öğeler */
 const CATALOG = [
@@ -701,6 +734,11 @@ const CATALOG = [
     {k: 'pass120', n: 'Geçiş 120 cm', sub: 'iki kişi', t: 'zone', s: 'rect', w: 1.2, d: 2, h: 0},
     {k: 'turn', n: 'Dönüş alanı', sub: 'Ø 150 · sandalye', t: 'zone', s: 'circle', w: 1.5, d: 1.5, h: 0},
   ]},
+  {g: 'Tavan & aydınlatma', list: [
+    {k: 'linear', n: 'Lineer LED', sub: '120 cm · gömme', t: 'light', s: 'linear', w: 1.2, d: .06, h: 0, mount: 'recessed', watt: 30},
+    {k: 'spot', n: 'Spot', sub: 'Ø 10 · gömme', t: 'light', s: 'spot', w: .1, d: .1, h: 0, mount: 'recessed', watt: 9},
+    {k: 'pendant', n: 'Avize', sub: 'Ø 60 · sarkıt', t: 'light', s: 'pendant', w: .6, d: .6, h: 0, model: 'ring', drop: .5, watt: 40},
+  ]},
 ];
 const CATALOG_BY_KEY = Object.fromEntries(CATALOG.flatMap(g => g.list).map(e => [e.k, e]));
 
@@ -736,6 +774,9 @@ function palIcon(k) {
     case 'table': return S(`<rect x="5" y="8" width="34" height="15" rx="1.5" fill="#B99470" fill-opacity=".35"/>`);
     case 'desk': return S(`<rect x="7" y="7" width="30" height="13" rx="1.5" fill="#B99470" fill-opacity=".35"/><rect x="17" y="21" width="10" height="7" rx="3" stroke-width="1.2"/>`);
     case 'round': return S(`<circle cx="22" cy="15" r="11" fill="#B99470" fill-opacity=".35"/>`);
+    case 'linear': return S(`<rect x="3" y="12" width="38" height="6" rx="1.5" fill="#F2C94C" fill-opacity=".55"/><path d="M6 15h32" stroke-width="1" stroke-dasharray="2 2"/><path d="M8 22l-2 4M16 22l-1 4M28 22l1 4M36 22l2 4" stroke="${acc}" stroke-width="1.3"/>`);
+    case 'spot': return S(`<circle cx="22" cy="13" r="7" fill="#F2C94C" fill-opacity=".55"/><path d="M17 8l10 10M27 8L17 18" stroke-width="1.1"/><path d="M15 23l-2 4M22 23v4M29 23l2 4" stroke="${acc}" stroke-width="1.3"/>`);
+    case 'pendant': return S(`<path d="M22 1v8" stroke-width="1.2"/><ellipse cx="22" cy="13" rx="14" ry="4.5" fill="#F2C94C" fill-opacity=".45" stroke-width="2"/><path d="M12 21l-2 5M22 21v5M32 21l2 5" stroke="${acc}" stroke-width="1.3"/>`);
     case 'person': return S(`<ellipse cx="22" cy="16" rx="11" ry="6" fill="#E07A5F" fill-opacity=".35"/><circle cx="22" cy="15" r="4" fill="#E07A5F" fill-opacity=".8" stroke="none"/>`);
     case 'wheel': return S(`<rect x="14" y="4" width="16" height="22" rx="2" fill="#E07A5F" fill-opacity=".2"/><path d="M12 8v14M32 8v14" stroke-width="3"/><circle cx="22" cy="13" r="3.5" fill="#E07A5F" fill-opacity=".8" stroke="none"/>`);
     case 'pass90': return S(`<rect x="15" y="2" width="14" height="26" fill="#3FA66B" fill-opacity=".18" stroke="#3FA66B" stroke-dasharray="3 2"/><path d="M18 15h8M18 15l2-2M18 15l2 2M26 15l-2-2M26 15l-2 2" stroke="#3FA66B" stroke-width="1.2"/>`);
@@ -927,7 +968,7 @@ function makeItem(e, cx, cy, extra = {}) {
     id: '', type: e.t, style: e.s || '', name: e.n, cx: r3(cx), cy: r3(cy), w: e.w, d: e.d, h: e.h, rot: 0,
     color: e.color || t.color, clear: e.clear || 0, clearB: e.clearB || 0, elev: e.elev || 0, flip: false,
     rows: e.rows || 0, cols: e.cols || 0, split: 0, label: e.label || '', upper: !!e.upper,
-  }, extra);
+  }, e.t === 'light' ? {mount: e.mount || 'recessed', watt: e.watt || 10, cnt: 1, sp: .9, cct: 4000, model: e.model || 'ring', drop: e.drop || 0} : {}, extra);
 }
 function nextId(p, pre) { p.seq = (p.seq || 1) + 1; return pre + p.seq.toString(36) + Math.random().toString(36).slice(2, 4); }
 
@@ -946,6 +987,10 @@ function normalizeProject(o) {
   p.walls = (Array.isArray(o.walls) ? o.walls : []).filter(v => v && typeof v === 'object').map(v => ({id: typeof v.id === 'string' ? v.id : uid(), x1: num(v.x1, 0), y1: num(v.y1, 0), x2: num(v.x2, 1), y2: num(v.y2, 0), t: num(v.t, INNER_T, .05, .6)}))
     .filter(w => Math.abs(w.x1 - w.x2) < .001 || Math.abs(w.y1 - w.y2) < .001);
   p.floor = FLOOR_BY_KEY[o.floor] ? o.floor : 'seramik';
+  if (o.ceil && typeof o.ceil === 'object') {
+    const t = CEILINGS.some(c => c[0] === o.ceil.type) ? o.ceil.type : 'grid';
+    p.ceil = {type: t, color: /^#[0-9a-f]{6}$/i.test(o.ceil.color) ? o.ceil.color : CEIL_COLORS[t][0]};
+  }
   if (o.kroki && typeof o.kroki === 'object') {
     const k = o.kroki, str = (v, n) => typeof v === 'string' ? v.slice(0, n) : undefined;
     p.kroki = {title: str(k.title, 60), name: str(k.name, 80), pharmacist: str(k.pharmacist, 80), address: str(k.address, 400), salesName: str(k.salesName, 60),
@@ -965,7 +1010,7 @@ function normalizeProject(o) {
     if (!it || typeof it !== 'object' || !TYPES[it.type]) continue;
     let id = typeof it.id === 'string' && it.id && !ids.has(it.id) ? it.id : fresh('i'); ids.add(id);
     const styles = STYLES[it.type];
-    p.items.push({
+    const n = {
       id, type: it.type, style: styles ? (styles.some(s => s[0] === it.style) ? it.style : styles[0][0]) : '',
       name: String(it.name ?? TYPES[it.type].n).slice(0, 60),
       cx: num(it.cx, 1), cy: num(it.cy, 1), w: num(it.w, 1, MIN_ITEM, 100), d: num(it.d, .5, 0.02, 100), h: num(it.h, 1, 0, 10),
@@ -973,9 +1018,47 @@ function normalizeProject(o) {
       clear: num(it.clear, 0, 0, 5), clearB: num(it.clearB, 0, 0, 5), elev: num(it.elev, 0, 0, 5), flip: !!it.flip,
       rows: Math.round(num(it.rows, 0, 0, 16)), cols: Math.round(num(it.cols, 0, 0, 8)), split: num(it.split, 0, 0, 3),
       label: String(it.label ?? '').slice(0, 30), upper: !!it.upper,
-    });
+    };
+    if (n.type === 'light') {
+      const mounts = LIGHT_MOUNTS[n.style];
+      Object.assign(n, {mount: mounts ? (mounts.some(m => m[0] === it.mount) ? it.mount : mounts[0][0]) : '', watt: num(it.watt, 10, 1, 500),
+        cnt: Math.round(num(it.cnt, 1, 1, 12)), sp: num(it.sp, .9, .2, 5), cct: CCTS.some(c => c[0] === +it.cct) ? +it.cct : 4000,
+        model: PENDANT_MODELS.some(m => m[0] === it.model) ? it.model : 'ring', drop: num(it.drop, 0, 0, 3)});
+      lightFix(n);
+    }
+    p.items.push(n);
   }
   return p;
+}
+
+/* Aydınlatma ölçü tutarlılığı: spot sırası genişliği, avize daire */
+function lightFix(it) {
+  if (it.style === 'spot') { it.cnt = clamp(Math.round(it.cnt || 1), 1, 12); it.d = .1; it.w = r3(it.cnt > 1 ? (it.cnt - 1) * it.sp + .1 : .1); }
+  else if (it.style === 'pendant') { it.d = it.w = r3(clamp(it.w, .2, 3)); if (!(it.drop > 0)) it.drop = .5; }
+  else if (it.style === 'linear') { it.d = r3(clamp(it.d, .03, .3)); if (it.mount === 'suspended' && !(it.drop > 0)) it.drop = .5; }
+  return it;
+}
+/* Armatürün tavandan aşağı uzandığı mesafe (alt ucu) */
+function lightDepth(it) {
+  if (it.style === 'pendant') return (it.drop || .7) + (it.model === 'globe' ? it.w : it.model === 'dome' ? it.w * .375 : .03);
+  if (it.style === 'linear') return it.mount === 'suspended' ? (it.drop || .5) + .07 : it.mount === 'surface' ? .07 : .01;
+  return it.mount === 'surface' ? .11 : .01;
+}
+/* Armatür ışık akısı (lm) ve gücü (W) — yaklaşık */
+function lightWatt(it) { return it.style === 'linear' ? it.watt * it.w : it.style === 'spot' ? it.watt * (it.cnt || 1) : it.watt; }
+function lightLm(it) { return lightWatt(it) * LM_PER_W; }
+function lightStats(P) {
+  const L = P.items.filter(isLight), A = Math.max(1, shopArea(P));
+  const st = {spot: 0, spots: 0, linear: 0, linM: 0, pendant: 0, W: 0, lm: 0, n: L.length};
+  for (const it of L) {
+    if (it.style === 'spot') { st.spot++; st.spots += it.cnt || 1; }
+    else if (it.style === 'linear') { st.linear++; st.linM += it.w; }
+    else st.pendant++;
+    st.W += lightWatt(it); st.lm += lightLm(it);
+  }
+  st.lux = st.lm * .44 / A;   // kullanım (0,55) × bakım (0,8) faktörü
+  st.wpm = st.W / A;
+  return st;
 }
 
 /* Örnek eczane yerleşimi (13,65 × 6,95 m) */
@@ -1091,7 +1174,7 @@ function rotPt(x, y, deg) { const a = deg * D2R, c = Math.cos(a), s = Math.sin(a
 function toWorld(it, lx, ly) { const [x, y] = rotPt(lx, ly, it.rot || 0); return [it.cx + x, it.cy + y]; }
 function toLocal(it, wx, wy) { return rotPt(wx - it.cx, wy - it.cy, -(it.rot || 0)); }
 function localPoly(it, x0, y0, x1, y1) { return [toWorld(it, x0, y0), toWorld(it, x1, y0), toWorld(it, x1, y1), toWorld(it, x0, y1)]; }
-const isRound = it => (it.type === 'table' && it.style === 'round') || (it.type === 'zone' && it.style === 'circle');
+const isRound = it => (it.type === 'table' && it.style === 'round') || (it.type === 'zone' && it.style === 'circle') || (it.type === 'light' && it.style === 'pendant');
 const isSolid = it => !!TYPES[it.type]?.solid;
 const isOpening = it => it.type === 'door' || it.type === 'window';
 function itemPoly(it) {
@@ -1527,6 +1610,48 @@ function reseatOpenings(P) {
   });
 }
 
+/* Aydınlık hesabı (çalışma düzlemi 0,75 m). Noktasal kaynak modeli: I(α) = I0·cosᵐα;
+   oda duvarları ışığı keser (aynı bölgedeki kaynaklar sayılır) + bölge başına yaklaşık dolaylı bileşen. */
+let _luxCache = null;
+function luxGrid(P) {
+  const L = P.items.filter(isLight); if (!L.length) return null;
+  const key = JSON.stringify([P.shop, P.voids, P.rooms.map(r => [r.x, r.y, r.w, r.d]), L.map(i => [i.style, i.cx, i.cy, i.w, i.rot, i.cnt, i.sp, i.watt, i.mount, i.drop])]);
+  if (_luxCache && _luxCache.key === key) return _luxCache.v;
+  const W = P.shop.w, D = P.shop.d, H = P.shop.h || 2.8, WP = .75, MF = .8;
+  const st = clamp(Math.sqrt(W * D / 2600), .1, .4), nx = Math.ceil(W / st), ny = Math.ceil(D / st);
+  const rooms = [...P.rooms].sort((a, b) => a.w * a.d - b.w * b.d);
+  const region = (x, y) => { for (let i = 0; i < rooms.length; i++) { const r = rooms[i]; if (x > r.x && x < r.x + r.w && y > r.y && y < r.y + r.d) return i; } return -1; };
+  const src = [], flux = new Map();
+  const add = (x, z, y, lm, m) => { const rg = region(x, z); src.push({x, z, h: Math.max(.3, y - WP), rg, I0: lm * (m + 1) / (2 * Math.PI), m}); flux.set(rg, (flux.get(rg) || 0) + lm); };
+  for (const it of L) {
+    const lm = lightLm(it) * MF;
+    const y = H - lightDepth(it);
+    if (it.style === 'spot') { const n = it.cnt || 1, m = Math.log(.5) / Math.log(Math.cos(28 * D2R)); for (let i = 0; i < n; i++) { const [x, z] = toWorld(it, n > 1 ? -it.w / 2 + .05 + i * it.sp : 0, 0); add(x, z, y, lm / n, m); } }
+    else if (it.style === 'linear') { const k = Math.max(1, Math.round(it.w / .3)); for (let i = 0; i < k; i++) { const [x, z] = toWorld(it, -it.w / 2 + (i + .5) * it.w / k, 0); add(x, z, y, lm / k, 1.2); } }
+    else add(it.cx, it.cy, y, lm * .75, 1);
+  }
+  const area = new Map(); let open = shopArea(P);
+  rooms.forEach((r, i) => { area.set(i, r.w * r.d); open -= r.w * r.d; }); area.set(-1, Math.max(1, open));
+  const E = new Float32Array(nx * ny);
+  let sum = 0, n = 0, mn = Infinity, mx = 0, sSum = 0, sN = 0;
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    const x = (i + .5) * st, z = (j + .5) * st, k = j * nx + i;
+    if (!inShop(P, x, z)) { E[k] = -1; continue; }
+    const rg = region(x, z);
+    let e = (flux.get(rg) || 0) * .06 / (area.get(rg) || 1); // dolaylı (yansıyan) bileşen
+    for (const s of src) {
+      if (s.rg !== rg) continue;
+      const dx = x - s.x, dz = z - s.z, d2 = dx * dx + dz * dz + s.h * s.h, c = s.h / Math.sqrt(d2);
+      e += s.I0 * Math.pow(c, s.m + 3) / (s.h * s.h) * .62; // duvar/tavan kayıpları (≈ kullanım faktörü)
+    }
+    E[k] = e; sum += e; n++; mn = Math.min(mn, e); mx = Math.max(mx, e);
+    if (rg === -1) { sSum += e; sN++; }
+  }
+  const v = {nx, ny, st, E, avg: n ? sum / n : 0, min: n ? mn : 0, max: mx, sales: sN ? sSum / sN : 0};
+  _luxCache = {key, v};
+  return v;
+}
+
 /* =====================================================================
    2B plan: çizim + etkileşim
    ===================================================================== */
@@ -1624,6 +1749,18 @@ function drawPlan(ctx, P, V, o) {
     withItem(ctx, it, () => drawSolid(ctx, it, C, px, A.bad.has(it.id)));
   }
 
+  // Tavan katmanı: zemin soluklaşır, tavan deseni ve aydınlık haritası çizilir
+  const ceilL = o.layer === 'ceil';
+  if (ceilL) {
+    const rects = shopRects(P);
+    ctx.fillStyle = rgba(C.floor.startsWith('#') ? C.floor : '#FFFFFF', C.dark ? .74 : .68);
+    for (const fr of rects) ctx.fillRect(fr.x, fr.y, fr.w, fr.d);
+    ctx.save(); ctx.beginPath(); for (const fr of rects) ctx.rect(fr.x, fr.y, fr.w, fr.d); ctx.clip();
+    if (o.lux) drawLuxMap(ctx, P, o.lux);
+    drawCeilPattern(ctx, P, C, px, W, D);
+    ctx.restore();
+  }
+
   // Duvarlar
   ctx.fillStyle = C.wall;
   for (const r of wallPieces(segs)) ctx.fillRect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0);
@@ -1635,7 +1772,10 @@ function drawPlan(ctx, P, V, o) {
   }
 
   // İnsanlar
-  for (const it of P.items) if (it.type === 'human') withItem(ctx, it, () => drawHuman(ctx, it, C, px));
+  if (!ceilL) for (const it of P.items) if (it.type === 'human') withItem(ctx, it, () => drawHuman(ctx, it, C, px));
+
+  // Armatürler: tavan katmanında belirgin, zemin katmanında soluk; dışa aktarımda yok
+  if (o.layer) for (const it of P.items) if (isLight(it)) withItem(ctx, it, () => drawLight(ctx, it, C, px, ceilL ? 1 : .28));
 
   // ---- Ekran uzayı: yazılar
   ST();
@@ -1662,8 +1802,18 @@ function drawPlan(ctx, P, V, o) {
     }
     const fItem = `600 ${10.5 * F}px ${getFont()}`;
     ctx.font = fItem;
+    if (ceilL) { // armatür etiketleri
+      ctx.font = `600 ${10 * F}px ${getMono()}`;
+      for (const it of P.items) {
+        if (!isLight(it) || s < 22 || (it.style === 'spot' && (it.cnt || 1) < 2)) continue;
+        const t = lightTag(it), [hx, hy] = halfExt(it);
+        ctx.fillStyle = C.dark ? '#F3E3A6' : '#6B5200';
+        halo(t, sx(it.cx), sy(it.cy + hy) + 9 * F);
+      }
+      ctx.font = fItem;
+    }
     for (const it of P.items) {
-      if (!(isSolid(it) || it.type === 'zone') || it.type === 'column') continue;
+      if (ceilL || !(isSolid(it) || it.type === 'zone') || it.type === 'column') continue;
       let t = it.type === 'zone' ? (it.style === 'circle' ? 'Ø ' + fmtCm(it.w) : fmtCm(Math.min(it.w, it.d)) + ' cm') : it.name;
       if (!t) continue;
       const long = it.w >= it.d, L = (long ? it.w : it.d) * s, Sh = (long ? it.d : it.w) * s;
@@ -1817,6 +1967,64 @@ function drawSolid(ctx, it, C, px, bad) {
   }
 }
 
+/* Armatür sembolleri (tavan planı) */
+function lightTag(it) {
+  if (it.style === 'linear') return `L${fmtCm(it.w)}` + (it.mount === 'suspended' ? ' sarkıt' : '');
+  if (it.style === 'spot') return (it.cnt > 1 ? it.cnt + '× ' : '') + 'spot';
+  return 'Avize · ' + (PENDANT_MODELS.find(m => m[0] === it.model) || PENDANT_MODELS[0])[1].toLowerCase();
+}
+function drawLight(ctx, it, C, px, a) {
+  const glow = '#F2C94C', ink = C.dark ? '#F3E3A6' : '#6B5200';
+  ctx.save(); ctx.globalAlpha = a;
+  ctx.lineWidth = 1.3 * px; ctx.strokeStyle = ink; ctx.lineJoin = 'round';
+  if (it.style === 'linear') {
+    const w = it.w, d = Math.max(it.d, 5 * px);
+    ctx.beginPath(); ctx.rect(-w / 2, -d / 2, w, d); ctx.fillStyle = rgba(glow, .8); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-w / 2 + .03, 0); ctx.lineTo(w / 2 - .03, 0); ctx.setLineDash([3 * px, 2 * px]); ctx.lineWidth = px; ctx.stroke(); ctx.setLineDash([]);
+    if (it.mount === 'suspended') for (const x of [-w / 2 + .1, w / 2 - .1]) { ctx.beginPath(); ctx.arc(x, 0, 2.4 * px, 0, 7); ctx.fillStyle = ink; ctx.fill(); }
+    if (it.mount === 'surface') { ctx.beginPath(); ctx.rect(-w / 2 - 2 * px, -d / 2 - 2 * px, w + 4 * px, d + 4 * px); ctx.lineWidth = px; ctx.stroke(); }
+  } else if (it.style === 'spot') {
+    const n = it.cnt || 1, r = Math.max(.05, 5 * px);
+    if (n > 1) { ctx.beginPath(); ctx.moveTo(-it.w / 2 + .05, 0); ctx.lineTo(it.w / 2 - .05, 0); ctx.setLineDash([2 * px, 3 * px]); ctx.lineWidth = px; ctx.stroke(); ctx.setLineDash([]); }
+    for (let i = 0; i < n; i++) {
+      const x = n > 1 ? -it.w / 2 + .05 + i * it.sp : 0, k = r * .62;
+      ctx.lineWidth = 1.3 * px;
+      ctx.beginPath(); ctx.arc(x, 0, r, 0, Math.PI * 2); ctx.fillStyle = rgba(glow, .85); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x - k, -k); ctx.lineTo(x + k, k); ctx.moveTo(x + k, -k); ctx.lineTo(x - k, k); ctx.lineWidth = px; ctx.stroke();
+      if (it.mount === 'surface') { ctx.beginPath(); ctx.arc(x, 0, r + 2.5 * px, 0, 7); ctx.stroke(); }
+    }
+  } else {
+    const R = it.w / 2;
+    ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fillStyle = rgba(glow, .2); ctx.fill();
+    ctx.setLineDash([4 * px, 3 * px]); ctx.lineWidth = px; ctx.stroke(); ctx.setLineDash([]);
+    ctx.lineWidth = 1.6 * px;
+    if (it.model === 'ring') { ctx.beginPath(); ctx.arc(0, 0, R * .92, 0, 7); ctx.lineWidth = Math.max(.03, 3 * px); ctx.strokeStyle = rgba(glow, 1); ctx.stroke(); ctx.lineWidth = px; ctx.strokeStyle = ink; ctx.stroke(); for (let i = 0; i < 3; i++) { const t = i * 2.094 - 1.571; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(t) * R * .92, Math.sin(t) * R * .92); ctx.stroke(); } }
+    else if (it.model === 'globe') { ctx.beginPath(); ctx.arc(0, 0, R * .7, 0, 7); ctx.fillStyle = rgba(glow, .7); ctx.fill(); ctx.stroke(); }
+    else { ctx.beginPath(); ctx.arc(0, 0, R * .92, 0, 7); ctx.fillStyle = rgba(C.dark ? '#555' : '#333', .35); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, R * .35, 0, 7); ctx.fillStyle = rgba(glow, .95); ctx.fill(); }
+    ctx.beginPath(); ctx.arc(0, 0, Math.max(.035, 3 * px), 0, 7); ctx.fillStyle = ink; ctx.fill();
+  }
+  ctx.restore();
+}
+/* Tavan deseni: asma tavan karoları / ahşap çıtalar */
+function drawCeilPattern(ctx, P, C, px, W, D) {
+  const c = ceilOf(P); if (c.type !== 'grid' && c.type !== 'wood') return;
+  const st = c.type === 'grid' ? .6 : .1;
+  if (st * (1 / px) < 4) return;
+  ctx.beginPath();
+  for (let y = st; y < D; y += st) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  if (c.type === 'grid') for (let x = st; x < W; x += st) { ctx.moveTo(x, 0); ctx.lineTo(x, D); }
+  ctx.strokeStyle = rgba(C.muted.startsWith('#') ? C.muted : '#6F7974', c.type === 'grid' ? .32 : .2); ctx.lineWidth = px; ctx.stroke();
+}
+/* Aydınlık (lx) haritası: ısı renkleri */
+function drawLuxMap(ctx, P, L) {
+  const ramp = [[0, [40, 60, 160]], [150, [40, 120, 220]], [300, [40, 180, 120]], [500, [240, 200, 40]], [750, [240, 120, 40]], [1100, [220, 40, 40]]];
+  const col = v => { for (let i = 1; i < ramp.length; i++) if (v <= ramp[i][0]) { const [a, ca] = ramp[i - 1], [b, cb] = ramp[i], t = (v - a) / (b - a); return ca.map((q, k) => Math.round(q + (cb[k] - q) * t)); } return ramp[ramp.length - 1][1]; };
+  for (let j = 0; j < L.ny; j++) for (let i = 0; i < L.nx; i++) {
+    const v = L.E[j * L.nx + i]; if (v < 0) continue;
+    const [r, g, b] = col(v); ctx.fillStyle = `rgba(${r},${g},${b},.34)`;
+    ctx.fillRect(i * L.st, j * L.st, L.st + .002, L.st + .002);
+  }
+}
 function drawDoor(ctx, it, C, px, onWall, bad) {
   const w = it.w, d = it.d, y = d / 2;
   const col = bad ? C.danger : C.ink;
@@ -1925,7 +2133,8 @@ const Plan = {
     this.C = planColors();
     const ctx = this.ctx;
     drawPlan(ctx, P, this.V, {w: this.w, h: this.h, dpr: this.dpr, C: this.C, segs: Ed.segs, A: Ed.A,
-      grid: Settings.v.grid, clear: Settings.v.clear, labels: true, dims: true});
+      grid: Settings.v.grid, clear: Settings.v.clear, labels: true, dims: true, layer: Ed.layer,
+      lux: Ed.layer === 'ceil' && Settings.v.luxMap ? luxGrid(P) : null});
     this.overlay(ctx);
     Ctx.place();
   },
@@ -2078,7 +2287,7 @@ const Plan = {
     if (sel.k === 'item' && isOpening(o)) gaps = doorGaps(o, Ed.segs);
     else if (sel.k === 'item') {
       const obs = [];
-      for (const it of P.items) if (it.id !== o.id && isSolid(it)) obs.push(itemBox(it));
+      for (const it of P.items) if (it.id !== o.id && (isLight(o) ? isLight(it) : isSolid(it))) obs.push(itemBox(it));
       for (const r of wallPieces(Ed.segs, op => op.type === 'door')) obs.push(r);
       gaps = gapsAround(itemBox(o), obs, 12);
     } else return;
@@ -2086,7 +2295,7 @@ const Plan = {
     for (const g of gaps) {
       const [x0, y0] = this.toS(g.x0, g.y0), [x1, y1] = this.toS(g.x1, g.y1);
       const L = Math.hypot(x1 - x0, y1 - y0); if (L < 4) continue;
-      const cm = gapComment(g.d), col = o.type === 'human' || o.type === 'zone' || isOpening(o) || isSolid(o) ? (cm.c === 'bad' ? C.danger : cm.c === 'warn' ? C.warn : C.ok) : C.muted;
+      const cm = gapComment(g.d), col = !isLight(o) && (o.type === 'human' || o.type === 'zone' || isOpening(o) || isSolid(o)) ? (cm.c === 'bad' ? C.danger : cm.c === 'warn' ? C.warn : C.ok) : C.muted;
       const colUse = isOpening(o) ? C.accent : col;
       ctx.strokeStyle = colUse; ctx.lineWidth = 1.3; ctx.setLineDash([]);
       ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
@@ -2107,7 +2316,8 @@ const Plan = {
       }
       return out;
     }
-    const canW = o.type !== 'human', canD = !['human', 'door', 'window'].includes(o.type);
+    const lt = isLight(o) ? o.style : '';
+    const canW = o.type !== 'human' && !(lt === 'spot' && (o.cnt || 1) < 2), canD = !['human', 'door', 'window'].includes(o.type) && lt !== 'linear' && lt !== 'spot';
     for (const hx of [-1, 0, 1]) for (const hy of [-1, 0, 1]) {
       if (!hx && !hy) continue;
       if ((hx && !canW) || (hy && !canD)) continue;
@@ -2134,8 +2344,10 @@ const Plan = {
   hitTest(wx, wy, touch) {
     const P = Ed.P, pad = (touch ? 12 : 6) / this.V.s;
     const cand = [];
+    const ceil = Ed.layer === 'ceil';
     for (let i = P.items.length - 1; i >= 0; i--) {
       const it = P.items[i];
+      if (isLight(it) !== ceil) continue; // katman: tavanda yalnız armatürler, zeminde armatürler hariç
       const [lx, ly] = toLocal(it, wx, wy);
       const hw = Math.max(it.w / 2, pad), hd = Math.max(it.d / 2, pad);
       let inside;
@@ -2147,6 +2359,7 @@ const Plan = {
       cand.sort((a, b) => a.pri - b.pri || a.a - b.a);
       return {k: 'item', id: cand[0].it.id};
     }
+    if (ceil) return null;
     for (const w of P.walls || []) { const b = wallBox(w); if (wx >= b.x0 - pad && wx <= b.x1 + pad && wy >= b.y0 - pad && wy <= b.y1 + pad) return {k: 'wall', id: w.id}; }
     const vd = (P.voids || []).find(v => wx > v.x && wx < v.x + v.w && wy > v.y && wy < v.y + v.d);
     if (vd) return {k: 'void', id: vd.id};
@@ -2323,7 +2536,7 @@ const Plan = {
         if (cancel) break;
         if (!a.moved) { if (!this.multiMode) Ed.select(null); break; }
         const x0 = Math.min(a.p0[0], a.p1[0]), x1 = Math.max(a.p0[0], a.p1[0]), y0 = Math.min(a.p0[1], a.p1[1]), y1 = Math.max(a.p0[1], a.p1[1]);
-        const inside = Ed.P.items.filter(it => { const b = itemBox(it); return b.x1 > x0 && b.x0 < x1 && b.y1 > y0 && b.y0 < y1; }).map(it => it.id);
+        const inside = Ed.P.items.filter(it => { if (isLight(it) !== (Ed.layer === 'ceil')) return false; const b = itemBox(it); return b.x1 > x0 && b.x0 < x1 && b.y1 > y0 && b.y0 < y1; }).map(it => it.id);
         const base = Ed.multi.length ? Ed.multi : (Ed.sel && Ed.sel.k === 'item' ? [Ed.sel.id] : []);
         Ed.setMulti([...new Set([...base, ...inside])]);
         break;
@@ -2369,7 +2582,9 @@ const Plan = {
       for (const w of P.walls || []) { xs.push(w.x1, w.x2); ys.push(w.y1, w.y2); }
     } else {
       for (const r of wallPieces(Ed.segs)) { xs.push(r.x0, r.x1); ys.push(r.y0, r.y1); }
-      for (const it of P.items) if (it.id !== sel.id && !skip.has(it.id) && (isSolid(it) || it.type === 'zone')) { const b = itemBox(it); xs.push(b.x0, b.x1, it.cx); ys.push(b.y0, b.y1, it.cy); }
+      const so = sel.k === 'item' && P.items.find(i => i.id === sel.id), lightSel = so ? isLight(so) : Ed.layer === 'ceil';
+      for (const it of P.items) if (it.id !== sel.id && !skip.has(it.id) && (lightSel ? isLight(it) : (isSolid(it) || it.type === 'zone'))) { const b = itemBox(it); xs.push(b.x0, b.x1, it.cx); ys.push(b.y0, b.y1, it.cy); }
+      if (lightSel) { for (const r of P.rooms) { xs.push(r.x, r.x + r.w, r.x + r.w / 2); ys.push(r.y, r.y + r.d, r.y + r.d / 2); } xs.push(P.shop.w / 2); ys.push(P.shop.d / 2); }
     }
     this.targets = {xs, ys};
   },
@@ -2504,6 +2719,10 @@ const Plan = {
     const [dx, dy] = rotPt(ccx, ccy, o0.rot);
     o.w = r3(w); o.d = r3(d); o.cx = r3(o0.cx + dx); o.cy = r3(o0.cy + dy);
     if (isOpening(o)) { const s = wallOf(o0, Ed.segs); if (s) o.d = o0.d; }
+    if (isLight(o)) {
+      if (o.style === 'spot' && o.cnt > 1) { o.sp = r3(Math.max(.2, (o.w - .1) / (o.cnt - 1))); const cx0 = -hx * o0.w / 2; lightFix(o); const [ex, ey] = rotPt(cx0 + hx * o.w / 2, 0, o0.rot); o.cx = r3(o0.cx + ex); o.cy = r3(o0.cy + ey); }
+      else lightFix(o);
+    }
     Ed.live();
   },
 };
@@ -2683,11 +2902,12 @@ const View3D = {
     return m;
   },
   skyTex(dark) {
-    const key = dark ? 'd' : 'l';
+    const key = dark === 'night' ? 'n' : dark ? 'd' : 'l';
     if (this._sky && this._sky.k === key) return this._sky.t;
     const T = this.T, c = document.createElement('canvas'); c.width = 4; c.height = 256;
     const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256);
-    if (dark) { gr.addColorStop(0, '#0C1116'); gr.addColorStop(.6, '#18212A'); gr.addColorStop(1, '#222A2E'); }
+    if (key === 'n') { gr.addColorStop(0, '#03060C'); gr.addColorStop(.6, '#0A1220'); gr.addColorStop(1, '#16202E'); }
+    else if (dark) { gr.addColorStop(0, '#0C1116'); gr.addColorStop(.6, '#18212A'); gr.addColorStop(1, '#222A2E'); }
     else { gr.addColorStop(0, '#A9CBE6'); gr.addColorStop(.55, '#D8E7F1'); gr.addColorStop(1, '#EEF1F0'); }
     g.fillStyle = gr; g.fillRect(0, 0, 4, 256);
     const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace;
@@ -2827,6 +3047,7 @@ const View3D = {
 
     // Eşyalar
     for (const it of P.items) {
+      if (isLight(it)) continue; // armatürler tavanla birlikte kurulur
       const g = this.buildItem(it, wallH, dark);
       if (!g) continue;
       g.position.set(it.cx, 0, it.cy); g.rotation.y = -(it.rot || 0) * D2R;
@@ -2854,8 +3075,8 @@ const View3D = {
     }
 
     // Tabela ve tavan
-    if (wallMode === 'full') { this.buildSign(P, H, dark); this.buildCeiling(P, H); }
-    else this.ceil = null;
+    if (wallMode === 'full') this.buildSign(P, H, dark);
+    this.buildCeiling(P, H, wallMode === 'full');
 
     // Güneş / gölge kutusu
     const ext = Math.max(W, D) * .75 + 4;
@@ -2867,31 +3088,184 @@ const View3D = {
     this.updateSel();
     this.miniDirty = true;
   },
-  /* Gezinirken tavan görünür, iç ışık artar */
+  /* Işık durumu: gündüz (yörünge/gez) ya da akşam; tavan ve armatür görünürlüğü */
   lightMode() {
-    const walk = this.mode === 'walk', dark = document.documentElement.dataset.mode === 'dark';
-    if (this.ceil) this.ceil.visible = walk;
-    for (const c of this.root.children) if (c.userData.label || c.userData.clearZone || c.userData.zoneItem) c.visible = !walk;
-    this.hemi.intensity = walk ? 1.25 : (dark ? .9 : 1.1);
-    this.sun.intensity = walk ? 1.2 : 2.0;
-    this.scene.environmentIntensity = walk ? .85 : .6;
-    if (this.fill) this.fill.intensity = walk ? 1.4 : 0;
+    const walk = this.mode === 'walk', dark = document.documentElement.dataset.mode === 'dark', night = !!Settings.v.night;
+    const showCeil = walk || (Settings.v.ceil3d ?? true);
+    if (this.ceil) this.ceil.visible = showCeil;
+    for (const c of this.root.children) {
+      if (c.userData.label || c.userData.clearZone || c.userData.zoneItem) c.visible = !walk;
+      if (c.userData.fixture) c.visible = showCeil;
+    }
+    const own = !!this.ownLights;
+    if (night) {
+      this.hemi.intensity = .14; this.sun.intensity = 0; this.scene.environmentIntensity = .1; if (this.fill) this.fill.intensity = 0;
+      this.scene.background = this.skyTex('night');
+    } else {
+      this.hemi.intensity = walk ? (own ? .85 : 1.25) : (dark ? .9 : 1.1);
+      this.sun.intensity = walk ? (own ? .9 : 1.2) : 2.0;
+      this.scene.environmentIntensity = walk ? (own ? .6 : .85) : .6;
+      if (this.fill) this.fill.intensity = walk ? (own ? .55 : 1.4) : 0;
+      this.scene.background = this.skyTex(dark);
+    }
+    const lf = night ? 1.5 : walk ? .7 : .4;
+    for (const L of this.lamps || []) L.intensity = L.userData.base * lf;
+    for (const m of this.ceilMats || []) m.emissiveIntensity = m.userData.em * (night ? .25 : walk ? 1 : .8);
   },
-  buildCeiling(P, H) {
-    const T = this.T, W = P.shop.w, D = P.shop.d, g = new T.Group();
-    const cm = this.mat('#F5F4F0', {roughness: .95, side: T.DoubleSide, emissive: '#F2F0EA', emissiveIntensity: .62});
-    for (const fr of shopRects(P)) {
-      const c = new T.Mesh(new T.PlaneGeometry(fr.w, fr.d), cm);
-      c.rotation.x = Math.PI / 2; c.position.set(fr.x + fr.w / 2, H - .002, fr.y + fr.d / 2); c.receiveShadow = false; c.castShadow = false; g.add(c);
+  /* Tavan dokusu (CanvasTexture): asma tavan karoları, düz boya, ahşap çıta, brüt */
+  ceilCanvas(c) {
+    this._ceilCv = this._ceilCv || new Map();
+    const key = c.type + c.color;
+    if (this._ceilCv.has(key)) return this._ceilCv.get(key);
+    const N = 256, cv = document.createElement('canvas'); cv.width = cv.height = N;
+    const g = cv.getContext('2d');
+    let sd = 11; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    g.fillStyle = c.color; g.fillRect(0, 0, N, N);
+    if (c.type === 'wood') {
+      const pitch = N / 6, gap = pitch * .2;
+      for (let k = 0; k < 6; k++) {
+        const y = k * pitch;
+        g.fillStyle = mixHex(c.color, r() < .5 ? '#000000' : '#FFFFFF', r() * .08); g.fillRect(0, y, N, pitch - gap);
+        for (let q = 0; q < 14; q++) { g.fillStyle = `rgba(60,35,15,${.05 + r() * .08})`; g.fillRect(0, y + r() * (pitch - gap), N, .6 + r() * 1.4); }
+        g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, y + pitch - gap - 1.5, N, 1.5);
+        g.fillStyle = '#1C1916'; g.fillRect(0, y + pitch - gap, N, gap);
+      }
+    } else {
+      for (let i = 0; i < (c.type === 'grid' ? 2600 : 900); i++) { g.fillStyle = `rgba(${r() < .7 ? '0,0,0' : '255,255,255'},${.02 + r() * .05})`; const s = c.type === 'grid' ? 1 + r() * 1.6 : 2 + r() * 5; g.fillRect(r() * N, r() * N, s, s); }
+      if (c.type === 'grid') {
+        const b = 5; // T profil (24 mm)
+        g.fillStyle = mixHex(c.color, '#FFFFFF', .55); g.fillRect(0, 0, N, b); g.fillRect(0, N - b, N, b); g.fillRect(0, 0, b, N); g.fillRect(N - b, 0, b, N);
+        g.fillStyle = 'rgba(0,0,0,.16)'; g.fillRect(b, b, N - b * 2, 1.5); g.fillRect(b, b, 1.5, N - b * 2); g.fillRect(b, N - b - 1, N - b * 2, 1); g.fillRect(N - b - 1, b, 1, N - b * 2);
+      }
     }
-    const lamp = this.mat('#FFFFFF', {emissive: '#FFFFFF', emissiveIntensity: 2.2, roughness: .4});
-    const nx = Math.max(1, Math.round(W / 2.4)), nz = Math.max(1, Math.round(D / 2.4));
-    for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) {
-      if (!inShop(P, (i + .5) * W / nx, (j + .5) * D / nz)) continue;
-      const l = this.box(g, .6, .02, .6, lamp, (i + .5) * W / nx, H - .012, (j + .5) * D / nz); l.castShadow = false; l.receiveShadow = false;
+    this._ceilCv.set(key, cv);
+    return cv;
+  },
+  ceilMat(c, fr) {
+    const T = this.T, size = c.type === 'grid' ? .6 : c.type === 'wood' ? .6 : 2;
+    const t = new T.CanvasTexture(this.ceilCanvas(c));
+    t.colorSpace = T.SRGBColorSpace; t.wrapS = t.wrapT = T.RepeatWrapping; t.anisotropy = 8;
+    t.repeat.set(fr.w / size, fr.d / size); t.offset.set((fr.x / size) % 1, (fr.y / size) % 1);
+    const em = c.type === 'none' ? .05 : c.type === 'wood' ? .22 : .42;
+    const m = new T.MeshStandardMaterial({map: t, emissiveMap: t, emissive: new T.Color('#FFFFFF'), emissiveIntensity: em, roughness: c.type === 'wood' ? .6 : .95, side: T.FrontSide});
+    m._own = true; m.userData.em = em;
+    return m;
+  },
+  buildCeiling(P, H, full) {
+    const T = this.T, W = P.shop.w, D = P.shop.d, g = new T.Group(), c = ceilOf(P);
+    this.ceilMats = []; this.lamps = []; this.ceil = null;
+    const lights = P.items.filter(isLight);
+    this.ownLights = lights.length > 0;
+    const em = [];
+    if (full) {
+      for (const fr of shopRects(P)) { // aşağı bakan tek yüzlü düzlem: yukarıdan bakınca görünmez
+        const m = this.ceilMat(c, fr); this.ceilMats.push(m);
+        const p = new T.Mesh(new T.PlaneGeometry(fr.w, fr.d), m);
+        p.rotation.x = Math.PI / 2; p.position.set(fr.x + fr.w / 2, H - .002, fr.y + fr.d / 2); p.receiveShadow = false; p.castShadow = false; g.add(p);
+      }
+      if (!lights.length) { // armatür yoksa varsayılan 60×60 paneller
+        const lamp = this.mat('#FFFFFF', {emissive: '#FFFFFF', emissiveIntensity: 2.2, roughness: .4});
+        const nx = Math.max(1, Math.round(W / 2.4)), nz = Math.max(1, Math.round(D / 2.4));
+        for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) {
+          const x = (i + .5) * W / nx, z = (j + .5) * D / nz;
+          if (!inShop(P, x, z)) continue;
+          const l = this.box(g, .6, .02, .6, lamp, x, H - .012, z); l.castShadow = false; l.receiveShadow = false;
+          em.push({x, z, y: H - .03, lm: 3600, ang: 1.15, col: '#FFF4E6'});
+        }
+      }
+      this.root.add(g); this.ceil = g;
     }
-    g.visible = this.mode === 'walk';
-    this.root.add(g); this.ceil = g;
+    for (const it of lights) {
+      const f = this.buildFixture(it, H);
+      f.position.set(it.cx, 0, it.cy); f.rotation.y = -(it.rot || 0) * D2R;
+      f.userData.pick = {k: 'item', id: it.id}; f.userData.fixture = 1;
+      this.root.add(f);
+      const col = CCT_COLOR[it.cct] || CCT_COLOR[4000], lm = lightLm(it);
+      if (it.style === 'spot') {
+        const n = it.cnt || 1;
+        for (let i = 0; i < n; i++) { const [x, z] = toWorld(it, n > 1 ? -it.w / 2 + .05 + i * it.sp : 0, 0); em.push({x, z, y: H - (it.mount === 'surface' ? .12 : .02), lm: lm / n, ang: .55, col}); }
+      } else if (it.style === 'linear') {
+        const y = it.mount === 'suspended' ? H - it.drop - .08 : it.mount === 'surface' ? H - .08 : H - .02;
+        const k = Math.max(1, Math.round(it.w / 1.8));
+        for (let i = 0; i < k; i++) { const [x, z] = toWorld(it, -it.w / 2 + (i + .5) * it.w / k, 0); em.push({x, z, y, lm: lm / k, ang: 1.1, col}); }
+      } else em.push({x: it.cx, z: it.cy, y: H - lightDepth(it) + .05, lm, ang: 1.3, col});
+    }
+    this.buildLamps(em, H);
+  },
+  /* Işık kaynakları: çok sayıda armatür, yakın olanlar birleştirilerek sınırlı sayıda gerçek ışığa dönüşür */
+  buildLamps(em, H) {
+    const T = this.T, MAX = isMobile() ? 6 : 10;
+    const rooms = [...Ed.P.rooms].sort((a, b) => a.w * a.d - b.w * b.d);
+    const region = (x, z) => rooms.findIndex(r => x > r.x && x < r.x + r.w && z > r.y && z < r.y + r.d);
+    let cl = em.map(e => ({...e, n: 1, spread: 0, pts: [[e.x, e.z]], rg: region(e.x, e.z)}));
+    while (cl.length > MAX) {
+      let bi = 0, bj = 1, bd = Infinity;
+      for (let i = 0; i < cl.length; i++) for (let j = i + 1; j < cl.length; j++) { const d = Math.hypot(cl[i].x - cl[j].x, cl[i].z - cl[j].z) * (1 + (cl[i].n + cl[j].n) * .05) * (cl[i].rg === cl[j].rg ? 1 : 6); /* aynı odadakiler önce birleşir */ if (d < bd) { bd = d; bi = i; bj = j; } }
+      const a = cl[bi], b = cl[bj], lm = a.lm + b.lm;
+      const m = {x: (a.x * a.lm + b.x * b.lm) / lm, z: (a.z * a.lm + b.z * b.lm) / lm, y: (a.y * a.lm + b.y * b.lm) / lm, lm, ang: Math.max(a.ang, b.ang), col: a.lm >= b.lm ? a.col : b.col, n: a.n + b.n, pts: a.pts.concat(b.pts), rg: a.lm >= b.lm ? a.rg : b.rg};
+      m.spread = Math.max(...m.pts.map(([x, z]) => Math.hypot(x - m.x, z - m.z)));
+      cl.splice(bj, 1); cl[bi] = m;
+    }
+    for (const c of cl) {
+      const h = Math.max(.5, c.y), ang = clamp(Math.atan((c.spread + h * Math.tan(c.ang)) / h), c.ang, 1.4);
+      const L = new T.SpotLight(new T.Color(c.col), 1, 0, ang, c.n > 1 ? 1 : .75, 2);
+      L.castShadow = false;
+      L.position.set(c.x, c.y, c.z); L.target.position.set(c.x, 0, c.z);
+      L.userData.base = c.lm / (2 * Math.PI * (1 - Math.cos(ang))) * .012;
+      this.root.add(L); this.root.add(L.target); this.lamps.push(L);
+    }
+  },
+  /* Armatür modelleri (yerel: x boy, z en; y mutlak yükseklik) */
+  buildFixture(it, H) {
+    const T = this.T, g = new T.Group();
+    const col = CCT_COLOR[it.cct] || CCT_COLOR[4000];
+    const glow = this.mat('#FFFFFF', {emissive: col, emissiveIntensity: 3.2, roughness: .3});
+    const soft = this.mat('#FFFFFF', {emissive: col, emissiveIntensity: 1.5, roughness: .4});
+    const alu = this.mat('#C7CBCF', {metalness: .65, roughness: .32});
+    const white = this.mat('#F3F3F1', {roughness: .45});
+    const black = this.mat('#1E2124', {roughness: .5, metalness: .2});
+    const cyl = (r0, r1, hh, m, x, y, z, seg = 24) => { const c = new T.Mesh(new T.CylinderGeometry(r0, r1, hh, seg), m); c.position.set(x, y, z); g.add(c); return c; };
+    const cable = (x0, y0, z0, x1, y1, z1) => { const a = new T.Vector3(x0, y0, z0), b = new T.Vector3(x1, y1, z1), L = a.distanceTo(b); const c = new T.Mesh(new T.CylinderGeometry(.0018, .0018, L, 5), black); c.position.copy(a).add(b).multiplyScalar(.5); c.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), b.clone().sub(a).normalize()); g.add(c); };
+    if (it.style === 'spot') {
+      const n = it.cnt || 1;
+      for (let i = 0; i < n; i++) {
+        const x = n > 1 ? -it.w / 2 + .05 + i * it.sp : 0;
+        if (it.mount === 'surface') { cyl(.045, .045, .11, white, x, H - .055, 0); cyl(.034, .034, .004, glow, x, H - .111, 0); cyl(.046, .046, .006, alu, x, H - .108, 0); }
+        else { cyl(.056, .056, .006, white, x, H - .003, 0); cyl(.04, .044, .006, alu, x, H - .006, 0); cyl(.03, .03, .016, glow, x, H - .004, 0); } // mercek üstten de görünür
+      }
+    } else if (it.style === 'linear') {
+      const w = it.w, d = Math.max(.035, it.d);
+      if (it.mount === 'recessed') { this.box(g, w + .012, .008, d + .012, alu, 0, H - .004, 0); this.box(g, w, .016, d - .012, glow, 0, H - .004, 0); }
+      else {
+        const y = it.mount === 'suspended' ? H - it.drop : H;
+        this.box(g, w, .07, d, alu, 0, y - .035, 0); this.box(g, w - .012, .004, d - .01, glow, 0, y - .072, 0);
+        this.box(g, .006, .07, d + .002, black, -w / 2 + .003, y - .035, 0); this.box(g, .006, .07, d + .002, black, w / 2 - .003, y - .035, 0);
+        if (it.mount === 'suspended') for (const x of [-w / 2 + .12, w / 2 - .12]) { cable(x, y, 0, x, H, 0); cyl(.025, .025, .012, white, x, H - .006, 0); }
+      }
+    } else {
+      const R = it.w / 2, y = H - (it.drop || .7);
+      cyl(.06, .06, .02, white, 0, H - .01, 0);
+      if (it.model === 'ring') {
+        const ring = new T.Mesh(new T.TorusGeometry(R, .022, 12, 72), alu); ring.rotation.x = Math.PI / 2; ring.position.set(0, y, 0); g.add(ring);
+        const band = new T.Mesh(new T.TorusGeometry(R, .012, 8, 72), glow); band.rotation.x = Math.PI / 2; band.position.set(0, y - .016, 0); g.add(band);
+        for (let k = 0; k < 3; k++) { const a = k * 2.094; cable(Math.cos(a) * R, y + .02, Math.sin(a) * R, 0, H - .02, 0); }
+      } else if (it.model === 'globe') { // sarkma: kablo boyu (kürenin tepesine kadar)
+        const cy = y - R;
+        cable(0, y, 0, 0, H - .02, 0); cyl(.025, .03, .05, alu, 0, y + .01, 0);
+        const s = new T.Mesh(new T.SphereGeometry(R, 40, 24), this.mat('#FFFFFF', {emissive: col, emissiveIntensity: .85, roughness: .25, transparent: true, opacity: .96})); s.position.set(0, cy, 0); g.add(s);
+        const core = new T.Mesh(new T.SphereGeometry(R * .35, 20, 14), glow); core.position.set(0, cy, 0); g.add(core);
+      } else {
+        const by = y - R * .75; // çan: üst ucu sarkma hizasında
+        const pts = []; for (let k = 0; k <= 16; k++) { const a = k / 16 * Math.PI / 2; pts.push(new T.Vector2(.03 + Math.sin(a) * R, Math.cos(a) * R * .75)); }
+        const shadeM = this.mat('#2A2F33', {metalness: .5, roughness: .35, side: T.DoubleSide});
+        const sh = new T.Mesh(new T.LatheGeometry(pts, 40), shadeM); sh.position.set(0, by, 0); g.add(sh);
+        const inner = new T.Mesh(new T.LatheGeometry(pts.map(p => new T.Vector2(p.x * .985, p.y - .004)), 40), this.mat('#FFFFFF', {emissive: col, emissiveIntensity: .9, side: T.BackSide})); inner.position.set(0, by, 0); g.add(inner);
+        const bulb = new T.Mesh(new T.SphereGeometry(.055, 20, 14), glow); bulb.position.set(0, by + .08, 0); g.add(bulb);
+        cable(0, y, 0, 0, H - .02, 0);
+      }
+    }
+    g.traverse(n => { if (n.isMesh) { n.castShadow = false; n.receiveShadow = false; } });
+    return g;
   },
 
   /* ---------- Eczane tabelası ---------- */
@@ -4054,12 +4428,12 @@ function pushOut(poly, x, y, R) {
 
 const Ed = {
   P: null, segs: [], A: {bad: new Set(), zoneBad: new Set(), issues: []}, sel: null, tool: 'select', view: '2d',
-  hist: [], fut: [], dirty: false, saveTimer: 0, _ck: null, _ct: 0, multi: [],
+  hist: [], fut: [], dirty: false, saveTimer: 0, _ck: null, _ct: 0, multi: [], layer: 'floor',
 
   open(id) {
     const p = Store.load(id);
     if (!p) { toast('Proje bulunamadı', 'err'); Router.home(); return false; }
-    this.P = p; this.sel = null; this.hist = []; this.fut = []; this.dirty = false; this.tool = 'select';
+    this.P = p; this.sel = null; this.hist = []; this.fut = []; this.dirty = false; this.tool = 'select'; this.layer = 'floor'; $('#togCeil').classList.remove('on');
     Settings.set('last', id);
     this.recompute();
     $('#home').hidden = true; $('#editor').hidden = false;
@@ -4089,11 +4463,12 @@ const Ed = {
     this.P = null; this.sel = null;
     return true;
   },
-  snap() { const P = this.P; return JSON.stringify({name: P.name, sign: P.sign, floor: P.floor, kroki: P.kroki, shop: P.shop, rooms: P.rooms, items: P.items, voids: P.voids, walls: P.walls}); },
+  snap() { const P = this.P; return JSON.stringify({name: P.name, sign: P.sign, floor: P.floor, ceil: P.ceil, kroki: P.kroki, shop: P.shop, rooms: P.rooms, items: P.items, voids: P.voids, walls: P.walls}); },
   restore(str) {
     const o = JSON.parse(str);
     Object.assign(this.P, {name: o.name, floor: o.floor, shop: o.shop, rooms: o.rooms, items: o.items, voids: o.voids || [], walls: o.walls || []});
     if (o.kroki) this.P.kroki = o.kroki; else delete this.P.kroki;
+    if (o.ceil) this.P.ceil = o.ceil; else delete this.P.ceil;
     if (o.sign === undefined) delete this.P.sign; else this.P.sign = o.sign;
     if (this.sel && !this.objOf(this.sel)) this.sel = null;
     if (this.multi.length) { this.multi = this.multi.filter(id => this.P.items.some(i => i.id === id)); if (this.multi.length < 2) this.multi = []; }
@@ -4156,6 +4531,8 @@ const Ed = {
     const hadMulti = this.multi.length > 0; this.multi = [];
     const same = !hadMulti && ((this.sel && sel && this.sel.id === sel.id) || (!this.sel && !sel));
     this.sel = sel && this.objOf(sel) ? {k: sel.k, id: sel.id} : null;
+    const so = this.sel && this.sel.k === 'item' && this.objOf(this.sel);
+    if (so && isLight(so) !== (this.layer === 'ceil')) this.setLayer(isLight(so) ? 'ceil' : 'floor', true);
     if (!same) Props.render();
     Plan.req(); View3D.updateSel(); Ctx.place();
     $('#dockPropsLbl').textContent = this.sel ? 'Özellikler' : 'Proje';
@@ -4174,7 +4551,24 @@ const Ed = {
     if (ids.has(id)) ids.delete(id); else ids.add(id);
     this.setMulti([...ids]);
   },
-  selectAll() { this.setMulti(this.P.items.filter(i => i.type !== 'zone').map(i => i.id)); },
+  selectAll() { const c = this.layer === 'ceil'; this.setMulti(this.P.items.filter(i => i.type !== 'zone' && isLight(i) === c).map(i => i.id)); },
+  /* Katman: zemin planı / tavan planı (aydınlatma) */
+  setLayer(l, keepSel) {
+    if (this.layer === l) return;
+    this.layer = l;
+    $('#togCeil').classList.toggle('on', l === 'ceil');
+    if (!keepSel) { this.multi = []; this.sel = null; Ctx.place(); $('#dockPropsLbl').textContent = 'Proje'; }
+    if (l === 'ceil' && this.tool !== 'select') this.setTool('select');
+    this.updatePill(); Props.render(); Plan.req();
+  },
+  updatePill() {
+    const pill = $('#hintPill'), t = this.tool;
+    const msg = {room: 'Oda çizmek için köşeden köşeye sürükle', wall: 'Duvar çizmek için iki nokta arasında sürükle (yatay/dikey)', erase: 'Silgi: kapalı alana dokun ya da sürükleyerek kes',
+      addarea: 'Alan ekle: sürükleyerek dükkânı büyüt ya da boşluğa dokun', measure: 'Ölçmek için iki nokta arasında sürükle'}[t];
+    if (msg) { $('#hintText').textContent = msg; $('#hintDone').textContent = 'Bitti'; pill.hidden = this.view !== '2d'; }
+    else if (this.layer === 'ceil') { $('#hintText').textContent = 'Tavan planı · armatürleri yerleştir'; $('#hintDone').textContent = 'Zemine dön'; pill.hidden = this.view !== '2d'; }
+    else pill.hidden = true;
+  },
   groupBox(its) { return its.reduce((b, it) => { const q = itemBox(it); return {x0: Math.min(b.x0, q.x0), y0: Math.min(b.y0, q.y0), x1: Math.max(b.x1, q.x1), y1: Math.max(b.y1, q.y1)}; }, {x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity}); },
   /* Hizalama: l, cx, r, t, cy, b; dağıtma: dh, dv */
   align(mode) {
@@ -4202,13 +4596,8 @@ const Ed = {
     $$('#dock [data-dock]').forEach(b => b.classList.toggle('on', b.dataset.dock === t));
     if (t !== 'measure') Plan.measure = null;
     Plan.hoverPt = null;
-    const pill = $('#hintPill');
-    if (t === 'room') { $('#hintText').textContent = 'Oda çizmek için köşeden köşeye sürükle'; pill.hidden = false; }
-    else if (t === 'wall') { $('#hintText').textContent = 'Duvar çizmek için iki nokta arasında sürükle (yatay/dikey)'; pill.hidden = false; }
-    else if (t === 'erase') { $('#hintText').textContent = 'Silgi: kapalı alana dokun ya da sürükleyerek kes'; pill.hidden = false; }
-    else if (t === 'addarea') { $('#hintText').textContent = 'Alan ekle: sürükleyerek dükkânı büyüt ya da boşluğa dokun'; pill.hidden = false; }
-    else if (t === 'measure') { $('#hintText').textContent = 'Ölçmek için iki nokta arasında sürükle'; pill.hidden = false; }
-    else pill.hidden = true;
+    if (t !== 'select' && t !== 'measure' && this.layer === 'ceil') this.setLayer('floor');
+    this.updatePill();
     if (t !== 'select') { this.select(null); Sheets.closeAll(); }
     Plan.req();
   },
@@ -4218,9 +4607,9 @@ const Ed = {
     const is3 = v === '3d';
     $('#plan').hidden = is3; $('#tools2d').hidden = is3; $('#tools3d').hidden = !is3;
     $('#dock').style.display = is3 ? 'none' : '';
-    $('#hintPill').hidden = is3 || this.tool === 'select';
+    this.updatePill();
     $('#zoomOut').hidden = $('#zoomIn').hidden = is3;
-    if (is3) { if (this.tool !== 'select') this.setTool('select'); View3D.show(); }
+    if (is3) { if (this.tool !== 'select') this.setTool('select'); Sheets.closeAll(); View3D.show(); }
     else { View3D.hide(); Plan.resize(); }
     Ctx.place();
   },
@@ -4243,6 +4632,10 @@ const Ed = {
     const it = makeItem(e, x, y);
     it.id = nextId(this.P, 'i');
     if (it.type === 'column') it.h = this.P.shop.h;
+    if (isLight(it)) {
+      lightFix(it);
+      if (this.layer !== 'ceil') { this.setLayer('ceil'); toast('Tavan planına geçildi · zemindeki eşyalar soluk görünür'); }
+    } else if (this.layer === 'ceil') this.setLayer('floor');
     let placedAtWindow = false;
     if (e.s === 'wstand') placedAtWindow = this.placeAtWindow(it, x, y);
     if (placedAtWindow) { /* vitrin camının önüne yerleşti */ }
@@ -4391,7 +4784,8 @@ const Ed = {
       if (s) seatOnWall(it, s, (s.h ? o.cx : o.cy) + o.w + .3);
       else { it.cx += .3; it.cy += .3; }
     } else {
-      const [dx, dy] = rotPt(o.w, 0, o.rot); // yanına, bitişik
+      const gap = isLight(o) ? (o.style === 'spot' ? (o.cnt > 1 ? o.sp : 1.2) - .1 : o.style === 'linear' ? .6 : 1.2) : 0;
+      const [dx, dy] = rotPt(o.w + gap, 0, o.rot); // yanına, bitişik (armatürlerde aralıklı)
       it.cx = r3(o.cx + dx); it.cy = r3(o.cy + dy);
     }
     this.change(() => P.items.push(it)); this.select({k: 'item', id: it.id});
@@ -4446,6 +4840,63 @@ const Ed = {
       else if (this.sel.k === 'wall') { o.x1 = r3(o.x1 + dx); o.x2 = r3(o.x2 + dx); o.y1 = r3(o.y1 + dy); o.y2 = r3(o.y2 + dy); }
       else { o.cx = r3(o.cx + dx); o.cy = r3(o.cy + dy); }
     }, 'nudge');
+  },
+  /* Hızlı aydınlatma yerleşimi: hedef ~500 lx için spot ızgarası ya da lineer sıralar */
+  async autoLights(kind) {
+    const P = this.P, old = P.items.filter(isLight);
+    if (old.length && !await confirmBox('Aydınlatma yeniden yerleştirilsin mi?', `Mevcut ${old.length} armatür kaldırılıp yerine otomatik yerleşim yapılacak. Geri almak için ↶ kullanabilirsin.`, 'Yerleştir')) return;
+    const W = P.shop.w, D = P.shop.d, A = shopArea(P), target = 500, MF = .44;
+    const e = CATALOG_BY_KEY[kind === 'spot' ? 'spot' : 'linear'];
+    const proto = lightFix(makeItem(e, 0, 0));
+    let need = Math.ceil(target * A / (MF * lightLm(proto)));
+    const ok = (x, y, m) => inShop(P, x, y) && inShop(P, x - m, y) && inShop(P, x + m, y) && inShop(P, x, y - m) && inShop(P, x, y + m);
+    const place = need => {
+      const out = [];
+      if (kind === 'spot') {
+        const sp = clamp(Math.sqrt(A / need), .8, 2.2);
+        const nx = Math.max(1, Math.round(W / sp)), ny = Math.max(1, Math.round(D / sp));
+        for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+          const x = r3(Math.round((i + .5) * W / nx / GRID) * GRID), y = r3(Math.round((j + .5) * D / ny / GRID) * GRID);
+          if (ok(x, y, .3)) out.push([x, y, 0]);
+        }
+      } else {
+        const along = W >= D, Lh = along ? W : D, Ls = along ? D : W, len = 1.2;
+        const maxPer = Math.max(1, Math.floor((Lh - .6) / (len + .45)));
+        const rows = clamp(Math.max(Math.round(Ls / 2.1), Math.ceil(need / maxPer)), 1, Math.max(1, Math.floor(Ls / 1.1)));
+        const per = Math.max(1, Math.min(maxPer, Math.ceil(need / rows)));
+        for (let r = 0; r < rows; r++) {
+          const s = (r + .5) * Ls / rows;
+          for (let k = 0; k < per; k++) {
+            const a = (k + .5) * Lh / per, x = r3(along ? a : s), y = r3(along ? s : a);
+            const [ex, ey] = along ? [len / 2, 0] : [0, len / 2];
+            if (ok(x, y, .25) && inShop(P, x - ex, y - ey) && inShop(P, x + ex, y + ey)) out.push([x, y, along ? 0 : 90]);
+          }
+        }
+      }
+      return out;
+    };
+    const mk = out => out.map(([x, y, rot]) => lightFix(makeItem(e, x, y, {rot})));
+    let out = place(need);
+    for (let k = 0; k < 3 && out.length; k++) { // ışık dağılımı hesabıyla hedefe yaklaştır
+      const L = luxGrid(Object.assign({}, P, {items: P.items.filter(i => !isLight(i)).concat(mk(out))}));
+      const v = L ? (L.sales || L.avg) : 0;
+      if (!v || (v >= 470 && v <= 650)) break;
+      need = Math.max(1, Math.round(need * target / v)); out = place(need);
+    }
+    if (!out.length) { toast('Uygun yer bulunamadı', 'err'); return; }
+    this.change(() => {
+      P.items = P.items.filter(i => !isLight(i));
+      for (const [x, y, rot] of out) { const it = lightFix(makeItem(e, x, y, {rot})); it.id = nextId(P, 'i'); P.items.push(it); }
+    });
+    if (this.layer !== 'ceil') this.setLayer('ceil'); else { this.select(null); Props.render(); }
+    const L = luxGrid(P);
+    toast(`${out.length} ${kind === 'spot' ? 'spot' : 'lineer armatür'} yerleşti · satış alanı ≈ ${Math.round(L ? L.sales || L.avg : 0)} lx`);
+  },
+  async clearLights() {
+    const n = this.P.items.filter(isLight).length; if (!n) return;
+    if (!await confirmBox('Tüm armatürler silinsin mi?', `${n} armatür kaldırılacak. Geri almak için ↶ kullanabilirsin.`, 'Sil', true)) return;
+    this.change(() => { this.P.items = this.P.items.filter(i => !isLight(i)); });
+    this.select(null); Props.render();
   },
   openProps(focus) {
     Sheets.open('sheetProps');
@@ -4563,6 +5014,7 @@ const Props = {
     else if (Ed.sel.k === 'room') { $('#propsTitle').textContent = 'Oda'; this.room(root, o); }
     else if (Ed.sel.k === 'void') { $('#propsTitle').textContent = 'Bina boşluğu'; this.voidPanel(root, o); }
     else if (Ed.sel.k === 'wall') { $('#propsTitle').textContent = 'Duvar'; this.wallPanel(root, o); }
+    else if (isLight(o)) { $('#propsTitle').textContent = 'Aydınlatma · ' + STYLES.light.find(s => s[0] === o.style)[1]; this.lightPanel(root, o); }
     else { $('#propsTitle').textContent = TYPES[o.type].n + (o.type === 'cabinet' && o.style ? ' · ' + STYLES.cabinet.find(s => s[0] === o.style)[1] : ''); this.item(root, o); }
   },
   sync() { for (const f of this.syncers) f(); for (const f of this.liveFns) f(); },
@@ -4637,8 +5089,11 @@ const Props = {
       if (P.rooms.length) list.append(h('div', {class: 'kv', style: 'margin-top:4px'}, h('span', null, 'Odalar toplamı'), h('b', null, fmtA(roomsA) + ' m²'), h('span', null, 'Satış / açık alan'), h('b', null, fmtA(Math.max(0, shopArea(P) - roomsA)) + ' m²')));
     };
     drawRooms(); this.liveFns.push(drawRooms);
+    const ceilG = this.ceilGroup();
+    if (Ed.layer === 'ceil') root.prepend(ceilG);
     root.append(this.shapeGroup());
     root.append(this.grp('Zemin', this.floorPicker(() => P.floor, k => { P.floor = k; })));
+    if (Ed.layer !== 'ceil') root.append(ceilG);
     root.append(this.grp('Odalar', list));
 
     // Kontrol
@@ -4782,6 +5237,109 @@ const Props = {
       this.num('Y', () => it.cy, v => { it.cy = v; }, {unit: 'm', min: -50, max: 200, key: 'icy'}))));
 
     root.append(this.grp(null, this.actions([['Kopyala', () => Ed.duplicate(), '', ICONS.dup], ['Sil', () => Ed.remove(), 'danger', ICONS.del], ['Bitti', () => { Ed.select(null); Sheets.closeAll(); }, '', ICONS.ok]])));
+  },
+
+  /* ---- Aydınlatma armatürü ---- */
+  lightPanel(root, it) {
+    const re = () => Props.render();
+    const set = fn => { Ed.change(() => { fn(); lightFix(it); }); re(); };
+    root.append(this.grp(null, this.text('Ad', () => it.name, v => { it.name = v; }, 'iname:' + it.id),
+      h('div', {class: 'pf'}, h('label', null, 'Tür'), this.chips(STYLES.light, () => it.style, v => set(() => {
+        const e = CATALOG_BY_KEY[v === 'linear' ? 'linear' : v === 'spot' ? 'spot' : 'pendant'];
+        const dflt = ['linear', 'spot', 'pendant'].some(k => CATALOG_BY_KEY[k].n === it.name);
+        Object.assign(it, {style: v, w: e.w, d: e.d, watt: e.watt, mount: e.mount || '', drop: e.drop || 0, cnt: 1, model: it.model || 'ring'});
+        if (dflt) it.name = e.n;
+      })))));
+    const g = this.grp(it.style === 'linear' ? 'Lineer armatür' : it.style === 'spot' ? 'Spot' : 'Avize');
+    if (it.style === 'linear') {
+      g.append(h('div', {class: 'prow'}, this.num('Boy', () => it.w, v => { it.w = v; }, {min: .3, max: 12, key: 'lw'}), this.num('Profil eni', () => it.d, v => { it.d = v; lightFix(it); }, {min: .03, max: .3, step: .01, key: 'ld'})));
+      g.append(this.chips([[.6, '60'], [1.2, '120'], [1.5, '150'], [1.8, '180'], [2.4, '240'], [3.6, '360']], () => it.w, v => set(() => { it.w = v; })));
+      g.append(h('div', {class: 'pf'}, h('label', null, 'Montaj'), this.chips(LIGHT_MOUNTS.linear, () => it.mount, v => set(() => { it.mount = v; if (v === 'suspended' && !(it.drop > 0)) it.drop = .5; }))));
+      if (it.mount === 'suspended') g.append(h('div', {class: 'prow'}, this.num('Sarkma', () => it.drop, v => { it.drop = v; }, {min: .1, max: 2, key: 'ldrop'}), h('div', {class: 'pf'})));
+      g.append(h('div', {class: 'prow'}, this.num('Güç', () => it.watt, v => { it.watt = v; }, {unit: 'W/m', step: 1, min: 5, max: 80, key: 'lwatt'}), h('div', {class: 'pf'})));
+    } else if (it.style === 'spot') {
+      g.append(h('div', {class: 'pf'}, h('label', null, 'Adet (sıra halinde)'), this.chips([[1, '1'], [2, '2'], [3, '3'], [4, '4'], [6, '6'], [8, '8']], () => it.cnt, v => set(() => {
+        it.cnt = v; if (v > 1 && !(it.sp > 0)) it.sp = .9;
+      }))));
+      if (it.cnt > 1) g.append(h('div', {class: 'prow'}, this.num('Aralık', () => it.sp, v => { it.sp = v; lightFix(it); }, {min: .2, max: 5, key: 'lsp'}), h('div', {class: 'pf'})));
+      g.append(h('div', {class: 'pf'}, h('label', null, 'Montaj'), this.chips(LIGHT_MOUNTS.spot, () => it.mount, v => set(() => { it.mount = v; }))));
+      g.append(h('div', {class: 'prow'}, this.num('Güç (adet başı)', () => it.watt, v => { it.watt = v; }, {unit: 'W', step: 1, min: 1, max: 60, key: 'lwatt'}), h('div', {class: 'pf'})));
+    } else {
+      g.append(h('div', {class: 'pf'}, h('label', null, 'Model'), this.chips(PENDANT_MODELS, () => it.model, v => set(() => { it.model = v; }))));
+      g.append(h('div', {class: 'prow'}, this.num('Çap', () => it.w, v => { it.w = it.d = v; }, {min: .2, max: 3, key: 'lpd'}), this.num('Sarkma (kablo)', () => it.drop, v => { it.drop = v; }, {min: .1, max: 2.5, key: 'ldrop'})));
+      g.append(this.chips([[.4, 'Ø40'], [.6, 'Ø60'], [.8, 'Ø80'], [1, 'Ø100'], [1.2, 'Ø120']], () => it.w, v => set(() => { it.w = it.d = v; })));
+      g.append(h('div', {class: 'prow'}, this.num('Güç', () => it.watt, v => { it.watt = v; }, {unit: 'W', step: 1, min: 5, max: 300, key: 'lwatt'}), h('div', {class: 'pf'})));
+    }
+    g.append(h('div', {class: 'pf'}, h('label', null, 'Işık rengi'), this.chips(CCTS, () => it.cct, v => set(() => { it.cct = v; }))));
+    const kv = h('div', {class: 'kv'});
+    const drawKv = () => {
+      const y = Ed.P.shop.h - lightDepth(it);
+      kv.innerHTML = '';
+      kv.append(h('span', null, 'Toplam güç'), h('b', null, Math.round(lightWatt(it)) + ' W'), h('span', null, 'Işık akısı (yaklaşık)'), h('b', null, Math.round(lightLm(it)).toLocaleString('tr-TR') + ' lm'),
+        h('span', null, 'Armatür alt seviyesi'), h('b', null, fmtM(y) + ' m'));
+      if (y < 2.1) kv.append(h('span', {style: 'color:var(--warn)', class: 'kv-full'}, 'Alt ucu 2,10 m’nin altında: yalnızca tezgâh / masa üstüne uygun. Geçiş yolundaysa sarkmayı kısalt.'));
+    };
+    drawKv(); this.liveFns.push(drawKv);
+    g.append(kv);
+    root.append(g);
+    if (!isRound(it)) {
+      const rotG = this.grp('Yön');
+      rotG.append(h('div', {class: 'prow'},
+        h('button', {class: 'btn', type: 'button', title: '90° sola', onclick: () => Ed.rotate(-90), html: ICONS.rotL}),
+        this.num('Açı', () => it.rot, v => { it.rot = normRot(v); }, {unit: '°', step: 15, min: -360, max: 720, key: 'rot'}),
+        h('button', {class: 'btn', type: 'button', title: '90° sağa', onclick: () => Ed.rotate(90), html: ICONS.rotR})));
+      root.append(rotG);
+    }
+    root.append(this.grp('Konum (merkez)', h('div', {class: 'prow'},
+      this.num('X', () => it.cx, v => { it.cx = v; }, {unit: 'm', min: -50, max: 200, key: 'icx'}),
+      this.num('Y', () => it.cy, v => { it.cy = v; }, {unit: 'm', min: -50, max: 200, key: 'icy'}))));
+    root.append(this.grp(null, this.actions([['Kopyala', () => Ed.duplicate(), '', ICONS.dup], ['Sil', () => Ed.remove(), 'danger', ICONS.del], ['Bitti', () => { Ed.select(null); Sheets.closeAll(); }, '', ICONS.ok]]),
+      h('p', {class: 'tip'}, 'Kopyala, armatürü aynı aralıkla yanına ekler. Ctrl/Shift ile birden çok armatür seçip birlikte taşıyabilir, hizalayabilirsin.')));
+  },
+  /* Proje paneli: tavan tipi + aydınlatma özeti + hızlı yerleşim */
+  ceilGroup() {
+    const P = Ed.P, g = this.grp('Tavan & aydınlatma');
+    const types = h('div', {class: 'shapes ceils'});
+    const drawTypes = () => {
+      types.innerHTML = '';
+      for (const [k, n, sub] of CEILINGS) types.append(h('button', {type: 'button', class: 'btn' + (ceilOf(P).type === k ? ' on' : ''), title: n + ' · ' + sub, onclick: () => {
+        Ed.change(() => { const c = ceilOf(P); P.ceil = {type: k, color: CEIL_COLORS[k].includes(c.color) ? c.color : CEIL_COLORS[k][0]}; });
+        Props.render();
+      }, html: ceilIcon(k) + `<span>${n}</span>`}));
+    };
+    drawTypes();
+    g.append(types);
+    const ct = ceilOf(P).type;
+    g.append(h('div', {class: 'pf'}, h('label', null, ct === 'wood' ? 'Ahşap tonu' : ct === 'none' ? 'Brüt tavan rengi' : 'Tavan rengi'),
+      this.swatches(CEIL_COLORS[ct], () => ceilOf(P).color, c => { P.ceil = {type: ceilOf(P).type, color: c}; })));
+    g.append(h('div', {class: 'prow'}, this.num('Tavan yüksekliği', () => P.shop.h, v => { P.shop.h = v; for (const it of P.items) if (it.type === 'column') it.h = v; }, {unit: 'm', min: 2.2, max: 6, key: 'shoph'}), h('div', {class: 'pf'})));
+    const sum = h('div', {class: 'kv'}), luxEl = h('div', {class: 'luxbar'});
+    const drawSum = () => {
+      const st = lightStats(P), L = luxGrid(P);
+      sum.innerHTML = ''; luxEl.innerHTML = '';
+      if (!st.n) { sum.append(h('span', null, 'Armatür'), h('b', null, 'yok')); luxEl.append(h('p', {class: 'tip'}, 'Henüz armatür yok. 3B’de varsayılan tavan panelleri gösterilir. Aşağıdan hızlı yerleşim yap ya da Ekle → Tavan & aydınlatma.')); return; }
+      if (st.spot) sum.append(h('span', null, 'Spot'), h('b', null, `${st.spots} adet`));
+      if (st.linear) sum.append(h('span', null, 'Lineer'), h('b', null, `${st.linear} adet · ${fmtM(st.linM)} m`));
+      if (st.pendant) sum.append(h('span', null, 'Avize'), h('b', null, `${st.pendant} adet`));
+      sum.append(h('span', null, 'Toplam güç'), h('b', null, `${Math.round(st.W)} W · ${fmtA(st.wpm)} W/m²`));
+      const avg = L ? L.avg : st.lux, sales = L && L.sales ? L.sales : avg;
+      const cls = sales >= 450 ? 'ok' : sales >= 300 ? 'w' : 'bad';
+      luxEl.append(h('div', {class: 'luxv ' + cls}, h('b', null, Math.round(sales) + ' lx'), h('span', null, 'satış alanı ortalaması')),
+        h('div', {class: 'luxmeter'}, h('i', {style: `width:${clamp(sales / 750 * 100, 2, 100)}%`, class: cls}), h('em', {style: 'left:66.6%'}, '500')),
+        h('p', {class: 'tip'}, L ? `Tüm dükkân: ort. ${Math.round(L.avg)} lx · en düşük ${Math.round(L.min)} lx · en yüksek ${Math.round(L.max)} lx. Hedef: satış alanında ~500 lx.` : ''));
+    };
+    drawSum(); this.liveFns.push(drawSum);
+    g.append(sum, luxEl);
+    const lux = h('input', {type: 'checkbox'}); lux.checked = !!Settings.v.luxMap;
+    lux.onchange = () => { Settings.set('luxMap', lux.checked); if (lux.checked && Ed.layer !== 'ceil') Ed.setLayer('ceil'); Plan.req(); };
+    g.append(h('label', {class: 'switch'}, lux, h('span', null, 'Işık dağılımı haritası', h('small', null, 'Tavan planında zemindeki aydınlığı renklerle gösterir (mavi az · yeşil iyi · sarı/kırmızı çok).'))));
+    g.append(h('div', {class: 'acts stack'},
+      h('button', {type: 'button', class: 'btn', onclick: () => Ed.autoLights('spot'), html: palIcon('spot') + '<span>Spot ızgarası</span>'}),
+      h('button', {type: 'button', class: 'btn', onclick: () => Ed.autoLights('linear'), html: palIcon('linear') + '<span>Lineer sıralar</span>'}),
+      h('button', {type: 'button', class: 'btn' + (Ed.layer === 'ceil' ? '' : ' primary'), onclick: () => Ed.setLayer(Ed.layer === 'ceil' ? 'floor' : 'ceil'), html: ICONS.ceil + `<span>${Ed.layer === 'ceil' ? 'Zemine dön' : 'Tavan planı'}</span>`})));
+    if (P.items.some(isLight)) g.append(h('button', {type: 'button', class: 'btn danger full', onclick: () => Ed.clearLights(), html: ICONS.del + '<span>Tüm armatürleri sil</span>'}));
+    g.append(h('p', {class: 'tip', html: '<b>Tavan planı</b> (T) açıkken yalnızca armatürler seçilir; eşyalar soluk görünür. 3B’de <b>Akşam</b> modunu açınca ışıkların etkisini görürsün.'}));
+    return g;
   },
 
   /* Dükkân şekli: hazır şablonlar + boşluklar + araçlar */
@@ -4946,7 +5504,15 @@ const ICONS = {
   open: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l4 4v13a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg>',
   grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>',
+  ceil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 4h18M12 4v4"/><path d="M7 13a5 5 0 0110 0z"/><path d="M8 17l-1.5 3M12 17.5V21M16 17l1.5 3"/></svg>',
 };
+function ceilIcon(k) {
+  const p = {grid: '<rect x="4" y="5" width="28" height="20" rx="1"/><path d="M4 12h28M4 18h28M13 5v20M23 5v20" stroke-width="1"/>',
+    flat: '<rect x="4" y="5" width="28" height="20" rx="1"/><path d="M8 9h8" stroke-width="1" opacity=".5"/>',
+    wood: '<rect x="4" y="5" width="28" height="20" rx="1"/><path d="M4 8.5h28M4 12h28M4 15.5h28M4 19h28M4 22.5h28" stroke-width="1.2"/>',
+    none: '<path d="M4 7h28" stroke-dasharray="3 2"/><path d="M8 7v6M18 7v9M28 7v5" stroke-width="1.2"/><path d="M5 25h26" stroke-width="2.4"/>'}[k];
+  return `<svg viewBox="0 0 36 30" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="2" stroke-linejoin="round">${p}</svg>`;
+}
 
 /* =====================================================================
    Kroki (rölöve planı): A4 dikey, ölçekli, siyah-beyaz; il/ilçe sağlık
@@ -5017,7 +5583,7 @@ const Kroki = {
     P.rooms.map((r, i) => ({r, i})).sort((a, b) => b.r.w * b.r.d - a.r.w * a.r.d).forEach(({r, i}) => fill(r.x, r.y, r.x + r.w, r.y + r.d, i + 1));
     for (const w of wallPieces(segs, () => false)) fill(w.x0, w.y0, w.x1, w.y1, -1);
     for (const v of P.voids || []) fill(v.x - .05, v.y - .05, v.x + v.w + .05, v.y + v.d + .05, -1);
-    for (const it of P.items) if (it.type !== 'zone' && it.type !== 'human') { const b = itemBox(it); fill(b.x0 - .05, b.y0 - .05, b.x1 + .05, b.y1 + .05, -1); }
+    for (const it of P.items) if (it.type !== 'zone' && it.type !== 'human' && !isLight(it)) { const b = itemBox(it); fill(b.x0 - .05, b.y0 - .05, b.x1 + .05, b.y1 + .05, -1); }
     const out = [];
     const d = new Float32Array(nx * ny);
     for (let v = 0; v <= P.rooms.length; v++) {
@@ -5132,7 +5698,7 @@ const Kroki = {
     // Eşyalar (duvarların altında kalsın)
     WT();
     if (o.items) for (const it of P.items) {
-      if (it.type === 'human' || it.type === 'zone' || isOpening(it) || it.type === 'column') continue;
+      if (it.type === 'human' || it.type === 'zone' || isOpening(it) || it.type === 'column' || isLight(it)) continue;
       g.save(); g.translate(it.cx, it.cy); g.rotate(it.rot * D2R);
       g.lineWidth = wl(.18); g.strokeStyle = INK; g.fillStyle = '#FFFFFF';
       const w = it.w, d = it.d;
@@ -5552,13 +6118,13 @@ async function exportPlanPNG() {
   toast('Ölçülü plan indiriliyor');
 }
 function equipmentList(P) {
-  const order = {counter: 0, cabinet: 1, table: 2, fixture: 3, column: 4, door: 5, window: 6};
+  const order = {counter: 0, cabinet: 1, table: 2, fixture: 3, column: 4, door: 5, window: 6, light: 7};
   const map = new Map();
   for (const it of P.items) {
     if (!(it.type in order)) continue;
-    const size = it.type === 'door' || it.type === 'window' ? `${fmtCm(it.w)} × ${fmtCm(it.h)}` : `${fmtCm(it.w)} × ${fmtCm(it.d)} × ${fmtCm(it.type === 'column' ? P.shop.h : it.h)}`;
+    const size = isLight(it) ? (it.style === 'spot' ? `Ø10 · ${it.watt} W · ${it.cct}K` : it.style === 'linear' ? `${fmtCm(it.w)} cm · ${Math.round(lightWatt(it))} W · ${it.cct}K` : `Ø${fmtCm(it.w)} · ${it.watt} W · ${it.cct}K`) : it.type === 'door' || it.type === 'window' ? `${fmtCm(it.w)} × ${fmtCm(it.h)}` : `${fmtCm(it.w)} × ${fmtCm(it.d)} × ${fmtCm(it.type === 'column' ? P.shop.h : it.h)}`;
     const key = [it.type, it.style, it.name, size].join('|');
-    const e = map.get(key) || {it, size, n: 0}; e.n++; map.set(key, e);
+    const e = map.get(key) || {it, size, n: 0}; e.n += isLight(it) && it.style === 'spot' ? it.cnt || 1 : 1; map.set(key, e);
   }
   return [...map.values()].sort((a, b) => order[a.it.type] - order[b.it.type] || a.it.name.localeCompare(b.it.name, 'tr'));
 }
@@ -5780,7 +6346,7 @@ function helpDialog() {
       ['Sürükle (boş alan)', 'Planı kaydır'], ['İki parmak / tekerlek', 'Yakınlaştır'], ['Çift dokun', 'Özellikleri aç'],
       ['V · O · M', 'Seç · Oda çiz · Ölç'], ['R', 'Döndür / kapı yönünü çevir'], ['Ctrl+D', 'Yanına kopyala'], ['Del', 'Sil'],
       ['Oklar', '5 cm kaydır (Shift: 1 cm)'], ['Ctrl+Z / Ctrl+Y', 'Geri al / yinele'], ['Ctrl+S', 'Kaydet'], ['1 · 2', '2B / 3B'],
-      ['G · S · B', 'Izgara · mıknatıs · boşluklar'], ['Alt + sürükle', 'Yapışmadan taşı'],
+      ['G · S · B', 'Izgara · mıknatıs · boşluklar'], ['T', 'Tavan planı (aydınlatma) aç / kapat'], ['Alt + sürükle', 'Yapışmadan taşı'],
       ['3B Gez: W A S D', 'Yürü (Shift koş, Q/E dön)'], ['3B Gez: fare', 'Tıkla → fareyle bak, Esc bırak'],
     ];
     for (const [k, v] of rows) dl.append(h('dt', null, k), h('dd', null, v));
@@ -5886,7 +6452,14 @@ function bindEditor() {
   $('#btnSave').onclick = () => Ed.save();
   $$('#viewSeg button').forEach(b => b.onclick = () => Ed.setView(b.dataset.v));
   $$('#tools2d [data-tool]').forEach(b => b.onclick = () => Ed.setTool(Ed.tool === b.dataset.tool && b.dataset.tool !== 'select' ? 'select' : b.dataset.tool));
-  $('#hintDone').onclick = () => Ed.setTool('select');
+  $('#hintDone').onclick = () => { if (Ed.tool !== 'select') Ed.setTool('select'); else if (Ed.layer === 'ceil') Ed.setLayer('floor'); };
+  $('#togCeil').onclick = () => Ed.setLayer(Ed.layer === 'ceil' ? 'floor' : 'ceil');
+  const tog3 = (id, key, def, after) => {
+    const b = $(id), on = () => Settings.v[key] ?? def; b.classList.toggle('on', on());
+    b.onclick = () => { Settings.set(key, !on()); b.classList.toggle('on', on()); after(on()); };
+  };
+  tog3('#camCeil', 'ceil3d', true, v => { View3D.lightMode(); View3D.req(); toast(v ? 'Tavan ve armatürler gösteriliyor' : 'Tavan gizlendi'); });
+  tog3('#camNight', 'night', false, v => { View3D.lightMode(); View3D.req(); toast(v ? 'Akşam görünümü: yalnızca armatür ışıkları' : 'Gündüz görünümü'); });
   const tog = (id, key, after) => {
     const b = $(id); b.classList.toggle('on', !!Settings.v[key]);
     b.onclick = () => { Settings.set(key, !Settings.v[key]); b.classList.toggle('on', !!Settings.v[key]); Plan.req(); if (after) after(); };
@@ -5966,6 +6539,7 @@ function onKey(e) {
     case 'g': case 'G': $('#togGrid').click(); break;
     case 's': case 'S': $('#togSnap').click(); break;
     case 'b': case 'B': $('#togClear').click(); break;
+    case 't': case 'T': Ed.setLayer(Ed.layer === 'ceil' ? 'floor' : 'ceil'); break;
     case '+': case '=': Plan.zoomAt(Plan.w / 2, Plan.h / 2, 1.25); break;
     case '-': Plan.zoomAt(Plan.w / 2, Plan.h / 2, .8); break;
     case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown': {

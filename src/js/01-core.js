@@ -48,6 +48,7 @@ const TYPES = {
   fixture: {n: 'Islak hacim', solid: 1, color: '#F4F4F2', front: 1},
   human:   {n: 'İnsan', color: '#E07A5F'},
   zone:    {n: 'Boşluk', color: '#3FA66B'},
+  light:   {n: 'Aydınlatma', color: '#F2C94C'},
 };
 const STYLES = {
   cabinet: [['drawer', 'İlaç dolabı'], ['otc', 'OTC dolabı'], ['cosmetic', 'Demir kozmetik'], ['open', 'Açık raf'], ['metal', 'Demir raf'], ['closed', 'Kapaklı'], ['gondola', 'Gondol'], ['glass', 'Vitrin'], ['fridge', 'Buzdolabı'], ['kitchen', 'Mutfak tezgâhı'], ['wstand', 'Cam önü stand']],
@@ -56,7 +57,18 @@ const STYLES = {
   door:    [['single', 'Tek kanat'], ['double', 'Çift kanat'], ['sliding', 'Sürgülü']],
   human:   [['stand', 'Ayakta'], ['wheelchair', 'Tekerlekli sandalye']],
   zone:    [['rect', 'Şerit'], ['circle', 'Daire']],
+  light:   [['linear', 'Lineer'], ['spot', 'Spot'], ['pendant', 'Avize']],
 };
+/* Aydınlatma: montaj, avize modeli, ışık rengi */
+const LIGHT_MOUNTS = {linear: [['recessed', 'Gömme'], ['surface', 'Sıva üstü'], ['suspended', 'Sarkıt']], spot: [['recessed', 'Gömme'], ['surface', 'Sıva üstü']]};
+const PENDANT_MODELS = [['ring', 'Halka'], ['globe', 'Küre'], ['dome', 'Çan']];
+const CCTS = [[3000, '3000K sıcak'], [4000, '4000K doğal'], [6500, '6500K soğuk']];
+const CCT_COLOR = {3000: '#FFD7A1', 4000: '#FFF0DA', 6500: '#E2ECFF'};
+const LM_PER_W = 100;        // LED verimi (lm/W), yaklaşık
+const CEILINGS = [['grid', 'Asma tavan', '60 × 60 karo'], ['flat', 'Düz alçıpan', 'boyalı'], ['wood', 'Ahşap çıta', 'lineer'], ['none', 'Tavan yok', 'açık / brüt']];
+const CEIL_COLORS = {grid: ['#F4F3EF', '#FFFFFF', '#E6E1D7', '#CFD3D6', '#3A3F44'], flat: ['#F4F3EF', '#FFFFFF', '#E9E2D4', '#D6DBDF', '#3A3F44'], wood: ['#C79C6E', '#A8774A', '#7A5536', '#E2C9A1', '#3E3833'], none: ['#4A4F54', '#2E3236', '#D9D9D6']};
+const ceilOf = P => P.ceil || {type: 'grid', color: '#F4F3EF'};
+const isLight = it => it.type === 'light';
 
 /* Eklenebilir öğeler */
 const CATALOG = [
@@ -102,6 +114,11 @@ const CATALOG = [
     {k: 'pass120', n: 'Geçiş 120 cm', sub: 'iki kişi', t: 'zone', s: 'rect', w: 1.2, d: 2, h: 0},
     {k: 'turn', n: 'Dönüş alanı', sub: 'Ø 150 · sandalye', t: 'zone', s: 'circle', w: 1.5, d: 1.5, h: 0},
   ]},
+  {g: 'Tavan & aydınlatma', list: [
+    {k: 'linear', n: 'Lineer LED', sub: '120 cm · gömme', t: 'light', s: 'linear', w: 1.2, d: .06, h: 0, mount: 'recessed', watt: 30},
+    {k: 'spot', n: 'Spot', sub: 'Ø 10 · gömme', t: 'light', s: 'spot', w: .1, d: .1, h: 0, mount: 'recessed', watt: 9},
+    {k: 'pendant', n: 'Avize', sub: 'Ø 60 · sarkıt', t: 'light', s: 'pendant', w: .6, d: .6, h: 0, model: 'ring', drop: .5, watt: 40},
+  ]},
 ];
 const CATALOG_BY_KEY = Object.fromEntries(CATALOG.flatMap(g => g.list).map(e => [e.k, e]));
 
@@ -137,6 +154,9 @@ function palIcon(k) {
     case 'table': return S(`<rect x="5" y="8" width="34" height="15" rx="1.5" fill="#B99470" fill-opacity=".35"/>`);
     case 'desk': return S(`<rect x="7" y="7" width="30" height="13" rx="1.5" fill="#B99470" fill-opacity=".35"/><rect x="17" y="21" width="10" height="7" rx="3" stroke-width="1.2"/>`);
     case 'round': return S(`<circle cx="22" cy="15" r="11" fill="#B99470" fill-opacity=".35"/>`);
+    case 'linear': return S(`<rect x="3" y="12" width="38" height="6" rx="1.5" fill="#F2C94C" fill-opacity=".55"/><path d="M6 15h32" stroke-width="1" stroke-dasharray="2 2"/><path d="M8 22l-2 4M16 22l-1 4M28 22l1 4M36 22l2 4" stroke="${acc}" stroke-width="1.3"/>`);
+    case 'spot': return S(`<circle cx="22" cy="13" r="7" fill="#F2C94C" fill-opacity=".55"/><path d="M17 8l10 10M27 8L17 18" stroke-width="1.1"/><path d="M15 23l-2 4M22 23v4M29 23l2 4" stroke="${acc}" stroke-width="1.3"/>`);
+    case 'pendant': return S(`<path d="M22 1v8" stroke-width="1.2"/><ellipse cx="22" cy="13" rx="14" ry="4.5" fill="#F2C94C" fill-opacity=".45" stroke-width="2"/><path d="M12 21l-2 5M22 21v5M32 21l2 5" stroke="${acc}" stroke-width="1.3"/>`);
     case 'person': return S(`<ellipse cx="22" cy="16" rx="11" ry="6" fill="#E07A5F" fill-opacity=".35"/><circle cx="22" cy="15" r="4" fill="#E07A5F" fill-opacity=".8" stroke="none"/>`);
     case 'wheel': return S(`<rect x="14" y="4" width="16" height="22" rx="2" fill="#E07A5F" fill-opacity=".2"/><path d="M12 8v14M32 8v14" stroke-width="3"/><circle cx="22" cy="13" r="3.5" fill="#E07A5F" fill-opacity=".8" stroke="none"/>`);
     case 'pass90': return S(`<rect x="15" y="2" width="14" height="26" fill="#3FA66B" fill-opacity=".18" stroke="#3FA66B" stroke-dasharray="3 2"/><path d="M18 15h8M18 15l2-2M18 15l2 2M26 15l-2-2M26 15l-2 2" stroke="#3FA66B" stroke-width="1.2"/>`);

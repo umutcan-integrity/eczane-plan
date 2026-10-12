@@ -150,11 +150,12 @@ const View3D = {
     return m;
   },
   skyTex(dark) {
-    const key = dark ? 'd' : 'l';
+    const key = dark === 'night' ? 'n' : dark ? 'd' : 'l';
     if (this._sky && this._sky.k === key) return this._sky.t;
     const T = this.T, c = document.createElement('canvas'); c.width = 4; c.height = 256;
     const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256);
-    if (dark) { gr.addColorStop(0, '#0C1116'); gr.addColorStop(.6, '#18212A'); gr.addColorStop(1, '#222A2E'); }
+    if (key === 'n') { gr.addColorStop(0, '#03060C'); gr.addColorStop(.6, '#0A1220'); gr.addColorStop(1, '#16202E'); }
+    else if (dark) { gr.addColorStop(0, '#0C1116'); gr.addColorStop(.6, '#18212A'); gr.addColorStop(1, '#222A2E'); }
     else { gr.addColorStop(0, '#A9CBE6'); gr.addColorStop(.55, '#D8E7F1'); gr.addColorStop(1, '#EEF1F0'); }
     g.fillStyle = gr; g.fillRect(0, 0, 4, 256);
     const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace;
@@ -294,6 +295,7 @@ const View3D = {
 
     // Eşyalar
     for (const it of P.items) {
+      if (isLight(it)) continue; // armatürler tavanla birlikte kurulur
       const g = this.buildItem(it, wallH, dark);
       if (!g) continue;
       g.position.set(it.cx, 0, it.cy); g.rotation.y = -(it.rot || 0) * D2R;
@@ -321,8 +323,8 @@ const View3D = {
     }
 
     // Tabela ve tavan
-    if (wallMode === 'full') { this.buildSign(P, H, dark); this.buildCeiling(P, H); }
-    else this.ceil = null;
+    if (wallMode === 'full') this.buildSign(P, H, dark);
+    this.buildCeiling(P, H, wallMode === 'full');
 
     // Güneş / gölge kutusu
     const ext = Math.max(W, D) * .75 + 4;
@@ -334,31 +336,184 @@ const View3D = {
     this.updateSel();
     this.miniDirty = true;
   },
-  /* Gezinirken tavan görünür, iç ışık artar */
+  /* Işık durumu: gündüz (yörünge/gez) ya da akşam; tavan ve armatür görünürlüğü */
   lightMode() {
-    const walk = this.mode === 'walk', dark = document.documentElement.dataset.mode === 'dark';
-    if (this.ceil) this.ceil.visible = walk;
-    for (const c of this.root.children) if (c.userData.label || c.userData.clearZone || c.userData.zoneItem) c.visible = !walk;
-    this.hemi.intensity = walk ? 1.25 : (dark ? .9 : 1.1);
-    this.sun.intensity = walk ? 1.2 : 2.0;
-    this.scene.environmentIntensity = walk ? .85 : .6;
-    if (this.fill) this.fill.intensity = walk ? 1.4 : 0;
+    const walk = this.mode === 'walk', dark = document.documentElement.dataset.mode === 'dark', night = !!Settings.v.night;
+    const showCeil = walk || (Settings.v.ceil3d ?? true);
+    if (this.ceil) this.ceil.visible = showCeil;
+    for (const c of this.root.children) {
+      if (c.userData.label || c.userData.clearZone || c.userData.zoneItem) c.visible = !walk;
+      if (c.userData.fixture) c.visible = showCeil;
+    }
+    const own = !!this.ownLights;
+    if (night) {
+      this.hemi.intensity = .14; this.sun.intensity = 0; this.scene.environmentIntensity = .1; if (this.fill) this.fill.intensity = 0;
+      this.scene.background = this.skyTex('night');
+    } else {
+      this.hemi.intensity = walk ? (own ? .85 : 1.25) : (dark ? .9 : 1.1);
+      this.sun.intensity = walk ? (own ? .9 : 1.2) : 2.0;
+      this.scene.environmentIntensity = walk ? (own ? .6 : .85) : .6;
+      if (this.fill) this.fill.intensity = walk ? (own ? .55 : 1.4) : 0;
+      this.scene.background = this.skyTex(dark);
+    }
+    const lf = night ? 1.5 : walk ? .7 : .4;
+    for (const L of this.lamps || []) L.intensity = L.userData.base * lf;
+    for (const m of this.ceilMats || []) m.emissiveIntensity = m.userData.em * (night ? .25 : walk ? 1 : .8);
   },
-  buildCeiling(P, H) {
-    const T = this.T, W = P.shop.w, D = P.shop.d, g = new T.Group();
-    const cm = this.mat('#F5F4F0', {roughness: .95, side: T.DoubleSide, emissive: '#F2F0EA', emissiveIntensity: .62});
-    for (const fr of shopRects(P)) {
-      const c = new T.Mesh(new T.PlaneGeometry(fr.w, fr.d), cm);
-      c.rotation.x = Math.PI / 2; c.position.set(fr.x + fr.w / 2, H - .002, fr.y + fr.d / 2); c.receiveShadow = false; c.castShadow = false; g.add(c);
+  /* Tavan dokusu (CanvasTexture): asma tavan karoları, düz boya, ahşap çıta, brüt */
+  ceilCanvas(c) {
+    this._ceilCv = this._ceilCv || new Map();
+    const key = c.type + c.color;
+    if (this._ceilCv.has(key)) return this._ceilCv.get(key);
+    const N = 256, cv = document.createElement('canvas'); cv.width = cv.height = N;
+    const g = cv.getContext('2d');
+    let sd = 11; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    g.fillStyle = c.color; g.fillRect(0, 0, N, N);
+    if (c.type === 'wood') {
+      const pitch = N / 6, gap = pitch * .2;
+      for (let k = 0; k < 6; k++) {
+        const y = k * pitch;
+        g.fillStyle = mixHex(c.color, r() < .5 ? '#000000' : '#FFFFFF', r() * .08); g.fillRect(0, y, N, pitch - gap);
+        for (let q = 0; q < 14; q++) { g.fillStyle = `rgba(60,35,15,${.05 + r() * .08})`; g.fillRect(0, y + r() * (pitch - gap), N, .6 + r() * 1.4); }
+        g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, y + pitch - gap - 1.5, N, 1.5);
+        g.fillStyle = '#1C1916'; g.fillRect(0, y + pitch - gap, N, gap);
+      }
+    } else {
+      for (let i = 0; i < (c.type === 'grid' ? 2600 : 900); i++) { g.fillStyle = `rgba(${r() < .7 ? '0,0,0' : '255,255,255'},${.02 + r() * .05})`; const s = c.type === 'grid' ? 1 + r() * 1.6 : 2 + r() * 5; g.fillRect(r() * N, r() * N, s, s); }
+      if (c.type === 'grid') {
+        const b = 5; // T profil (24 mm)
+        g.fillStyle = mixHex(c.color, '#FFFFFF', .55); g.fillRect(0, 0, N, b); g.fillRect(0, N - b, N, b); g.fillRect(0, 0, b, N); g.fillRect(N - b, 0, b, N);
+        g.fillStyle = 'rgba(0,0,0,.16)'; g.fillRect(b, b, N - b * 2, 1.5); g.fillRect(b, b, 1.5, N - b * 2); g.fillRect(b, N - b - 1, N - b * 2, 1); g.fillRect(N - b - 1, b, 1, N - b * 2);
+      }
     }
-    const lamp = this.mat('#FFFFFF', {emissive: '#FFFFFF', emissiveIntensity: 2.2, roughness: .4});
-    const nx = Math.max(1, Math.round(W / 2.4)), nz = Math.max(1, Math.round(D / 2.4));
-    for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) {
-      if (!inShop(P, (i + .5) * W / nx, (j + .5) * D / nz)) continue;
-      const l = this.box(g, .6, .02, .6, lamp, (i + .5) * W / nx, H - .012, (j + .5) * D / nz); l.castShadow = false; l.receiveShadow = false;
+    this._ceilCv.set(key, cv);
+    return cv;
+  },
+  ceilMat(c, fr) {
+    const T = this.T, size = c.type === 'grid' ? .6 : c.type === 'wood' ? .6 : 2;
+    const t = new T.CanvasTexture(this.ceilCanvas(c));
+    t.colorSpace = T.SRGBColorSpace; t.wrapS = t.wrapT = T.RepeatWrapping; t.anisotropy = 8;
+    t.repeat.set(fr.w / size, fr.d / size); t.offset.set((fr.x / size) % 1, (fr.y / size) % 1);
+    const em = c.type === 'none' ? .05 : c.type === 'wood' ? .22 : .42;
+    const m = new T.MeshStandardMaterial({map: t, emissiveMap: t, emissive: new T.Color('#FFFFFF'), emissiveIntensity: em, roughness: c.type === 'wood' ? .6 : .95, side: T.FrontSide});
+    m._own = true; m.userData.em = em;
+    return m;
+  },
+  buildCeiling(P, H, full) {
+    const T = this.T, W = P.shop.w, D = P.shop.d, g = new T.Group(), c = ceilOf(P);
+    this.ceilMats = []; this.lamps = []; this.ceil = null;
+    const lights = P.items.filter(isLight);
+    this.ownLights = lights.length > 0;
+    const em = [];
+    if (full) {
+      for (const fr of shopRects(P)) { // aşağı bakan tek yüzlü düzlem: yukarıdan bakınca görünmez
+        const m = this.ceilMat(c, fr); this.ceilMats.push(m);
+        const p = new T.Mesh(new T.PlaneGeometry(fr.w, fr.d), m);
+        p.rotation.x = Math.PI / 2; p.position.set(fr.x + fr.w / 2, H - .002, fr.y + fr.d / 2); p.receiveShadow = false; p.castShadow = false; g.add(p);
+      }
+      if (!lights.length) { // armatür yoksa varsayılan 60×60 paneller
+        const lamp = this.mat('#FFFFFF', {emissive: '#FFFFFF', emissiveIntensity: 2.2, roughness: .4});
+        const nx = Math.max(1, Math.round(W / 2.4)), nz = Math.max(1, Math.round(D / 2.4));
+        for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) {
+          const x = (i + .5) * W / nx, z = (j + .5) * D / nz;
+          if (!inShop(P, x, z)) continue;
+          const l = this.box(g, .6, .02, .6, lamp, x, H - .012, z); l.castShadow = false; l.receiveShadow = false;
+          em.push({x, z, y: H - .03, lm: 3600, ang: 1.15, col: '#FFF4E6'});
+        }
+      }
+      this.root.add(g); this.ceil = g;
     }
-    g.visible = this.mode === 'walk';
-    this.root.add(g); this.ceil = g;
+    for (const it of lights) {
+      const f = this.buildFixture(it, H);
+      f.position.set(it.cx, 0, it.cy); f.rotation.y = -(it.rot || 0) * D2R;
+      f.userData.pick = {k: 'item', id: it.id}; f.userData.fixture = 1;
+      this.root.add(f);
+      const col = CCT_COLOR[it.cct] || CCT_COLOR[4000], lm = lightLm(it);
+      if (it.style === 'spot') {
+        const n = it.cnt || 1;
+        for (let i = 0; i < n; i++) { const [x, z] = toWorld(it, n > 1 ? -it.w / 2 + .05 + i * it.sp : 0, 0); em.push({x, z, y: H - (it.mount === 'surface' ? .12 : .02), lm: lm / n, ang: .55, col}); }
+      } else if (it.style === 'linear') {
+        const y = it.mount === 'suspended' ? H - it.drop - .08 : it.mount === 'surface' ? H - .08 : H - .02;
+        const k = Math.max(1, Math.round(it.w / 1.8));
+        for (let i = 0; i < k; i++) { const [x, z] = toWorld(it, -it.w / 2 + (i + .5) * it.w / k, 0); em.push({x, z, y, lm: lm / k, ang: 1.1, col}); }
+      } else em.push({x: it.cx, z: it.cy, y: H - lightDepth(it) + .05, lm, ang: 1.3, col});
+    }
+    this.buildLamps(em, H);
+  },
+  /* Işık kaynakları: çok sayıda armatür, yakın olanlar birleştirilerek sınırlı sayıda gerçek ışığa dönüşür */
+  buildLamps(em, H) {
+    const T = this.T, MAX = isMobile() ? 6 : 10;
+    const rooms = [...Ed.P.rooms].sort((a, b) => a.w * a.d - b.w * b.d);
+    const region = (x, z) => rooms.findIndex(r => x > r.x && x < r.x + r.w && z > r.y && z < r.y + r.d);
+    let cl = em.map(e => ({...e, n: 1, spread: 0, pts: [[e.x, e.z]], rg: region(e.x, e.z)}));
+    while (cl.length > MAX) {
+      let bi = 0, bj = 1, bd = Infinity;
+      for (let i = 0; i < cl.length; i++) for (let j = i + 1; j < cl.length; j++) { const d = Math.hypot(cl[i].x - cl[j].x, cl[i].z - cl[j].z) * (1 + (cl[i].n + cl[j].n) * .05) * (cl[i].rg === cl[j].rg ? 1 : 6); /* aynı odadakiler önce birleşir */ if (d < bd) { bd = d; bi = i; bj = j; } }
+      const a = cl[bi], b = cl[bj], lm = a.lm + b.lm;
+      const m = {x: (a.x * a.lm + b.x * b.lm) / lm, z: (a.z * a.lm + b.z * b.lm) / lm, y: (a.y * a.lm + b.y * b.lm) / lm, lm, ang: Math.max(a.ang, b.ang), col: a.lm >= b.lm ? a.col : b.col, n: a.n + b.n, pts: a.pts.concat(b.pts), rg: a.lm >= b.lm ? a.rg : b.rg};
+      m.spread = Math.max(...m.pts.map(([x, z]) => Math.hypot(x - m.x, z - m.z)));
+      cl.splice(bj, 1); cl[bi] = m;
+    }
+    for (const c of cl) {
+      const h = Math.max(.5, c.y), ang = clamp(Math.atan((c.spread + h * Math.tan(c.ang)) / h), c.ang, 1.4);
+      const L = new T.SpotLight(new T.Color(c.col), 1, 0, ang, c.n > 1 ? 1 : .75, 2);
+      L.castShadow = false;
+      L.position.set(c.x, c.y, c.z); L.target.position.set(c.x, 0, c.z);
+      L.userData.base = c.lm / (2 * Math.PI * (1 - Math.cos(ang))) * .012;
+      this.root.add(L); this.root.add(L.target); this.lamps.push(L);
+    }
+  },
+  /* Armatür modelleri (yerel: x boy, z en; y mutlak yükseklik) */
+  buildFixture(it, H) {
+    const T = this.T, g = new T.Group();
+    const col = CCT_COLOR[it.cct] || CCT_COLOR[4000];
+    const glow = this.mat('#FFFFFF', {emissive: col, emissiveIntensity: 3.2, roughness: .3});
+    const soft = this.mat('#FFFFFF', {emissive: col, emissiveIntensity: 1.5, roughness: .4});
+    const alu = this.mat('#C7CBCF', {metalness: .65, roughness: .32});
+    const white = this.mat('#F3F3F1', {roughness: .45});
+    const black = this.mat('#1E2124', {roughness: .5, metalness: .2});
+    const cyl = (r0, r1, hh, m, x, y, z, seg = 24) => { const c = new T.Mesh(new T.CylinderGeometry(r0, r1, hh, seg), m); c.position.set(x, y, z); g.add(c); return c; };
+    const cable = (x0, y0, z0, x1, y1, z1) => { const a = new T.Vector3(x0, y0, z0), b = new T.Vector3(x1, y1, z1), L = a.distanceTo(b); const c = new T.Mesh(new T.CylinderGeometry(.0018, .0018, L, 5), black); c.position.copy(a).add(b).multiplyScalar(.5); c.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), b.clone().sub(a).normalize()); g.add(c); };
+    if (it.style === 'spot') {
+      const n = it.cnt || 1;
+      for (let i = 0; i < n; i++) {
+        const x = n > 1 ? -it.w / 2 + .05 + i * it.sp : 0;
+        if (it.mount === 'surface') { cyl(.045, .045, .11, white, x, H - .055, 0); cyl(.034, .034, .004, glow, x, H - .111, 0); cyl(.046, .046, .006, alu, x, H - .108, 0); }
+        else { cyl(.056, .056, .006, white, x, H - .003, 0); cyl(.04, .044, .006, alu, x, H - .006, 0); cyl(.03, .03, .016, glow, x, H - .004, 0); } // mercek üstten de görünür
+      }
+    } else if (it.style === 'linear') {
+      const w = it.w, d = Math.max(.035, it.d);
+      if (it.mount === 'recessed') { this.box(g, w + .012, .008, d + .012, alu, 0, H - .004, 0); this.box(g, w, .016, d - .012, glow, 0, H - .004, 0); }
+      else {
+        const y = it.mount === 'suspended' ? H - it.drop : H;
+        this.box(g, w, .07, d, alu, 0, y - .035, 0); this.box(g, w - .012, .004, d - .01, glow, 0, y - .072, 0);
+        this.box(g, .006, .07, d + .002, black, -w / 2 + .003, y - .035, 0); this.box(g, .006, .07, d + .002, black, w / 2 - .003, y - .035, 0);
+        if (it.mount === 'suspended') for (const x of [-w / 2 + .12, w / 2 - .12]) { cable(x, y, 0, x, H, 0); cyl(.025, .025, .012, white, x, H - .006, 0); }
+      }
+    } else {
+      const R = it.w / 2, y = H - (it.drop || .7);
+      cyl(.06, .06, .02, white, 0, H - .01, 0);
+      if (it.model === 'ring') {
+        const ring = new T.Mesh(new T.TorusGeometry(R, .022, 12, 72), alu); ring.rotation.x = Math.PI / 2; ring.position.set(0, y, 0); g.add(ring);
+        const band = new T.Mesh(new T.TorusGeometry(R, .012, 8, 72), glow); band.rotation.x = Math.PI / 2; band.position.set(0, y - .016, 0); g.add(band);
+        for (let k = 0; k < 3; k++) { const a = k * 2.094; cable(Math.cos(a) * R, y + .02, Math.sin(a) * R, 0, H - .02, 0); }
+      } else if (it.model === 'globe') { // sarkma: kablo boyu (kürenin tepesine kadar)
+        const cy = y - R;
+        cable(0, y, 0, 0, H - .02, 0); cyl(.025, .03, .05, alu, 0, y + .01, 0);
+        const s = new T.Mesh(new T.SphereGeometry(R, 40, 24), this.mat('#FFFFFF', {emissive: col, emissiveIntensity: .85, roughness: .25, transparent: true, opacity: .96})); s.position.set(0, cy, 0); g.add(s);
+        const core = new T.Mesh(new T.SphereGeometry(R * .35, 20, 14), glow); core.position.set(0, cy, 0); g.add(core);
+      } else {
+        const by = y - R * .75; // çan: üst ucu sarkma hizasında
+        const pts = []; for (let k = 0; k <= 16; k++) { const a = k / 16 * Math.PI / 2; pts.push(new T.Vector2(.03 + Math.sin(a) * R, Math.cos(a) * R * .75)); }
+        const shadeM = this.mat('#2A2F33', {metalness: .5, roughness: .35, side: T.DoubleSide});
+        const sh = new T.Mesh(new T.LatheGeometry(pts, 40), shadeM); sh.position.set(0, by, 0); g.add(sh);
+        const inner = new T.Mesh(new T.LatheGeometry(pts.map(p => new T.Vector2(p.x * .985, p.y - .004)), 40), this.mat('#FFFFFF', {emissive: col, emissiveIntensity: .9, side: T.BackSide})); inner.position.set(0, by, 0); g.add(inner);
+        const bulb = new T.Mesh(new T.SphereGeometry(.055, 20, 14), glow); bulb.position.set(0, by + .08, 0); g.add(bulb);
+        cable(0, y, 0, 0, H - .02, 0);
+      }
+    }
+    g.traverse(n => { if (n.isMesh) { n.castShadow = false; n.receiveShadow = false; } });
+    return g;
   },
 
   /* ---------- Eczane tabelası ---------- */

@@ -67,7 +67,7 @@ const Kroki = {
     P.rooms.map((r, i) => ({r, i})).sort((a, b) => b.r.w * b.r.d - a.r.w * a.r.d).forEach(({r, i}) => fill(r.x, r.y, r.x + r.w, r.y + r.d, i + 1));
     for (const w of wallPieces(segs, () => false)) fill(w.x0, w.y0, w.x1, w.y1, -1);
     for (const v of P.voids || []) fill(v.x - .05, v.y - .05, v.x + v.w + .05, v.y + v.d + .05, -1);
-    for (const it of P.items) if (it.type !== 'zone' && it.type !== 'human') { const b = itemBox(it); fill(b.x0 - .05, b.y0 - .05, b.x1 + .05, b.y1 + .05, -1); }
+    for (const it of P.items) if (it.type !== 'zone' && it.type !== 'human' && !isLight(it)) { const b = itemBox(it); fill(b.x0 - .05, b.y0 - .05, b.x1 + .05, b.y1 + .05, -1); }
     const out = [];
     const d = new Float32Array(nx * ny);
     for (let v = 0; v <= P.rooms.length; v++) {
@@ -182,7 +182,7 @@ const Kroki = {
     // Eşyalar (duvarların altında kalsın)
     WT();
     if (o.items) for (const it of P.items) {
-      if (it.type === 'human' || it.type === 'zone' || isOpening(it) || it.type === 'column') continue;
+      if (it.type === 'human' || it.type === 'zone' || isOpening(it) || it.type === 'column' || isLight(it)) continue;
       g.save(); g.translate(it.cx, it.cy); g.rotate(it.rot * D2R);
       g.lineWidth = wl(.18); g.strokeStyle = INK; g.fillStyle = '#FFFFFF';
       const w = it.w, d = it.d;

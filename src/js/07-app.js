@@ -115,13 +115,13 @@ async function exportPlanPNG() {
   toast('Ölçülü plan indiriliyor');
 }
 function equipmentList(P) {
-  const order = {counter: 0, cabinet: 1, table: 2, fixture: 3, column: 4, door: 5, window: 6};
+  const order = {counter: 0, cabinet: 1, table: 2, fixture: 3, column: 4, door: 5, window: 6, light: 7};
   const map = new Map();
   for (const it of P.items) {
     if (!(it.type in order)) continue;
-    const size = it.type === 'door' || it.type === 'window' ? `${fmtCm(it.w)} × ${fmtCm(it.h)}` : `${fmtCm(it.w)} × ${fmtCm(it.d)} × ${fmtCm(it.type === 'column' ? P.shop.h : it.h)}`;
+    const size = isLight(it) ? (it.style === 'spot' ? `Ø10 · ${it.watt} W · ${it.cct}K` : it.style === 'linear' ? `${fmtCm(it.w)} cm · ${Math.round(lightWatt(it))} W · ${it.cct}K` : `Ø${fmtCm(it.w)} · ${it.watt} W · ${it.cct}K`) : it.type === 'door' || it.type === 'window' ? `${fmtCm(it.w)} × ${fmtCm(it.h)}` : `${fmtCm(it.w)} × ${fmtCm(it.d)} × ${fmtCm(it.type === 'column' ? P.shop.h : it.h)}`;
     const key = [it.type, it.style, it.name, size].join('|');
-    const e = map.get(key) || {it, size, n: 0}; e.n++; map.set(key, e);
+    const e = map.get(key) || {it, size, n: 0}; e.n += isLight(it) && it.style === 'spot' ? it.cnt || 1 : 1; map.set(key, e);
   }
   return [...map.values()].sort((a, b) => order[a.it.type] - order[b.it.type] || a.it.name.localeCompare(b.it.name, 'tr'));
 }
@@ -343,7 +343,7 @@ function helpDialog() {
       ['Sürükle (boş alan)', 'Planı kaydır'], ['İki parmak / tekerlek', 'Yakınlaştır'], ['Çift dokun', 'Özellikleri aç'],
       ['V · O · M', 'Seç · Oda çiz · Ölç'], ['R', 'Döndür / kapı yönünü çevir'], ['Ctrl+D', 'Yanına kopyala'], ['Del', 'Sil'],
       ['Oklar', '5 cm kaydır (Shift: 1 cm)'], ['Ctrl+Z / Ctrl+Y', 'Geri al / yinele'], ['Ctrl+S', 'Kaydet'], ['1 · 2', '2B / 3B'],
-      ['G · S · B', 'Izgara · mıknatıs · boşluklar'], ['Alt + sürükle', 'Yapışmadan taşı'],
+      ['G · S · B', 'Izgara · mıknatıs · boşluklar'], ['T', 'Tavan planı (aydınlatma) aç / kapat'], ['Alt + sürükle', 'Yapışmadan taşı'],
       ['3B Gez: W A S D', 'Yürü (Shift koş, Q/E dön)'], ['3B Gez: fare', 'Tıkla → fareyle bak, Esc bırak'],
     ];
     for (const [k, v] of rows) dl.append(h('dt', null, k), h('dd', null, v));
@@ -449,7 +449,14 @@ function bindEditor() {
   $('#btnSave').onclick = () => Ed.save();
   $$('#viewSeg button').forEach(b => b.onclick = () => Ed.setView(b.dataset.v));
   $$('#tools2d [data-tool]').forEach(b => b.onclick = () => Ed.setTool(Ed.tool === b.dataset.tool && b.dataset.tool !== 'select' ? 'select' : b.dataset.tool));
-  $('#hintDone').onclick = () => Ed.setTool('select');
+  $('#hintDone').onclick = () => { if (Ed.tool !== 'select') Ed.setTool('select'); else if (Ed.layer === 'ceil') Ed.setLayer('floor'); };
+  $('#togCeil').onclick = () => Ed.setLayer(Ed.layer === 'ceil' ? 'floor' : 'ceil');
+  const tog3 = (id, key, def, after) => {
+    const b = $(id), on = () => Settings.v[key] ?? def; b.classList.toggle('on', on());
+    b.onclick = () => { Settings.set(key, !on()); b.classList.toggle('on', on()); after(on()); };
+  };
+  tog3('#camCeil', 'ceil3d', true, v => { View3D.lightMode(); View3D.req(); toast(v ? 'Tavan ve armatürler gösteriliyor' : 'Tavan gizlendi'); });
+  tog3('#camNight', 'night', false, v => { View3D.lightMode(); View3D.req(); toast(v ? 'Akşam görünümü: yalnızca armatür ışıkları' : 'Gündüz görünümü'); });
   const tog = (id, key, after) => {
     const b = $(id); b.classList.toggle('on', !!Settings.v[key]);
     b.onclick = () => { Settings.set(key, !Settings.v[key]); b.classList.toggle('on', !!Settings.v[key]); Plan.req(); if (after) after(); };
@@ -529,6 +536,7 @@ function onKey(e) {
     case 'g': case 'G': $('#togGrid').click(); break;
     case 's': case 'S': $('#togSnap').click(); break;
     case 'b': case 'B': $('#togClear').click(); break;
+    case 't': case 'T': Ed.setLayer(Ed.layer === 'ceil' ? 'floor' : 'ceil'); break;
     case '+': case '=': Plan.zoomAt(Plan.w / 2, Plan.h / 2, 1.25); break;
     case '-': Plan.zoomAt(Plan.w / 2, Plan.h / 2, .8); break;
     case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown': {
