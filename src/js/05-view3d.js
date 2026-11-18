@@ -211,33 +211,74 @@ const View3D = {
   build() {
     if (!this.T || !Ed.P) return;
     this.sceneDirty = false;
-    const T = this.T, P = Ed.P, W = P.shop.w, D = P.shop.d, H = P.shop.h || 2.8;
-    const cs = getComputedStyle(document.documentElement), css = n => cs.getPropertyValue(n).trim();
+    const T = this.T, P = Ed.P, L = P.levels, cur = P.cur, g = groundIdx(P);
     const dark = document.documentElement.dataset.mode === 'dark';
     this.clearRoot();
-    this.prods = []; this.signInfo = null;
-    const SW = 7;   // kaldırım genişliği
+    this.signInfo = null; this.ceils = []; this.ceilMats = []; this.lamps = []; this.ownLights = false; this.lvY = [];
     this.scene.background = this.skyTex(dark);
+    const walk = this.mode === 'walk', mode = walk || L.length < 2 ? 'all' : (Settings.v.lvView || 'stack');
+    this.builtMode = mode;
+    const show = L.map((l, i) => mode === 'all' || mode === 'explode' ? true : mode === 'single' ? i === cur : i <= cur);
+    const realRoot = this.root, segs0 = Ed.segs, A0 = Ed.A;
+    try {
+      for (let i = 0; i < L.length; i++) {
+        this.lvY[i] = levelElev(P, i) + (mode === 'explode' ? (i - g) * 2.6 : 0);
+        if (!show[i]) continue;
+        P.cur = i;
+        Ed.segs = i === cur ? segs0 : computeWalls(P); Ed.A = i === cur ? A0 : analyze(P, Ed.segs);
+        const lg = new T.Group(); lg.userData.level = i; realRoot.add(lg); this.root = lg;
+        this.prods = [];
+        this.buildLevel(P, i, {dark, walk, top: !walk && (i === cur || mode === 'explode'), maxLamps: i === cur ? (isMobile() ? 6 : 10) : (walk ? 3 : 2)});
+        this.root = realRoot;
+        lg.position.set(L[i].ox, this.lvY[i], L[i].oy);
+      }
+    } finally { P.cur = cur; Ed.segs = segs0; Ed.A = A0; this.root = realRoot; }
+    if (show[g] && mode !== 'explode' && (mode !== 'single' || cur === g)) this.buildOutdoor(P, dark);
+
+    // Güneş / gölge kutusu (görünen katların toplam izi)
+    let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity, y1 = 3;
+    L.forEach((l, i) => { if (!show[i]) return; x0 = Math.min(x0, l.ox); z0 = Math.min(z0, l.oy); x1 = Math.max(x1, l.ox + l.shop.w); z1 = Math.max(z1, l.oy + l.shop.d); y1 = Math.max(y1, this.lvY[i] + l.shop.h); });
+    const W = x1 - x0, D = z1 - z0, ext = Math.max(W, D) * .75 + 4 + y1 * .4;
+    const sc = this.sun.shadow.camera; sc.left = -ext; sc.right = ext; sc.top = ext; sc.bottom = -ext; sc.near = 1; sc.far = 70 + y1 * 2; sc.updateProjectionMatrix();
+    this.sun.position.set(x0 + W / 2 + 7, 15 + y1, z0 + D / 2 + 10); this.sun.target.position.set(x0 + W / 2, Math.min(0, this.lvY[cur]), z0 + D / 2);
+    this.lightMode();
+
+    this.buildColliders();
+    this.updateSel();
+    this.miniDirty = true;
+  },
+  /* Katın kökü (dünya): x, y (kot / ayrık görünümde kaydırılmış), z */
+  lvOrigin(i = Ed.P.cur) { const l = Ed.P.levels[i]; return {x: l.ox, y: this.lvY && this.lvY[i] !== undefined ? this.lvY[i] : levelElev(Ed.P, i), z: l.oy}; },
+  /* Tüm kat gruplarının çocukları (düz liste) */
+  kids() { const out = []; for (const c of this.root.children) { if (c.userData.level !== undefined) out.push(...c.children); else out.push(c); } return out; },
+  levelChanged(walkSwitch) {
+    if (!this.ready) { this.sceneDirty = true; return; }
+    if (walkSwitch && this.mode === 'walk') { this.buildColliders(); this.miniDirty = true; this.req(); return; }
+    const o = this.orb, before = o ? o.ty : 0;
+    this.sceneDirty = true;
+    if (Ed.view === '3d') { this.build(); if (o) { const p = this.lvOrigin(); o.ty = p.y + (before - (this._lastTy0 ?? before)); } this.req(); }
+    this._lastTy0 = this.lvOrigin().y;
+    if (this.mode === 'walk') { this.placeOnLevel(); }
+  },
+  /* Bir katı kur (kök: o katın grubu; koordinatlar kat yereli) */
+  buildLevel(P, li, o) {
+    const T = this.T, W = P.shop.w, D = P.shop.d, H = P.shop.h || 2.8, dark = o.dark;
+    const cs = getComputedStyle(document.documentElement), css = n => cs.getPropertyValue(n).trim();
     const root = this.root;
-    const wallMode = Settings.v.walls || 'full';
+    const wallMode = o.top ? (Settings.v.walls || 'full') : 'full';
     const wallH = wallMode === 'full' ? H : wallMode === 'half' ? 1.1 : 0.06;
-    this.wallH = wallH;
-
-    // Dış zemin: asfalt + dükkân çevresinde kaldırım
-    const ground = new T.Mesh(new T.PlaneGeometry(W + 80, D + 80), this.mat(dark ? '#2B302E' : '#9A9C98', {roughness: .95}));
-    ground.rotation.x = -Math.PI / 2; ground.position.set(W / 2, -0.03, D / 2); ground.receiveShadow = true; root.add(ground);
-    const swM = new T.MeshStandardMaterial({color: 0xffffff, roughness: .9, map: this.floorTex(dark ? '#4A504D' : '#D6D2C9', dark ? '#3E4441' : '#C2BDB2', 3)});
-    swM._own = true; swM.map.repeat.set((W + SW * 2) / 0.5, (D + SW * 2) / 0.5);
-    const walk = new T.Mesh(new T.PlaneGeometry(W + SW * 2, D + SW * 2), swM);
-    walk.rotation.x = -Math.PI / 2; walk.position.set(W / 2, -0.012, D / 2); walk.receiveShadow = true; root.add(walk);
-    // Kaldırım bordürü
-    const curb = this.mat(dark ? '#5C625F' : '#B9B4AA');
-    for (const [x, z, w, d] of [[W / 2, -SW - .05, W + SW * 2 + .1, .1], [W / 2, D + SW + .05, W + SW * 2 + .1, .1], [-SW - .05, D / 2, .1, D + SW * 2], [W + SW + .05, D / 2, .1, D + SW * 2]]) this.box(root, w, .04, d, curb, x, -.01, z);
-
-    // İç zemin (seramik)
-    for (const fr of shopRects(P)) { // dükkân şekline göre zemin parçaları
+    if (o.top || li === P.cur) this.wallH = wallH;
+    const mz = mezzOver(P, li); // üstte asma kat varsa galeri (çift yükseklik) bölümü
+    // İç zemin (seramik): merdiven boşlukları çıkarılır; alttaki katın üstünde döşeme plağı
+    const der = levelDerived(P, li), cuts = der.holes.map(hl => ({x: hl.box.x0, y: hl.box.y0, w: hl.box.x1 - hl.box.x0, d: hl.box.y1 - hl.box.y0}));
+    const floorRects = shopRects(P).flatMap(r => cuts.length ? rectMinus(r, cuts) : [r]);
+    if (li > 0) {
+      const slabM = this.mat(dark ? '#77736C' : '#B8B3AA', {roughness: .9}), sl = curLevel(P).slab;
+      for (const fr of floorRects) { const m = this.box(root, fr.w, sl - .008, fr.d, slabM, fr.x + fr.w / 2, -sl / 2, fr.y + fr.d / 2); m.receiveShadow = true; }
+    }
+    for (const fr of floorRects) { // dükkân şekline göre zemin parçaları
       const floor = new T.Mesh(new T.PlaneGeometry(fr.w, fr.d), this.floorMat(P.floor, fr.w, fr.d, fr.x, fr.y));
-      floor.rotation.x = -Math.PI / 2; floor.position.set(fr.x + fr.w / 2, 0, fr.y + fr.d / 2); floor.receiveShadow = true; floor.userData.floor = 1; root.add(floor);
+      floor.rotation.x = -Math.PI / 2; floor.position.set(fr.x + fr.w / 2, 0, fr.y + fr.d / 2); floor.receiveShadow = true; floor.userData.floor = 1; floor.userData.lv = li; root.add(floor);
     }
     for (const v of P.voids || []) { // bina boşluğu: koyu, taralı olmayan düz zemin
       const x0 = clamp(v.x, 0, W), y0 = clamp(v.y, 0, D), x1 = clamp(v.x + v.w, 0, W), y1 = clamp(v.y + v.d, 0, D);
@@ -251,8 +292,8 @@ const View3D = {
       const rm = r.floor && r.floor !== P.floor ? this.floorMat(r.floor, r.w, r.d, r.x, r.y) : this.mat('#FFFFFF', {visible: false});
       const m = new T.Mesh(new T.PlaneGeometry(r.w, r.d), rm);
       m.rotation.x = -Math.PI / 2; m.position.set(r.x + r.w / 2, 0.002, r.y + r.d / 2); m.receiveShadow = true;
-      m.userData.pick = {k: 'room', id: r.id}; m.userData.floor = 1; root.add(m);
-      if (!Settings.v.roomLabels3d && Settings.v.roomLabels3d !== undefined) continue;
+      m.userData.pick = {k: 'room', id: r.id, lv: li}; m.userData.floor = 1; m.userData.lv = li; root.add(m);
+      if (o.walk || !Settings.v.roomLabels3d && Settings.v.roomLabels3d !== undefined) continue;
       const {t, aspect} = this.textTex([r.name, fmtA(r.w * r.d) + ' m²'], dark ? '#FFFFFF' : '#1B211F');
       const lh = clamp(Math.min(r.w, r.d) * .22, .25, .7), lw = lh * aspect;
       const s = Math.min(1, (r.w * .85) / lw);
@@ -267,6 +308,7 @@ const View3D = {
     const facade = this.mat(dark ? '#8E8A82' : '#E3DDD2', {roughness: .95});
     const cap = this.mat(dark ? '#9FA8A3' : '#3A423F');
     const skirt = this.mat(dark ? '#6B6760' : '#9A958C', {roughness: .6});
+    const glassM = this.glass(), railM = this.chrome();
     const addWall = (s, a, b, y0, y1, dz = 0) => {
       if (b - a < 0.005 || y1 - y0 < 0.005) return;
       const len = b - a, mid = (a + b) / 2, hh = y1 - y0 - dz;
@@ -275,31 +317,44 @@ const View3D = {
       const m = s.h ? this.box(root, len, hh, s.t, mats, mid, y0 + hh / 2, s.c) : this.box(root, s.t, hh, len, mats, s.c, y0 + hh / 2, mid);
       m.userData.wall = 1; m.userData.seg = s; m.userData.y0 = y0;
       if (y0 < .01) this.wallAo(root, s, a, b);
-      if (y0 < .01 && wallH > .5) { // süpürgelik
+      if (y0 < .01 && y1 > .5) { // süpürgelik
         const k = s.h ? this.box(root, len, .08, s.t + .016, skirt, mid, .04, s.c) : this.box(root, s.t + .016, .08, len, skirt, s.c, .04, mid);
         k.castShadow = false;
       }
     };
-    for (const s of Ed.segs) {
-      let cur = s.a; const ops = [...s.open].sort((p, q) => p.a - q.a);
+    const emit = (s, A, B, top) => { // [A,B] aralığında kapı/pencere boşluklarını atlayarak duvar
+      let cur = A; const ops = s.open.filter(q => q.b > A && q.a < B).sort((p, q) => p.a - q.a);
       const dz = s.h ? 0 : 0.001; // dikey duvarlar 1 mm alçak: kesişimde titremeyi önler
-      for (const o of ops) {
-        if (o.a > cur) addWall(s, cur, o.a, 0, wallH, dz);
-        const lo = Math.max(cur, o.a);
-        if (o.elev > 0.01) addWall(s, lo, o.b, 0, Math.min(o.elev, wallH), dz);
-        if (o.top < wallH - 0.01) addWall(s, lo, o.b, o.top, wallH, dz);
-        cur = Math.max(cur, o.b);
+      for (const q of ops) {
+        const qa = Math.max(q.a, A), qb = Math.min(q.b, B);
+        if (qa > cur) addWall(s, cur, qa, 0, top, dz);
+        const lo = Math.max(cur, qa);
+        if (q.elev > 0.01) addWall(s, lo, qb, 0, Math.min(q.elev, top), dz);
+        if (q.top < top - 0.01) addWall(s, lo, qb, q.top, top, dz);
+        cur = Math.max(cur, qb);
       }
-      if (s.b > cur) addWall(s, cur, s.b, 0, wallH, dz);
+      if (B > cur) addWall(s, cur, B, 0, top, dz);
+    };
+    for (const s of Ed.segs) {
+      if (s.rail) { if (wallH > .5) this.buildRail(root, s.h, s.c, s.a, s.b, glassM, railM); continue; }
+      if (mz && s.outer && wallMode === 'full') { // asma katlı zemin: galeri bölümünde dış duvar asma kat tavanına kadar
+        const brk = new Set([s.a, s.b]), inn = s.e - s.n * .05;
+        for (const r of mz.rects) for (const v of s.h ? [r.x, r.x + r.w] : [r.y, r.y + r.d]) if (v > s.a && v < s.b) brk.add(v);
+        const xs = [...brk].sort((p, q) => p - q);
+        for (let k = 0; k < xs.length - 1; k++) { const m = (xs[k] + xs[k + 1]) / 2, cov = s.h ? inRects(mz.rects, m, inn) : inRects(mz.rects, inn, m); emit(s, xs[k], xs[k + 1], cov ? H + mz.slab : mz.top); }
+        continue;
+      }
+      emit(s, s.a, s.b, wallH);
     }
+    for (const hl of der.holes) this.holeRail(root, hl, glassM, railM); // merdiven boşluğu korkuluğu
 
     // Eşyalar
-    for (const it of P.items) {
+    for (const it of [...P.items, ...der.ghosts]) {
       if (isLight(it)) continue; // armatürler tavanla birlikte kurulur
-      const g = this.buildItem(it, wallH, dark);
+      const g = it.type === 'stair' ? this.buildStair(it, P, li, dark) : it.type === 'lift' ? this.buildLift(it, P, li, dark) : this.buildItem(it, wallH, dark);
       if (!g) continue;
       g.position.set(it.cx, 0, it.cy); g.rotation.y = -(it.rot || 0) * D2R;
-      g.userData.pick = {k: 'item', id: it.id};
+      g.userData.pick = {k: 'item', id: it.id, lv: it.ghost ? it.lv : li};
       if (it.type === 'zone') g.userData.zoneItem = 1;
       root.add(g);
     }
@@ -322,26 +377,110 @@ const View3D = {
       }
     }
 
-    // Tabela ve tavan
-    if (wallMode === 'full') this.buildSign(P, H, dark);
-    this.buildCeiling(P, H, wallMode === 'full');
+    // Tabela (yalnız zemin kat) ve tavan
+    if (wallMode === 'full' && curLevel(P).kind === 'ground') this.buildSign(P, H, dark);
+    const up = P.items.filter(it => it.type === 'stair').map(it => { const b = itemBox(it); return {x: b.x0, y: b.y0, w: b.x1 - b.x0, d: b.y1 - b.y0}; });
+    this.buildCeiling(P, H, wallMode === 'full' || (!o.top && !o.walk), {cuts: up, mz, maxLamps: o.maxLamps});
 
-    // Güneş / gölge kutusu
-    const ext = Math.max(W, D) * .75 + 4;
-    const sc = this.sun.shadow.camera; sc.left = -ext; sc.right = ext; sc.top = ext; sc.bottom = -ext; sc.near = 1; sc.far = 70; sc.updateProjectionMatrix();
-    this.sun.position.set(W / 2 + 7, 15, D / 2 + 10); this.sun.target.position.set(W / 2, 0, D / 2);
-    this.lightMode();
-
-    this.buildColliders();
-    this.updateSel();
-    this.miniDirty = true;
+  },
+  /* Dış zemin: asfalt + kaldırım + bordür; zemin ve bodrum katların izinin çevresinde şerit olarak (boşluktan alt kat görünsün) */
+  buildOutdoor(P, dark) {
+    const T = this.T, root = this.root, L = P.levels, SW = 7;
+    let x0 = 0, z0 = 0, x1 = L[groundIdx(P)].shop.w, z1 = L[groundIdx(P)].shop.d;
+    L.forEach((l, i) => { if (l.kind === 'basement') { x0 = Math.min(x0, l.ox); z0 = Math.min(z0, l.oy); x1 = Math.max(x1, l.ox + l.shop.w); z1 = Math.max(z1, l.oy + l.shop.d); } });
+    const strips = (ax0, az0, ax1, az1, bx0, bz0, bx1, bz1) => [[ax0, az0, ax1, bz0], [ax0, bz1, ax1, az1], [ax0, bz0, bx0, bz1], [bx1, bz0, ax1, bz1]].filter(r => r[2] - r[0] > .01 && r[3] - r[1] > .01);
+    const plane = (r, m, y, rep) => { const w = r[2] - r[0], d = r[3] - r[1]; const pm = new T.Mesh(new T.PlaneGeometry(w, d), m); pm.rotation.x = -Math.PI / 2; pm.position.set((r[0] + r[2]) / 2, y, (r[1] + r[3]) / 2); pm.receiveShadow = true; root.add(pm); return pm; };
+    const asph = this.mat(dark ? '#2B302E' : '#9A9C98', {roughness: .95});
+    for (const r of strips(x0 - SW - 40, z0 - SW - 40, x1 + SW + 40, z1 + SW + 40, x0 - SW, z0 - SW, x1 + SW, z1 + SW)) plane(r, asph, -.03);
+    const tex = this.floorTex(dark ? '#4A504D' : '#D6D2C9', dark ? '#3E4441' : '#C2BDB2', 3);
+    for (const r of strips(x0 - SW, z0 - SW, x1 + SW, z1 + SW, x0, z0, x1, z1)) {
+      const m = new T.MeshStandardMaterial({color: 0xffffff, roughness: .9, map: tex.clone()}); m._own = true;
+      m.map.needsUpdate = true; m.map.repeat.set((r[2] - r[0]) / .5, (r[3] - r[1]) / .5); m.map.offset.set(r[0] / .5 % 1, -r[3] / .5 % 1);
+      plane(r, m, -.012);
+    }
+    const curb = this.mat(dark ? '#5C625F' : '#B9B4AA'), W = x1 - x0, D = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+    for (const [x, z, w, d] of [[cx, z0 - SW - .05, W + SW * 2 + .1, .1], [cx, z1 + SW + .05, W + SW * 2 + .1, .1], [x0 - SW - .05, cz, .1, D + SW * 2], [x1 + SW + .05, cz, .1, D + SW * 2]]) this.box(root, w, .04, d, curb, x, -.01, z);
+  },
+  /* Cam korkuluk: hat (yatay/dikey), aralık */
+  buildRail(root, horiz, c, a, b, glassM, railM, h = 1.0) {
+    const len = b - a, mid = (a + b) / 2;
+    if (len < .05) return;
+    const P3 = (al, y, w, hh, d) => horiz ? [w, hh, d, mid + al, y, c] : [d, hh, w, c, y, mid + al];
+    const add = (w, hh, d, m, al, y) => { const [bw, bh, bd, x, yy, z] = P3(al, y, w, hh, d); const k = this.box(root, bw, bh, bd, m, x, yy, z); k.castShadow = false; return k; };
+    add(len, h - .08, .012, glassM, 0, (h - .08) / 2 + .04);
+    add(len, .045, .05, railM, 0, h);
+    add(len, .06, .06, railM, 0, .03);
+  },
+  holeRail(root, hl, glassM, railM) {
+    const b = hl.box;
+    if (hl.edge !== 't') this.buildRail(root, true, b.y0, b.x0, b.x1, glassM, railM);
+    if (hl.edge !== 'b') this.buildRail(root, true, b.y1, b.x0, b.x1, glassM, railM);
+    if (hl.edge !== 'l') this.buildRail(root, false, b.x0, b.y0, b.y1, glassM, railM);
+    if (hl.edge !== 'r') this.buildRail(root, false, b.x1, b.y0, b.y1, glassM, railM);
+  },
+  /* Merdiven: blok basamaklar, sahanlık, korkuluk ve küpeşte (yerel koordinat) */
+  buildStair(it, P, li, dark) {
+    const T = this.T, g = new T.Group(), R = stairRise(P, li), G = stairGeom(it, R.n), r = R.r, ff = R.ff;
+    const top = this.mat(dark ? '#CFC8BC' : '#E4DED3', {roughness: .5}), body = this.mat(dark ? '#8F8A82' : '#BDB7AD', {roughness: .85});
+    const nose = this.mat('#3A3F44', {roughness: .5}), rail = this.chrome(), glass = this.glass();
+    for (const t of G.treads) {
+      const ys = t.k * r;
+      if (it.style === 'spiral') {
+        const sh = new T.Shape(t.poly.map(([x, y]) => new T.Vector2(x, y)));
+        const geo = new T.ExtrudeGeometry(sh, {depth: .05, bevelEnabled: false});
+        const m = new T.Mesh(geo, top); m.rotation.x = Math.PI / 2; m.position.y = ys; m.castShadow = true; m.receiveShadow = true; g.add(m);
+        continue;
+      }
+      const bx = polyBox(t.poly), w = bx.x1 - bx.x0, d = bx.y1 - bx.y0, th = Math.min(ys, t.landing ? .2 : .24);
+      this.box(g, w, th - .02, d, body, (bx.x0 + bx.x1) / 2, ys - .02 - (th - .02) / 2, (bx.y0 + bx.y1) / 2);
+      this.box(g, w, .02, d + .01, top, (bx.x0 + bx.x1) / 2, ys - .01, (bx.y0 + bx.y1) / 2);
+    }
+    if (it.style === 'spiral') {
+      const pole = new T.Mesh(new T.CylinderGeometry(.05, .05, ff + 1, 16), rail); pole.position.y = (ff + 1) / 2; g.add(pole);
+      const pts = []; for (let q = 0; q <= 48; q++) { const p = pathAt(G.path, pathLen(G.path) * q / 48), a = Math.atan2(p.y, p.x); pts.push(new T.Vector3(Math.cos(a) * (it.w / 2 - .04), p.t * ff + .95, Math.sin(a) * (it.w / 2 - .04))); }
+      const tube = new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 96, .02, 8), rail); g.add(tube);
+      for (let q = 0; q < pts.length; q += 3) { const p = pts[q], post = new T.Mesh(new T.CylinderGeometry(.008, .008, .95, 6), rail); post.position.set(p.x, p.y - .475, p.z); g.add(post); }
+    } else {
+      const Lp = pathLen(G.path), side = G.width / 2 - .04;
+      for (const sg of [-1, 1]) {
+        let prev = null;
+        for (let q = 0; q <= Math.ceil(Lp / .25); q++) {
+          const p = pathAt(G.path, Math.min(Lp, q * .25)), nx = p.dy * sg * side, ny = -p.dx * sg * side;
+          const cur = new T.Vector3(p.x + nx, p.t * ff + .9, p.y + ny);
+          if (prev && prev.distanceTo(cur) > .01) { const L = prev.distanceTo(cur), c = new T.Mesh(new T.CylinderGeometry(.02, .02, L, 8), rail); c.position.copy(prev).add(cur).multiplyScalar(.5); c.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), cur.clone().sub(prev).normalize()); g.add(c);
+            const gp = new T.Mesh(new T.PlaneGeometry(L, .8), glass); gp.position.set((prev.x + cur.x) / 2, (prev.y + cur.y) / 2 - .45, (prev.z + cur.z) / 2); gp.rotation.y = -Math.atan2(cur.z - prev.z, cur.x - prev.x); gp.rotation.z = Math.atan2(cur.y - prev.y, Math.hypot(cur.x - prev.x, cur.z - prev.z)); g.add(gp); }
+          prev = cur;
+        }
+      }
+    }
+    if (!R.top) { const warnM = this.mat('#E5484D', {transparent: true, opacity: .25, depthWrite: false}); const m = this.box(g, it.w, .02, it.d, warnM, 0, .01, 0); m.castShadow = false; }
+    g.traverse(n => { if (n.isMesh && n.material === glass) n.castShadow = false; });
+    return g;
+  },
+  /* Asansör kuyusu (bu kat yüksekliği boyunca): duvarlar, kapı, çağrı butonu */
+  buildLift(it, P, li, dark) {
+    const T = this.T, g = new T.Group(), w = it.w, d = it.d, t = .1, L = P.levels, H = L[li].shop.h + (L[li + 1] ? L[li + 1].slab : 0);
+    const wall = this.mat(dark ? '#9AA3AB' : '#D7DBDE', {roughness: .7}), steel = this.chrome(), dark2 = this.mat('#2E3438', {roughness: .4, metalness: .5});
+    this.box(g, w, H, t, wall, 0, H / 2, -d / 2 + t / 2);
+    this.box(g, t, H, d, wall, -w / 2 + t / 2, H / 2, 0);
+    this.box(g, t, H, d, wall, w / 2 - t / 2, H / 2, 0);
+    const dw = Math.min(.9, w - .5), side = (w - dw) / 2;
+    this.box(g, side, H, t, wall, -w / 2 + side / 2, H / 2, d / 2 - t / 2);
+    this.box(g, side, H, t, wall, w / 2 - side / 2, H / 2, d / 2 - t / 2);
+    this.box(g, dw, H - 2.1, t, wall, 0, 2.1 + (H - 2.1) / 2, d / 2 - t / 2);
+    this.box(g, dw / 2 - .005, 2.1, .03, steel, -dw / 4, 1.05, d / 2 - t / 2 + .02);
+    this.box(g, dw / 2 - .005, 2.1, .03, steel, dw / 4, 1.05, d / 2 - t / 2 + .02);
+    this.box(g, dw + .1, .06, .05, dark2, 0, 2.13, d / 2 - t / 2 + .03);
+    this.box(g, .08, .16, .02, dark2, dw / 2 + .16, 1.1, d / 2 + .005);
+    const b = this.box(g, .03, .03, .01, this.mat('#FFFFFF', {emissive: '#9FD4FF', emissiveIntensity: 2}), dw / 2 + .16, 1.13, d / 2 + .016); b.castShadow = false;
+    return g;
   },
   /* Işık durumu: gündüz (yörünge/gez) ya da akşam; tavan ve armatür görünürlüğü */
   lightMode() {
     const walk = this.mode === 'walk', dark = document.documentElement.dataset.mode === 'dark', night = !!Settings.v.night;
     const showCeil = walk || (Settings.v.ceil3d ?? true);
-    if (this.ceil) this.ceil.visible = showCeil;
-    for (const c of this.root.children) {
+    for (const cg of this.ceils || []) { cg.visible = showCeil; for (const c of cg.children) if (c.userData.autoLamp) c.visible = walk; } // varsayılan paneller yukarıdan bakınca gizli
+    for (const c of this.kids()) {
       if (c.userData.label || c.userData.clearZone || c.userData.zoneItem) c.visible = !walk;
       if (c.userData.fixture) c.visible = showCeil;
     }
@@ -399,34 +538,44 @@ const View3D = {
     m._own = true; m.userData.em = em;
     return m;
   },
-  buildCeiling(P, H, full) {
-    const T = this.T, W = P.shop.w, D = P.shop.d, g = new T.Group(), c = ceilOf(P);
-    this.ceilMats = []; this.lamps = []; this.ceil = null;
+  buildCeiling(P, H0, full, o = {}) {
+    const T = this.T, W = P.shop.w, D = P.shop.d, g = new T.Group(), c = ceilOf(P), mz = o.mz;
     const lights = P.items.filter(isLight);
-    this.ownLights = lights.length > 0;
+    if (lights.length) this.ownLights = true;
+    // Tavan yüksekliği: asma katın dışında kalan galeri bölümü çift yükseklik
+    const Hat = (x, y) => mz && !inRects(mz.rects, x, y) ? mz.top : H0;
     const em = [];
     if (full) {
-      for (const fr of shopRects(P)) { // aşağı bakan tek yüzlü düzlem: yukarıdan bakınca görünmez
+      const base = shopRects(P).flatMap(r => o.cuts && o.cuts.length ? rectMinus(r, o.cuts) : [r]);
+      const parts = [];
+      for (const r of base) {
+        if (!mz) { parts.push([r, H0]); continue; }
+        for (const m of mz.rects) { const x0 = Math.max(r.x, m.x), y0 = Math.max(r.y, m.y), x1 = Math.min(r.x + r.w, m.x + m.w), y1 = Math.min(r.y + r.d, m.y + m.d); if (x1 - x0 > .005 && y1 - y0 > .005) parts.push([{x: x0, y: y0, w: x1 - x0, d: y1 - y0}, H0]); }
+        for (const q of rectMinus(r, mz.rects)) parts.push([q, mz.top]);
+      }
+      for (const [fr, hh] of parts) { // aşağı bakan tek yüzlü düzlem: yukarıdan bakınca görünmez
         const m = this.ceilMat(c, fr); this.ceilMats.push(m);
         const p = new T.Mesh(new T.PlaneGeometry(fr.w, fr.d), m);
-        p.rotation.x = Math.PI / 2; p.position.set(fr.x + fr.w / 2, H - .002, fr.y + fr.d / 2); p.receiveShadow = false; p.castShadow = false; g.add(p);
+        p.rotation.x = Math.PI / 2; p.position.set(fr.x + fr.w / 2, hh - .002, fr.y + fr.d / 2); p.receiveShadow = false; p.castShadow = false; g.add(p);
       }
       if (!lights.length) { // armatür yoksa varsayılan 60×60 paneller
         const lamp = this.mat('#FFFFFF', {emissive: '#FFFFFF', emissiveIntensity: 2.2, roughness: .4});
         const nx = Math.max(1, Math.round(W / 2.4)), nz = Math.max(1, Math.round(D / 2.4));
         for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) {
           const x = (i + .5) * W / nx, z = (j + .5) * D / nz;
-          if (!inShop(P, x, z)) continue;
-          const l = this.box(g, .6, .02, .6, lamp, x, H - .012, z); l.castShadow = false; l.receiveShadow = false;
+          if (!inShop(P, x, z) || (o.cuts && inRects(o.cuts, x, z))) continue;
+          const H = Hat(x, z);
+          const l = this.box(g, .6, .02, .6, lamp, x, H - .012, z); l.castShadow = false; l.receiveShadow = false; l.userData.autoLamp = 1;
           em.push({x, z, y: H - .03, lm: 3600, ang: 1.15, col: '#FFF4E6'});
         }
       }
-      this.root.add(g); this.ceil = g;
+      this.root.add(g); this.ceils.push(g);
     }
     for (const it of lights) {
+      const H = Hat(it.cx, it.cy);
       const f = this.buildFixture(it, H);
       f.position.set(it.cx, 0, it.cy); f.rotation.y = -(it.rot || 0) * D2R;
-      f.userData.pick = {k: 'item', id: it.id}; f.userData.fixture = 1;
+      f.userData.pick = {k: 'item', id: it.id, lv: P.cur}; f.userData.fixture = 1;
       this.root.add(f);
       const col = CCT_COLOR[it.cct] || CCT_COLOR[4000], lm = lightLm(it);
       if (it.style === 'spot') {
@@ -438,11 +587,11 @@ const View3D = {
         for (let i = 0; i < k; i++) { const [x, z] = toWorld(it, -it.w / 2 + (i + .5) * it.w / k, 0); em.push({x, z, y, lm: lm / k, ang: 1.1, col}); }
       } else em.push({x: it.cx, z: it.cy, y: H - lightDepth(it) + .05, lm, ang: 1.3, col});
     }
-    this.buildLamps(em, H);
+    this.buildLamps(em, H0, o.maxLamps);
   },
   /* Işık kaynakları: çok sayıda armatür, yakın olanlar birleştirilerek sınırlı sayıda gerçek ışığa dönüşür */
-  buildLamps(em, H) {
-    const T = this.T, MAX = isMobile() ? 6 : 10;
+  buildLamps(em, H, max) {
+    const T = this.T, MAX = max || (isMobile() ? 6 : 10);
     const rooms = [...Ed.P.rooms].sort((a, b) => a.w * a.d - b.w * b.d);
     const region = (x, z) => rooms.findIndex(r => x > r.x && x < r.x + r.w && z > r.y && z < r.y + r.d);
     let cl = em.map(e => ({...e, n: 1, spread: 0, pts: [[e.x, e.z]], rg: region(e.x, e.z)}));
@@ -1105,7 +1254,7 @@ const View3D = {
     if (this.selHelper) { this.scene.remove(this.selHelper); this.selHelper.geometry.dispose(); this.selHelper = null; }
     if (Ed.multi.length) {
       const box = new T.Box3(), ids = new Set(Ed.multi);
-      for (const c of this.root.children) if (c.userData.pick && ids.has(c.userData.pick.id)) box.expandByObject(c);
+      for (const c of this.kids()) if (c.userData.pick && ids.has(c.userData.pick.id)) box.expandByObject(c);
       if (!box.isEmpty()) { box.expandByScalar(.03); this.selHelper = new T.Box3Helper(box, new T.Color(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim())); this.scene.add(this.selHelper); }
       this.req(); return;
     }
@@ -1125,14 +1274,15 @@ const View3D = {
   /* ---------- Kamera ---------- */
   resetCam() {
     const P = Ed.P; if (!P) return;
-    const W = P.shop.w, D = P.shop.d;
-    this.orb = {tx: W / 2, ty: 0, tz: D / 2, theta: Math.PI / 2 + .55, phi: .92, dist: Math.max(W, D) * 1.15 + 2};
+    const W = P.shop.w, D = P.shop.d, O = this.lvOrigin();
+    this.orb = {tx: O.x + W / 2, ty: O.y, tz: O.z + D / 2, theta: Math.PI / 2 + .55, phi: .92, dist: Math.max(W, D) * 1.15 + 2 + (this.builtMode === 'explode' ? P.levels.length * 2 : 0)};
+    this._lastTy0 = O.y;
     this.req();
   },
   preset(k) {
     const P = Ed.P; if (!P) return; if (!this.orb) this.resetCam();
-    const W = P.shop.w, D = P.shop.d, o = this.orb;
-    o.tx = W / 2; o.tz = D / 2; o.ty = 0;
+    const W = P.shop.w, D = P.shop.d, o = this.orb, O = this.lvOrigin();
+    o.tx = O.x + W / 2; o.tz = O.z + D / 2; o.ty = O.y;
     const aspect = this.w / Math.max(1, this.h);
     if (k === 'top') { o.phi = 0.001; o.theta = Math.PI / 2; o.dist = Math.max(D * 1.35, W * 1.35 / aspect) / (2 * Math.tan(22.5 * D2R)) * .9; }
     else { o.phi = .92; o.theta = Math.PI / 2 + .55; o.dist = Math.max(W, D) * 1.15 + 2; }
@@ -1141,11 +1291,11 @@ const View3D = {
   applyCam() {
     const c = this.cam;
     if (this.mode === 'walk') {
-      const k = this.wk, bob = Math.sin(k.bob) * .016;
+      const k = this.wk, bob = Math.sin(k.bob) * .016, y = (k.fy || 0) + EYE + bob;
       if (c.fov !== 70) { c.fov = 70; c.updateProjectionMatrix(); }
-      c.position.set(k.x, EYE + bob, k.z);
+      c.position.set(k.x, y, k.z);
       const cp = Math.cos(k.pitch);
-      c.lookAt(k.x + Math.sin(k.yaw) * cp, EYE + bob + Math.sin(k.pitch), k.z - Math.cos(k.yaw) * cp);
+      c.lookAt(k.x + Math.sin(k.yaw) * cp, y + Math.sin(k.pitch), k.z - Math.cos(k.yaw) * cp);
     } else {
       const o = this.orb; if (!o) return;
       if (c.fov !== 45) { c.fov = 45; c.updateProjectionMatrix(); }
@@ -1157,6 +1307,7 @@ const View3D = {
     }
   },
   setMode(m) {
+    const prev = this.mode;
     this.mode = m;
     $$('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === m));
     $$('.orbit-only').forEach(b => b.hidden = m !== 'orbit');
@@ -1164,7 +1315,12 @@ const View3D = {
     const touch = matchMedia('(pointer: coarse)').matches;
     $('#joy').hidden = !(m === 'walk' && touch);
     $('#minimap').hidden = m !== 'walk';
-    if (m === 'walk') { if (!this.wkInit) this.enterWalk(); this.startLoop(); }
+    $('#walkNav').hidden = m !== 'walk';
+    $('#camLevels').hidden = m === 'walk' || !(Ed.P && multiLevel(Ed.P));
+    if (m !== 'walk') $('#liftPanel').hidden = true;
+    // Gezintide tüm katlar birlikte kurulur; yörüngede seçili görünüm
+    if (this.ready && Ed.P && multiLevel(Ed.P) && prev !== m && ((m === 'walk') !== (this.builtMode === 'all'))) this.build();
+    if (m === 'walk') { if (!this.wkInit) this.enterWalk(); this.navUI(); this.startLoop(); }
     else { if (document.pointerLockElement) document.exitPointerLock(); this.keys.clear(); }
     if (this.ready) { this.lightMode(); this.updateSel(); }
     this.hint();
@@ -1175,17 +1331,70 @@ const View3D = {
     if (Ed.view !== '3d') { el.hidden = true; return; }
     const touch = matchMedia('(pointer: coarse)').matches;
     let t;
-    if (this.mode === 'walk') t = touch ? 'Sol alttaki çubukla yürü · ekranı sürükleyerek dön · haritaya dokun: ışınlan'
-      : this.locked ? 'W A S D yürü · fareyle bak · Shift koş · Esc fareyi bırak' : 'Ekrana tıkla: fareyle bak · W A S D / ok tuşları yürü · Shift koş';
+    if (this.mode === 'walk') t = touch ? 'Çubukla yürü · sürükle: etrafına bak · zemine dokun: oraya git · haritaya dokun: ışınlan'
+      : this.locked ? 'W A S D yürü · fareyle bak · Esc fareyi bırak' : 'Sürükle: etrafına bak · zemine tıkla: oraya yürü · W A S D / oklar · Q E dön · Shift koş';
     else t = touch ? 'Tek parmak: döndür · iki parmak: yakınlaştır / kaydır · dokun: seç' : 'Sürükle: döndür · sağ tuş/Shift: kaydır · tekerlek: yakınlaştır · tıkla: seç';
     el.textContent = t; el.hidden = false;
   },
-  /* Girişten (dış duvardaki kapının önünden) başla */
+  /* Gezinti düğmeleri: kat adları, görünürlük */
+  navUI() {
+    const P = Ed.P; if (!P) return;
+    const up = P.levels[P.cur + 1], dn = P.levels[P.cur - 1];
+    const bu = $('#walkNav [data-nav=up]'), bd = $('#walkNav [data-nav=down]');
+    bu.hidden = !up; bd.hidden = !dn;
+    if (up) { bu.querySelector('.lbl').textContent = levelName(P, P.cur + 1); bu.title = levelName(P, P.cur + 1) + '’a çık'; }
+    if (dn) { bd.querySelector('.lbl').textContent = levelName(P, P.cur - 1); bd.title = levelName(P, P.cur - 1) + '’a in'; }
+    $('#walkNav [data-nav=home]').hidden = P.levels[P.cur].kind !== 'ground' && false;
+  },
+  nav(a) {
+    const k = this.wk, P = Ed.P;
+    if (a === 'left' || a === 'right') { k.yawTo = (k.yawTo ?? k.yaw) + (a === 'left' ? -1 : 1) * Math.PI / 4; }
+    else if (a === 'level') { k.pitchTo = 0; }
+    else if (a === 'home') { if (P.cur !== groundIdx(P)) Ed.setLevel(groundIdx(P), {walk: true, quiet: true}); this.enterWalk(); this.navUI(); }
+    else if (a === 'up' || a === 'down') this.goLevel(P.cur + (a === 'up' ? 1 : -1));
+    this.startLoop(); this.req();
+  },
+  /* Başka kata geç: varsa merdiven çıkışına/girişine, yoksa asansör önüne ya da katın ortasına */
+  goLevel(i, near) {
+    const P = Ed.P; if (!P.levels[i]) return;
+    const from = P.cur, k = this.wk;
+    Ed.setLevel(i, {walk: true, quiet: true});
+    const O = this.lvOrigin(i);
+    let spot = null;
+    if (near) spot = near;
+    if (!spot) { // merdiven: yukarı çıkınca çıkışın önü, aşağı inince girişin önü
+      const lo = Math.min(from, i), st = P.levels[lo].items.find(it => it.type === 'stair');
+      if (st && Math.abs(from - i) === 1) {
+        const G = stairGeom(st, stairRise(P, lo).n), L = P.levels[lo], up = i > from;
+        const e = up ? G.exit : G.entry, [x, y] = toWorld(st, e.x, e.y), [dx, dy] = rotPt(e.dx, e.dy, st.rot || 0);
+        const sgn = up ? 1 : -1;
+        spot = {x: L.ox + x + dx * .6 * sgn, z: L.oy + y + dy * .6 * sgn, yaw: Math.atan2(dx * sgn, -dy * sgn)};
+      }
+    }
+    if (!spot) { const lift = [...P.items, ...levelDerived(P, i).ghosts].find(it => it.type === 'lift'); if (lift) { const [x, y] = toWorld(lift, 0, lift.d / 2 + .8), [fx, fy] = rotPt(0, 1, lift.rot || 0); spot = {x: O.x + x, z: O.z + y, yaw: Math.atan2(fx, -fy)}; } }
+    if (!spot) spot = {x: O.x + P.shop.w / 2, z: O.z + P.shop.d / 2, yaw: k.yaw};
+    k.x = spot.x; k.z = spot.z; k.yaw = spot.yaw; k.yawTo = null; k.fy = levelElev(P, i); k.stair = null; k.target = null; k.path = null;
+    this.resolve(); this.navUI(); this.miniDirty = true;
+    toast(levelName(P, i));
+    this.req();
+  },
+  /* Kat değişince yürüyeni o katın döşemesine al */
+  placeOnLevel() { const k = this.wk; if (!k.stair) k.fy = levelElev(Ed.P, Ed.P.cur); this.navUI(); },
+  /* Girişten (dış duvardaki kapının önünden) başla; zemin dışındaki katta merdiven çıkışından */
   enterWalk() {
-    const P = Ed.P, W = P.shop.w, D = P.shop.d;
+    const P = Ed.P, k = this.wk;
+    k.target = null; k.path = null; k.vx = 0; k.vz = 0; k.stair = null; k.yawTo = null; k.pitchTo = null; this.wkInit = true;
+    if (P.levels[P.cur].kind !== 'ground') {
+      k.fy = levelElev(P, P.cur);
+      const hl = levelDerived(P, P.cur).holes[0], O = this.lvOrigin();
+      if (hl) { const G = stairGeom(hl.it, stairRise(P, hl.lv).n), [x, y] = toWorld(hl.it, G.exit.x, G.exit.y), [dx, dy] = rotPt(G.exit.dx, G.exit.dy, hl.it.rot || 0); k.x = O.x + x + dx * .7; k.z = O.z + y + dy * .7; k.yaw = Math.atan2(dx, -dy); }
+      else { k.x = O.x + P.shop.w / 2; k.z = O.z + P.shop.d / 2; k.yaw = 0; }
+      k.pitch = -.05; this.resolve(); return;
+    }
+    const W = P.shop.w, D = P.shop.d;
+    k.fy = 0;
     const outerDoors = P.items.filter(it => it.type === 'door' && (() => { const s = wallOf(it, Ed.segs); return s && s.outer; })());
     outerDoors.sort((a, b) => (b.style === 'double') - (a.style === 'double') || b.w - a.w);
-    const k = this.wk;
     if (outerDoors.length) {
       const dr = outerDoors[0], s = wallOf(dr, Ed.segs);
       let ix = 0, iz = 0;
@@ -1201,17 +1410,19 @@ const View3D = {
     } else {
       k.x = W / 2; k.z = D - .8; k.yaw = 0; k.pitch = -.05;
     }
-    k.target = null; k.vx = 0; k.vz = 0; this.wkInit = true;
     this.resolve();
   },
   look(dx, dy) {
     const k = this.wk;
-    k.yaw += dx; k.pitch = clamp(k.pitch - dy, -1.25, 1.25);
+    k.yaw += dx; k.pitch = clamp(k.pitch - dy, -1.25, 1.25); k.yawTo = null; k.pitchTo = null;
     this.req();
   },
+  /* Tıklanan noktaya yürü: engellerin etrafından dolaşan yol (A*) */
   walkTo(x, z) {
-    const P = Ed.P;
-    this.wk.target = [clamp(x, -3, P.shop.w + 3), clamp(z, -3, P.shop.d + 3)];
+    const k = this.wk; if (k.stair) return;
+    const path = this.findPath(k.x, k.z, x, z);
+    if (!path || !path.length) { toast('Oraya yol bulunamadı'); return; }
+    k.path = path; k.target = k.path.shift();
     this.startLoop();
   },
   startLoop() {
@@ -1223,7 +1434,7 @@ const View3D = {
       const moving = this.tick(dt);
       this.render();
       if (moving || this.keys.size || this.joy.id != null) requestAnimationFrame(step);
-      else this.loopOn = false;
+      else { this.loopOn = false; this.liftCheck(); }
     };
     requestAnimationFrame(step);
   },
@@ -1240,18 +1451,21 @@ const View3D = {
     if (this.joy.id != null) { f += -this.joy.y; s += this.joy.x; }
     const run = K.has('ShiftLeft') || K.has('ShiftRight') || Math.hypot(this.joy.x, this.joy.y) > .95;
     const speed = run ? 3.0 : 1.5;
-    if (turn) k.yaw += turn * 1.9 * dt;
+    if (turn) { k.yaw += turn * 1.9 * dt; k.yawTo = null; }
+    let anim = false;
+    if (k.yawTo != null) { const da = k.yawTo - k.yaw; if (Math.abs(da) < .01) { k.yaw = k.yawTo; k.yawTo = null; } else { k.yaw += da * Math.min(1, dt * 8); anim = true; } }
+    if (k.pitchTo != null) { const dp = k.pitchTo - k.pitch; if (Math.abs(dp) < .005) { k.pitch = k.pitchTo; k.pitchTo = null; } else { k.pitch += dp * Math.min(1, dt * 8); anim = true; } }
     let vx = 0, vz = 0;
     const L = Math.hypot(f, s);
     if (L > .05) {
       const n = Math.min(1, L) / L; f *= n; s *= n;
       const fx = Math.sin(k.yaw), fz = -Math.cos(k.yaw);
       vx = (fx * f + -fz * s) * speed; vz = (fz * f + fx * s) * speed;
-      k.target = null;
+      k.target = null; k.path = null;
     } else if (k.target) {
       const dx = k.target[0] - k.x, dz = k.target[1] - k.z, dd = Math.hypot(dx, dz);
-      if (dd < .08) k.target = null;
-      else { const sp = Math.min(2.2, dd * 3); vx = dx / dd * sp; vz = dz / dd * sp;
+      if (dd < (k.path && k.path.length ? .25 : .08)) { k.target = k.path && k.path.length ? k.path.shift() : null; }
+      else { const sp = Math.min(2.2, dd * 3 + (k.path && k.path.length ? 1.2 : 0)); vx = dx / dd * sp; vz = dz / dd * sp;
         const want = Math.atan2(dx, -dz); let da = ((want - k.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI; k.yaw += da * Math.min(1, dt * 4); }
     }
     // yumuşak hızlanma / durma
@@ -1262,28 +1476,100 @@ const View3D = {
     const moving = Math.hypot(vx, vz) > .01;
     if (moving) {
       const px = k.x, pz = k.z;
-      k.x += vx * dt; k.z += vz * dt; this.resolve();
+      if (k.stair) this.stairMove(vx * dt, vz * dt);
+      else { k.x += vx * dt; k.z += vz * dt; this.resolve(); this.stairCheck(px, pz, vx, vz); }
       const moved = Math.hypot(k.x - px, k.z - pz);
-      if (moved < Math.hypot(vx, vz) * dt * .3) { k.vx *= .5; k.vz *= .5; }
+      if (!k.stair && moved < Math.hypot(vx, vz) * dt * .3) { k.vx *= .5; k.vz *= .5; }
       k.bob += moved * 7.5;
-      if (k.target && moved < Math.hypot(vx, vz) * dt * .2) k.target = null; // takıldı
+      if (k.target && moved < Math.hypot(vx, vz) * dt * .2) { k.target = null; k.path = null; } // takıldı
+      if (!k.stair) { const fy = levelElev(Ed.P, Ed.P.cur); k.fy = (k.fy ?? fy) + (fy - (k.fy ?? fy)) * Math.min(1, dt * 10); }
     } else if (Math.sin(k.bob) !== 0) { k.bob = Math.abs(Math.sin(k.bob)) < .05 ? 0 : k.bob + dt * 6; }
-    return moving || !!turn || !!k.target || Math.abs(Math.sin(k.bob)) > .01;
+    if (moving && this._liftT === undefined) this._liftT = 0;
+    if ((this._liftT = (this._liftT || 0) + dt) > .25) { this._liftT = 0; this.liftCheck(); }
+    return moving || !!turn || anim || !!k.target || Math.abs(Math.sin(k.bob)) > .01;
   },
-  /* Çarpışma: oyuncu R yarıçaplı daire; duvarlar ve katı eşyalar dışbükey çokgen */
-  buildColliders() {
-    const P = Ed.P, list = [];
-    for (const r of wallPieces(Ed.segs, o => o.type === 'door')) list.push(rectPoly(r));
-    for (const it of P.items) {
-      if (!isSolid(it) && !(it.type === 'human')) continue;
-      if (it.type === 'human') { const p = itemPoly(it); list.push(p); continue; }
-      list.push(itemPoly(it));
+  /* ---------- Merdivenler: alttan girişte yukarı, üstteki boşluktan inişte aşağı ---------- */
+  stairList() {
+    const P = Ed.P, i = P.cur, out = [];
+    const add = (lv, it, fromTop) => { const L = P.levels[lv], R = stairRise(P, lv), G = stairGeom(it, R.n); out.push({lv, it: shiftItem(it, L.ox, L.oy), G, len: pathLen(G.path), ff: R.ff, e0: levelElev(P, lv), fromTop, top: R.top}); };
+    for (const it of P.items) if (it.type === 'stair') add(i, it, false);
+    if (P.levels[i - 1]) for (const it of P.levels[i - 1].items) if (it.type === 'stair') add(i - 1, it, true);
+    return out;
+  },
+  inStair(S, x, z) {
+    const [lx, ly] = toLocal(S.it, x, z);
+    return S.it.style === 'spiral' ? Math.hypot(lx, ly) < S.it.w / 2 + .05 : Math.abs(lx) < S.it.w / 2 + .05 && Math.abs(ly) < S.it.d / 2 + .05;
+  },
+  stairCheck(px, pz, vx, vz) {
+    const k = this.wk;
+    for (const S of this.stairs || []) {
+      if (!this.inStair(S, k.x, k.z)) continue;
+      const [lx, ly] = toLocal(S.it, k.x, k.z), pr = pathProject(S.G.path, lx, ly);
+      const [lvx, lvy] = rotPt(vx, vz, -(S.it.rot || 0));
+      if (!S.fromTop && S.top && pr.s < .55 && (lvx * S.G.entry.dx + lvy * S.G.entry.dy) > 0) { k.stair = {S, s: Math.max(.02, pr.s), lat: clamp(pr.lat, -S.G.width / 2 + .22, S.G.width / 2 - .22)}; k.target = null; k.path = null; return; }
+      if (S.fromTop && pr.s > S.len - .55) {
+        const ex = pathAt(S.G.path, S.len);
+        if ((lvx * -ex.dx + lvy * -ex.dy) > 0) { Ed.setLevel(S.lv, {walk: true, quiet: true}); k.stair = {S: Object.assign({}, S, {fromTop: false}), s: Math.min(S.len - .02, pr.s), lat: clamp(pr.lat, -S.G.width / 2 + .22, S.G.width / 2 - .22)}; k.target = null; k.path = null; return; }
+      }
+      k.x = px; k.z = pz; k.vx *= .3; k.vz *= .3; return; // yandan girilmez (korkuluk / boşluk)
     }
-    // kapalı pencereler: sürgülü kapı dahil geçilir; pencere boşlukları duvar sayılır (pencere altı zaten duvar)
-    for (const s of Ed.segs) for (const o of s.open) if (o.type === 'window') list.push(rectPoly(segRect(s, o.a, o.b)));
+  },
+  stairMove(dx, dz) {
+    const k = this.wk, st = k.stair, S = st.S;
+    const [lx, ly] = rotPt(dx, dz, -(S.it.rot || 0)), p = pathAt(S.G.path, st.s);
+    st.s += lx * p.dx + ly * p.dy;
+    st.lat = clamp(st.lat + (lx * p.dy - ly * p.dx), -S.G.width / 2 + .22, S.G.width / 2 - .22);
+    const P = Ed.P;
+    if (st.s <= 0) { // alta indi
+      const e = S.G.entry, [x, y] = toWorld(S.it, e.x - e.dx * .25, e.y - e.dy * .25);
+      k.x = x; k.z = y; k.fy = S.e0; k.stair = null; this.resolve(); this.navUI(); return;
+    }
+    if (st.s >= S.len) { // üst kata çıktı
+      const e = S.G.exit, [x, y] = toWorld(S.it, e.x + e.dx * .4, e.y + e.dy * .4);
+      k.stair = null; Ed.setLevel(S.lv + 1, {walk: true, quiet: true});
+      k.x = x; k.z = y; k.fy = levelElev(P, S.lv + 1); this.resolve(); this.navUI(); toast(levelName(P, S.lv + 1)); return;
+    }
+    const q = pathAt(S.G.path, st.s), [x, y] = toWorld(S.it, q.x + q.dy * st.lat, q.y - q.dx * st.lat);
+    k.x = x; k.z = y; k.fy = S.e0 + q.t * S.ff;
+  },
+  /* ---------- Asansör: kapısının önüne gelince kat seçimi ---------- */
+  liftCheck() {
+    const el = $('#liftPanel'); if (!el) return;
+    const P = Ed.P, k = this.wk;
+    if (this.mode !== 'walk' || k.stair || !P || !multiLevel(P)) { el.hidden = true; return; }
+    const O = this.lvOrigin(), lifts = [...P.items, ...levelDerived(P, P.cur).ghosts].filter(it => it.type === 'lift');
+    let hit = null;
+    for (const it of lifts) { const [x, y] = toWorld(it, 0, it.d / 2 + .6); if (Math.hypot(O.x + x - k.x, O.z + y - k.z) < .9) { hit = it; break; } }
+    if (!hit) { el.hidden = true; this._liftId = null; return; }
+    if (this._liftId === hit.id + P.cur && !el.hidden) return;
+    this._liftId = hit.id + P.cur;
+    el.innerHTML = ''; el.append(h('h4', null, 'Asansör · kat seç'));
+    for (let j = P.levels.length - 1; j >= 0; j--) el.append(h('button', {type: 'button', class: j === P.cur ? 'on' : '', onclick: () => {
+      if (j === P.cur) { el.hidden = true; return; }
+      const [dx, dy] = lvShift(P, P.cur, j), L = P.levels[j], src = hit.ghost ? hit : hit;
+      const [x, y] = toWorld(src, 0, src.d / 2 + .8), [fx, fy] = rotPt(0, 1, src.rot || 0);
+      el.hidden = true; this._liftId = null;
+      this.goLevel(j, {x: L.ox + x + dx, z: L.oy + y + dy, yaw: Math.atan2(fx, -fy)});
+    }}, levelName(P, j)));
+    el.hidden = false;
+  },
+  /* Çarpışma: oyuncu R yarıçaplı daire; duvarlar ve katı eşyalar dışbükey çokgen (dünya koordinatı) */
+  buildColliders() {
+    const P = Ed.P, list = [], O = P.levels[P.cur], ox = O.ox, oy = O.oy, sh = poly => poly.map(([x, y]) => [x + ox, y + oy]);
+    for (const r of wallPieces(Ed.segs, o => o.type === 'door')) list.push(sh(rectPoly(r)));
+    const der = levelDerived(P, P.cur);
+    for (const it of [...P.items, ...der.ghosts]) {
+      if (it.type === 'stair' || (!isSolid(it) && it.type !== 'human')) continue; // merdiven ayrıca ele alınır
+      list.push(sh(itemPoly(it)));
+    }
+    // kapalı pencereler: pencere boşlukları duvar sayılır
+    for (const s of Ed.segs) for (const o of s.open) if (o.type === 'window') list.push(sh(rectPoly(segRect(s, o.a, o.b))));
     this.colliders = list;
-    const W = P.shop.w, D = P.shop.d;
-    this.bounds = [-6.8, -6.8, W + 6.8, D + 6.8];
+    this.stairs = this.stairList();
+    const W = P.shop.w, D = P.shop.d, gnd = O.kind === 'ground';
+    this.bounds = gnd ? [-6.8, -6.8, W + 6.8, D + 6.8] : [ox - .1, oy - .1, ox + W + .1, oy + D + .1];
+    if (gnd) { this.bounds[2] += ox; this.bounds[3] += oy; }
+    this.navG = null; // yol ızgarası tembel kurulur
   },
   resolve() {
     const k = this.wk, R = .24;
@@ -1297,11 +1583,60 @@ const View3D = {
     }
     const b = this.bounds; if (b) { k.x = clamp(k.x, b[0], b[2]); k.z = clamp(k.z, b[1], b[3]); }
   },
+  /* Yol ızgarası (20 cm) + A* + düzleştirme */
+  navGrid() {
+    if (this.navG) return this.navG;
+    const b = this.bounds, c = .2, R = .27, nx = Math.max(1, Math.ceil((b[2] - b[0]) / c)), ny = Math.max(1, Math.ceil((b[3] - b[1]) / c));
+    const block = new Uint8Array(nx * ny);
+    const mark = (poly, inflate) => {
+      const bb = polyBox(poly), i0 = clamp(Math.floor((bb.x0 - inflate - b[0]) / c), 0, nx - 1), i1 = clamp(Math.ceil((bb.x1 + inflate - b[0]) / c), 0, nx - 1);
+      const j0 = clamp(Math.floor((bb.y0 - inflate - b[1]) / c), 0, ny - 1), j1 = clamp(Math.ceil((bb.y1 + inflate - b[1]) / c), 0, ny - 1);
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const x = b[0] + (i + .5) * c, y = b[1] + (j + .5) * c; if (pushOut(poly, x, y, inflate)) block[j * nx + i] = 1; }
+    };
+    for (const p of this.colliders) mark(p, R);
+    for (const S of this.stairs || []) mark(itemPoly(S.it), .2);
+    // zemin dışındaki katlarda dükkân dışı (boşluklar) yürünemez
+    const P = Ed.P, O = P.levels[P.cur];
+    if (O.kind !== 'ground') for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) { const x = b[0] + (i + .5) * c - O.ox, y = b[1] + (j + .5) * c - O.oy; if (!inShop(P, x, y)) block[j * nx + i] = 1; }
+    return (this.navG = {b, c, nx, ny, block});
+  },
+  findPath(sx, sz, tx, tz) {
+    const N = this.navGrid(), {b, c, nx, ny, block} = N;
+    const cell = (x, z) => [clamp(Math.floor((x - b[0]) / c), 0, nx - 1), clamp(Math.floor((z - b[1]) / c), 0, ny - 1)];
+    const free = (i, j) => i >= 0 && j >= 0 && i < nx && j < ny && !block[j * nx + i];
+    const near = (i, j) => { if (free(i, j)) return [i, j]; for (let r = 1; r < 25; r++) for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) if (Math.max(Math.abs(di), Math.abs(dj)) === r && free(i + di, j + dj)) return [i + di, j + dj]; return null; };
+    const s0 = near(...cell(sx, sz)), g0 = near(...cell(tx, tz)); if (!s0 || !g0) return null;
+    const key = (i, j) => j * nx + i, G = new Float32Array(nx * ny).fill(Infinity), from = new Int32Array(nx * ny).fill(-1), open = [[0, s0[0], s0[1]]];
+    G[key(...s0)] = 0;
+    const hfn = (i, j) => Math.hypot(i - g0[0], j - g0[1]);
+    const closed = new Uint8Array(nx * ny);
+    let found = false, guard = 0;
+    while (open.length && guard++ < 60000) {
+      let bi = 0; for (let q = 1; q < open.length; q++) if (open[q][0] < open[bi][0]) bi = q;
+      const [, i, j] = open[bi]; open[bi] = open[open.length - 1]; open.pop();
+      const kk = key(i, j); if (closed[kk]) continue; closed[kk] = 1;
+      if (i === g0[0] && j === g0[1]) { found = true; break; }
+      for (const [di, dj, w] of [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414]]) {
+        const ni = i + di, nj = j + dj; if (!free(ni, nj)) continue;
+        if (di && dj && (!free(i + di, j) || !free(i, j + dj))) continue;
+        const nk = key(ni, nj), ng = G[kk] + w; if (ng < G[nk]) { G[nk] = ng; from[nk] = kk; open.push([ng + hfn(ni, nj), ni, nj]); }
+      }
+    }
+    if (!found) return null;
+    const pts = []; let kk = key(...g0);
+    while (kk >= 0) { pts.push([b[0] + (kk % nx + .5) * c, b[1] + (Math.floor(kk / nx) + .5) * c]); kk = from[kk]; }
+    pts.reverse();
+    const los = (p, q) => { const L = Math.hypot(q[0] - p[0], q[1] - p[1]), n = Math.ceil(L / (c * .5)); for (let t = 1; t < n; t++) { const [i, j] = cell(p[0] + (q[0] - p[0]) * t / n, p[1] + (q[1] - p[1]) * t / n); if (block[j * nx + i]) return false; } return true; };
+    const out = []; let a0 = [sx, sz];
+    for (let q = 1; q < pts.length; q++) if (!los(a0, pts[q])) { out.push(pts[q - 1]); a0 = pts[q - 1]; }
+    out.push(free(...cell(tx, tz)) ? [tx, tz] : pts[pts.length - 1]);
+    return out;
+  },
 
   /* ---------- Mini harita ---------- */
   drawMini() {
     const cv = $('#minimap'); if (cv.hidden || !Ed.P) return;
-    const P = Ed.P, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const P = Ed.P, dpr = Math.min(window.devicePixelRatio || 1, 2), O = P.levels[P.cur];
     const cssW = cv.getBoundingClientRect().width || 180;
     const W = P.shop.w + 1.2, D = P.shop.d + 1.2;
     const cw = cssW, ch = Math.round(cssW * D / W);
@@ -1311,18 +1646,20 @@ const View3D = {
       const off = document.createElement('canvas'); off.width = cv.width; off.height = cv.height;
       const C = planColors();
       drawPlan(off.getContext('2d'), P, V, {w: cw, h: ch, dpr, C: Object.assign({}, C, {bg: C.floor, glass: false}), segs: Ed.segs, A: Ed.A, grid: false, clear: false, labels: false, dims: false});
+      if (multiLevel(P)) { const g2 = off.getContext('2d'); g2.setTransform(dpr, 0, 0, dpr, 0, 0); g2.font = `800 11px ${getFont()}`; g2.fillStyle = C.ink; g2.textAlign = 'left'; g2.textBaseline = 'top'; g2.fillText(levelName(P, P.cur), 6, 4); }
       this.mini = {cw, ch, V, off}; this.miniDirty = false;
     }
     const m = this.mini, g = cv.getContext('2d'), k = this.wk;
     g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(m.off, 0, 0);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const x = k.x * m.V.s + m.V.ox, y = k.z * m.V.s + m.V.oy;
+    const x = (k.x - O.ox) * m.V.s + m.V.ox, y = (k.z - O.oy) * m.V.s + m.V.oy;
     const acc = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
     g.beginPath(); g.moveTo(x, y);
     const R = 26, a0 = k.yaw - Math.PI / 2 - .6, a1 = k.yaw - Math.PI / 2 + .6;
     g.arc(x, y, R, a0, a1); g.closePath(); g.fillStyle = rgba(acc.startsWith('#') ? acc : '#1F7A5A', .25); g.fill();
     g.beginPath(); g.arc(x, y, 5, 0, Math.PI * 2); g.fillStyle = acc; g.fill(); g.lineWidth = 2; g.strokeStyle = '#fff'; g.stroke();
-    if (k.target) { g.beginPath(); g.arc(k.target[0] * m.V.s + m.V.ox, k.target[1] * m.V.s + m.V.oy, 4, 0, Math.PI * 2); g.strokeStyle = acc; g.stroke(); }
+    const tg = k.path && k.path.length ? k.path[k.path.length - 1] : k.target;
+    if (tg) { g.beginPath(); g.arc((tg[0] - O.ox) * m.V.s + m.V.ox, (tg[1] - O.oy) * m.V.s + m.V.oy, 4, 0, Math.PI * 2); g.strokeStyle = acc; g.lineWidth = 2; g.stroke(); }
   },
 
   /* ---------- İşaretçi ---------- */
@@ -1348,18 +1685,18 @@ const View3D = {
       const [a, b] = [...this.ptrs.values()];
       const dd = Math.hypot(a.x - b.x, a.y - b.y), m = [(a.x + b.x) / 2, (a.y + b.y) / 2];
       if (this.mode === 'orbit') {
-        this.orb.dist = clamp(d.dist0 * d.d0 / dd, 1.2, 120);
+        this.orb.dist = clamp(d.dist0 * d.d0 / dd, 1.2, 160);
         this.panBy(m[0] - d.m[0], m[1] - d.m[1]); d.m = m;
       } else { // gezinti: iki parmakla ileri/geri
         const k = this.wk, step = (dd - (d.last || d.d0)) * 0.01; d.last = dd;
-        k.x += Math.sin(k.yaw) * step; k.z -= Math.cos(k.yaw) * step; this.resolve();
+        if (!k.stair) { k.x += Math.sin(k.yaw) * step; k.z -= Math.cos(k.yaw) * step; this.resolve(); }
       }
       this.req(); return;
     }
     if (!d.moved && Math.hypot(x - d.x, y - d.y) < (d.touch ? 6 : 3)) return;
     d.moved = true;
     const dx = x - d.lx, dy = y - d.ly; d.lx = x; d.ly = y;
-    if (this.mode === 'walk') { this.look(dx * (d.touch ? .006 : .004), dy * (d.touch ? .006 : .004)); return; }
+    if (this.mode === 'walk') { this.look(dx * (d.touch ? .006 : .0045), dy * (d.touch ? .006 : .0045)); return; }
     if (d.type === 'pan') this.panBy(dx, dy);
     else { const o = this.orb; o.theta += dx * .008; o.phi = clamp(o.phi - dy * .008, 0.001, 1.52); }
     this.req();
@@ -1370,21 +1707,21 @@ const View3D = {
     if (d && d.type === 'pinch') { if (!this.ptrs.size) this.drag = null; return; }
     this.drag = null;
     if (!d || cancel || d.moved) return;
-    // Dokunma: seç / yürü
-    if (this.mode === 'walk' && d.mouse && d.btn === 0 && !this.locked) {
-      try { this.cv.requestPointerLock(); } catch (_) {}
-      return;
-    }
-    this.pick(d.x, d.y);
+    this.pick(d.x, d.y); // gezintide: zemine tıkla → oraya yürü
   },
   pick(x, y) {
     const T = this.T, rc = new T.Raycaster();
     rc.setFromCamera(new T.Vector2(x / this.w * 2 - 1, -(y / this.h) * 2 + 1), this.cam);
     const hits = rc.intersectObjects(this.root.children, true);
     for (const h of hits) {
-      let n = h.object, pick = null, floor = false;
-      while (n && n !== this.root) { if (n.userData.floor) floor = true; if (n.userData.pick) { pick = n.userData.pick; break; } n = n.parent; }
-      if (this.mode === 'walk' && (floor || h.object.userData.floor || (!pick && h.point.y < .02))) { this.walkTo(h.point.x, h.point.z); return; }
+      if (!h.object.visible) continue;
+      let n = h.object, pick = null, floor = false, lv = null;
+      while (n && n !== this.root) { if (n.userData.floor) floor = true; if (n.userData.lv !== undefined && lv === null) lv = n.userData.lv; if (n.userData.pick) { pick = n.userData.pick; break; } n = n.parent; }
+      if (this.mode === 'walk') {
+        const fy = this.wk.fy || 0, onMine = Math.abs(h.point.y - fy) < .35;
+        if ((floor || h.object.userData.floor || (!pick && h.point.y < fy + .05)) && onMine) { this.walkTo(h.point.x, h.point.z); return; }
+        if (floor && !onMine) { toast('Bu nokta başka katta · merdivenden ya da alttaki düğmeyle geç'); return; }
+      }
       if (pick) { Ed.select(pick); return; }
       if (h.object.userData.wall) break;
     }
@@ -1402,9 +1739,10 @@ const View3D = {
     e.preventDefault();
     if (this.mode === 'walk') {
       const k = this.wk, st = -e.deltaY * 0.003;
-      k.x += Math.sin(k.yaw) * st; k.z -= Math.cos(k.yaw) * st; this.resolve(); this.req(); return;
+      if (!k.stair) { k.x += Math.sin(k.yaw) * st; k.z -= Math.cos(k.yaw) * st; this.resolve(); this.req(); }
+      return;
     }
-    this.orb.dist = clamp(this.orb.dist * Math.exp(e.deltaY * 0.0012 * (e.deltaMode === 1 ? 16 : 1)), 1.2, 120);
+    this.orb.dist = clamp(this.orb.dist * Math.exp(e.deltaY * 0.0012 * (e.deltaMode === 1 ? 16 : 1)), 1.2, 160);
     this.req();
   },
   key(e, down) {
@@ -1420,9 +1758,9 @@ const View3D = {
     if (this.sceneDirty || !this.root.children.length) this.build();
   },
   setShadow(n) { const sh = this.sun.shadow; if (sh.mapSize.x === n) return; sh.mapSize.set(n, n); if (sh.map) { sh.map.dispose(); sh.map = null; } },
-  /* Dükkânı kadraja sığdıran yörünge kamerası */
+  /* Etkin katı kadraja sığdıran yörünge kamerası */
   fitOrbit(aspect, view) {
-    const P = Ed.P, W = P.shop.w, D = P.shop.d, H = P.shop.h || 2.8;
+    const P = Ed.P, W = P.shop.w, D = P.shop.d, H = P.shop.h || 2.8, O = this.lvOrigin();
     const r = .5 * Math.hypot(W + 1.2, D + 1.2, H * .6);
     const vf = 45 * D2R, hf = 2 * Math.atan(Math.tan(vf / 2) * aspect);
     const f = Math.min(vf, hf);
@@ -1430,31 +1768,34 @@ const View3D = {
     const [theta, phi] = views[view] || views.iso;
     let dist = r / Math.sin(f / 2) * .88;
     if (view === 'top') dist = Math.max((D + 1.6) / (2 * Math.tan(vf / 2)), (W + 1.6) / (2 * Math.tan(hf / 2))) + H;
-    return {tx: W / 2, ty: view === 'top' ? 0 : H * .12, tz: D / 2, theta, phi, dist};
+    return {tx: O.x + W / 2, ty: O.y + (view === 'top' ? 0 : H * .12), tz: O.z + D / 2, theta, phi, dist};
   },
-  /* Girişin hemen içinden, göz hizasında */
+  /* Girişin hemen içinden, göz hizasında (zemin kat) */
   entrancePose() {
-    const P = Ed.P, doors = P.items.filter(it => it.type === 'door').map(it => ({it, s: wallOf(it, Ed.segs)})).filter(o => o.s && o.s.outer);
+    const P = Ed.P, gv = lvView(P, groundIdx(P)), segs = computeWalls(gv);
+    const doors = gv.items.filter(it => it.type === 'door').map(it => ({it, s: wallOf(it, segs)})).filter(o => o.s && o.s.outer);
     doors.sort((a, b) => (b.it.style === 'double') - (a.it.style === 'double') || b.it.w - a.it.w);
-    if (!doors.length) return {x: P.shop.w / 2, z: P.shop.d - .6, yaw: 0, pitch: -.06};
+    if (!doors.length) return {x: gv.shop.w / 2, z: gv.shop.d - .6, yaw: 0, pitch: -.06, fy: 0};
     const {it, s} = doors[0]; let ix = 0, iz = 0;
     if (s.h) iz = -s.n; else ix = -s.n;
-    return {x: it.cx + ix * .7, z: it.cy + iz * .7, yaw: Math.atan2(ix, -iz), pitch: -.08};
+    return {x: it.cx + ix * .7, z: it.cy + iz * .7, yaw: Math.atan2(ix, -iz), pitch: -.08, fy: 0};
   },
   async renderImage(o) {
     await this.ready3d();
     const T = this.T, R = this.R, W = o.w, H = o.h;
     const saved = {mode: this.mode, orb: this.orb ? {...this.orb} : null, wk: {...this.wk}, pr: R.getPixelRatio()};
     if (o.view === 'walk') { this.mode = 'walk'; Object.assign(this.wk, this.entrancePose(), {bob: 0}); }
+    const rebuilt = multiLevel(Ed.P) && (this.mode === 'walk') !== (this.builtMode === 'all');
+    if (rebuilt) this.build();
     else if (o.view !== 'current') { this.mode = 'orbit'; this.orb = this.fitOrbit(W / H, o.view); }
     else if (!this.orb && this.mode === 'orbit') this.orb = this.fitOrbit(W / H, 'iso');
     this.lightMode();
     const hidden = [];
     const hide = n => { if (n && n.visible) { hidden.push(n); n.visible = false; } };
     hide(this.selHelper);
-    for (const c of this.root.children) {
+    for (const c of this.kids()) {
       if (c.userData.clearZone || c.userData.zoneItem || c.userData.label) hide(c);
-      if (!o.people && c.userData.pick && Ed.P.items.some(i => i.id === c.userData.pick.id && i.type === 'human')) hide(c);
+      if (!o.people && c.userData.pick && Ed.P.levels.some(l => l.items.some(i => i.id === c.userData.pick.id && i.type === 'human'))) hide(c);
     }
     this.setShadow(o.hq ? 4096 : 2048);
     let out;
@@ -1463,22 +1804,7 @@ const View3D = {
       R.setPixelRatio(1); R.setSize(W, H, false);
       this.cam.aspect = W / H; this.cam.updateProjectionMatrix();
       this.applyCam();
-      if (o.cut && o.view !== 'walk' && o.view !== 'top') {
-        // Kameraya bakan dış duvarları 1 m'de kes
-        const cp = this.cam.position, P = Ed.P, cutH = 1.0;
-        const facing = sg => sg && sg.outer && (sg.h ? (sg.n < 0 ? cp.z < sg.c : cp.z > sg.c) : (sg.n < 0 ? cp.x < sg.c : cp.x > sg.c));
-        for (const c of this.root.children) {
-          if (c.userData.wall && facing(c.userData.seg)) {
-            const y0 = c.userData.y0 || 0, hh = c.geometry.parameters.height, nh = Math.min(hh, cutH - y0);
-            cutRestore.push([c, c.scale.y, c.position.y, c.visible]);
-            if (nh <= .01) c.visible = false; else { c.scale.y = nh / hh; c.position.y = y0 + nh / 2; }
-          } else if (c.userData.signSeg && facing(c.userData.signSeg)) hide(c);
-          else if (c.userData.pick && c.userData.pick.k === 'item') {
-            const it = P.items.find(i => i.id === c.userData.pick.id);
-            if (it && isOpening(it) && facing(wallOf(it, Ed.segs))) hide(c);
-          }
-        }
-      }
+      if (o.cut && o.view !== 'walk' && o.view !== 'top') cutRestore.push(...this.cutFacing());
       R.render(this.scene, this.cam);
       out = document.createElement('canvas'); out.width = W; out.height = H;
       const g = out.getContext('2d'); g.drawImage(this.cv, 0, 0);
@@ -1488,19 +1814,20 @@ const View3D = {
       hidden.forEach(n => { n.visible = true; });
       this.mode = saved.mode; this.orb = saved.orb; Object.assign(this.wk, saved.wk);
       this.setShadow(2048);
-      R.setPixelRatio(saved.pr); this.resize(); this.lightMode();
+      R.setPixelRatio(saved.pr); this.resize();
+      if (rebuilt) this.build(); else this.lightMode();
       if (Ed.view === '3d') this.req();
     }
     return out;
   },
   /* Render üzerine ölçü çizgileri ve oda etiketleri */
   drawDims3D(g, Wp, Hp) {
-    const T = this.T, cam = this.cam, P = Ed.P, W = P.shop.w, D = P.shop.d, Hh = this.wallH;
+    const T = this.T, cam = this.cam, P = Ed.P, W = P.shop.w, D = P.shop.d, Hh = this.wallH, O = this.lvOrigin();
     const k = Math.max(1, Wp / 1250);
     const taken = [];
     const free = (x, y, w, h) => { const r = [x - w / 2, y - h / 2, x + w / 2, y + h / 2]; if (taken.some(t => r[0] < t[2] && r[2] > t[0] && r[1] < t[3] && r[3] > t[1])) return false; taken.push(r); return true; };
-    const pr = (x, y, z) => { const v = new T.Vector3(x, y, z).project(cam); return [(v.x + 1) / 2 * Wp, (1 - v.y) / 2 * Hp, v.z]; };
-    const cp = cam.position;
+    const pr = (x, y, z) => { const v = new T.Vector3(x + O.x, y + O.y, z + O.z).project(cam); return [(v.x + 1) / 2 * Wp, (1 - v.y) / 2 * Hp, v.z]; };
+    const cp = {x: cam.position.x - O.x, y: cam.position.y - O.y, z: cam.position.z - O.z};
     const pill = (x, y, lines, ang = 0, dark = true) => {
       g.save(); g.translate(x, y); g.rotate(ang);
       const f1 = `700 ${15 * k}px ${getFont()}`, f2 = `500 ${12.5 * k}px ${getMono()}`;
@@ -1551,16 +1878,21 @@ const View3D = {
     return '';
   },
   /* Kameraya bakan dış duvarları 1 m'de keser; geri alma listesi döndürür */
-  cutFacing(hideFn) {
-    const cp = this.cam.position, P = Ed.P, cutH = 1.0, list = [];
-    const facing = sg => sg && sg.outer && (sg.h ? (sg.n < 0 ? cp.z < sg.c : cp.z > sg.c) : (sg.n < 0 ? cp.x < sg.c : cp.x > sg.c));
-    for (const c of this.root.children) {
-      if (c.userData.wall && facing(c.userData.seg)) {
-        const y0 = c.userData.y0 || 0, hh = c.geometry.parameters.height, nh = Math.min(hh, cutH - y0);
-        list.push([c, c.scale.y, c.position.y, c.visible]);
-        if (nh <= .01) c.visible = false; else { c.scale.y = nh / hh; c.position.y = y0 + nh / 2; }
-      } else if ((c.userData.signSeg && facing(c.userData.signSeg)) || (c.userData.pick && c.userData.pick.k === 'item' && (() => { const it = P.items.find(i => i.id === c.userData.pick.id); return it && isOpening(it) && facing(wallOf(it, Ed.segs)); })())) {
-        list.push([c, c.scale.y, c.position.y, c.visible]); c.visible = false;
+  cutFacing() {
+    const cp0 = this.cam.position, P = Ed.P, cutH = 1.0, list = [];
+    for (const lg of this.root.children) {
+      if (lg.userData.level === undefined) continue;
+      const li = lg.userData.level, lv = P.levels[li], cp = {x: cp0.x - lg.position.x, z: cp0.z - lg.position.z};
+      const facing = sg => sg && sg.outer && (sg.h ? (sg.n < 0 ? cp.z < sg.c : cp.z > sg.c) : (sg.n < 0 ? cp.x < sg.c : cp.x > sg.c));
+      const segsL = li === P.cur ? Ed.segs : computeWalls(lvView(P, li));
+      for (const c of lg.children) {
+        if (c.userData.wall && facing(c.userData.seg)) {
+          const y0 = c.userData.y0 || 0, hh = c.geometry.parameters.height, nh = Math.min(hh, cutH - y0);
+          list.push([c, c.scale.y, c.position.y, c.visible]);
+          if (nh <= .01) c.visible = false; else { c.scale.y = nh / hh; c.position.y = y0 + nh / 2; }
+        } else if ((c.userData.signSeg && facing(c.userData.signSeg)) || (c.userData.pick && c.userData.pick.k === 'item' && (() => { const it = lv.items.find(i => i.id === c.userData.pick.id); return it && isOpening(it) && facing(wallOf(it, segsL)); })())) {
+          list.push([c, c.scale.y, c.position.y, c.visible]); c.visible = false;
+        }
       }
     }
     return list;
@@ -1575,15 +1907,18 @@ const View3D = {
     this.recording = true; this.stopLoop();
     const hidden = [];
     R.setPixelRatio(1); R.setSize(w, h, false); this.cam.aspect = w / h; this.cam.updateProjectionMatrix();
-    this.mode = kind === 'walk' ? 'walk' : 'orbit'; this.lightMode();
+    this.mode = kind === 'walk' ? 'walk' : 'orbit';
+    const rebuilt = multiLevel(P) && (this.mode === 'walk') !== (this.builtMode === 'all');
+    if (rebuilt) this.build(); else this.lightMode();
     if (this.selHelper) { hidden.push(this.selHelper); this.selHelper.visible = false; }
-    for (const c of this.root.children) if (c.userData.clearZone || c.userData.zoneItem || c.userData.label) { if (c.visible) { hidden.push(c); c.visible = false; } }
+    for (const c of this.kids()) if (c.userData.clearZone || c.userData.zoneItem || c.userData.label) { if (c.visible) { hidden.push(c); c.visible = false; } }
     // Yol
     const base = this.fitOrbit(w / h, 'iso');
     const ent = this.entrancePose();
     const ix = Math.sin(ent.yaw), iz = -Math.cos(ent.yaw);
     const door = [ent.x - ix * .7, ent.z - iz * .7];
-    const depth = Math.abs(ix) > .5 ? P.shop.w : P.shop.d;
+    const G0 = P.levels[groundIdx(P)], depth = Math.abs(ix) > .5 ? G0.shop.w : G0.shop.d;
+    if (kind === 'walk') this.wk.fy = 0;
     const p0 = [door[0] - ix * 4, door[1] - iz * 4], p2 = [door[0] + ix * Math.min(depth * .5, 4.5), door[1] + iz * Math.min(depth * .5, 4.5)];
     const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
     const pose = p => {
@@ -1620,7 +1955,8 @@ const View3D = {
       this.uncut(cut);
       hidden.forEach(n => { n.visible = true; });
       this.mode = saved.mode; this.orb = saved.orb; Object.assign(this.wk, saved.wk);
-      R.setPixelRatio(saved.pr); this.resize(); this.lightMode();
+      R.setPixelRatio(saved.pr); this.resize();
+      if (rebuilt) this.build(); else this.lightMode();
       this.recording = false; this.req();
     }
     if (isCancelled && isCancelled()) return null;

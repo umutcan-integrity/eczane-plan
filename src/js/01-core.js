@@ -49,6 +49,8 @@ const TYPES = {
   human:   {n: 'İnsan', color: '#E07A5F'},
   zone:    {n: 'Boşluk', color: '#3FA66B'},
   light:   {n: 'Aydınlatma', color: '#F2C94C'},
+  stair:   {n: 'Merdiven', solid: 1, color: '#B9AFA2', front: 1},
+  lift:    {n: 'Asansör', solid: 1, color: '#8E9AA6', front: 1},
 };
 const STYLES = {
   cabinet: [['drawer', 'İlaç dolabı'], ['otc', 'OTC dolabı'], ['cosmetic', 'Demir kozmetik'], ['open', 'Açık raf'], ['metal', 'Demir raf'], ['closed', 'Kapaklı'], ['gondola', 'Gondol'], ['glass', 'Vitrin'], ['fridge', 'Buzdolabı'], ['kitchen', 'Mutfak tezgâhı'], ['wstand', 'Cam önü stand']],
@@ -58,6 +60,7 @@ const STYLES = {
   human:   [['stand', 'Ayakta'], ['wheelchair', 'Tekerlekli sandalye']],
   zone:    [['rect', 'Şerit'], ['circle', 'Daire']],
   light:   [['linear', 'Lineer'], ['spot', 'Spot'], ['pendant', 'Avize']],
+  stair:   [['straight', 'Düz'], ['L', 'L dönüşlü'], ['U', 'U (çift kollu)'], ['spiral', 'Döner']],
 };
 /* Aydınlatma: montaj, avize modeli, ışık rengi */
 const LIGHT_MOUNTS = {linear: [['recessed', 'Gömme'], ['surface', 'Sıva üstü'], ['suspended', 'Sarkıt']], spot: [['recessed', 'Gömme'], ['surface', 'Sıva üstü']]};
@@ -114,6 +117,13 @@ const CATALOG = [
     {k: 'pass120', n: 'Geçiş 120 cm', sub: 'iki kişi', t: 'zone', s: 'rect', w: 1.2, d: 2, h: 0},
     {k: 'turn', n: 'Dönüş alanı', sub: 'Ø 150 · sandalye', t: 'zone', s: 'circle', w: 1.5, d: 1.5, h: 0},
   ]},
+  {g: 'Merdiven & asansör', list: [
+    {k: 'stair', n: 'Düz merdiven', sub: '100 × 440 · tek kol', t: 'stair', s: 'straight', w: 1.0, d: 4.4, h: 0, clear: 1.2},
+    {k: 'stairL', n: 'L merdiven', sub: 'sahanlıklı · 240 × 320', t: 'stair', s: 'L', w: 2.4, d: 3.2, h: 0, sw: 1.0, clear: 1.2},
+    {k: 'stairU', n: 'U merdiven', sub: 'çift kollu · 220 × 300', t: 'stair', s: 'U', w: 2.2, d: 3.0, h: 0, sw: 1.0, clear: 1.2},
+    {k: 'spiral', n: 'Döner merdiven', sub: 'Ø 160 · dar alan', t: 'stair', s: 'spiral', w: 1.6, d: 1.6, h: 0, clear: 1.0},
+    {k: 'lift', n: 'Asansör', sub: '160 × 170 · tüm katlar', t: 'lift', w: 1.6, d: 1.7, h: 0, clear: 1.5},
+  ]},
   {g: 'Tavan & aydınlatma', list: [
     {k: 'linear', n: 'Lineer LED', sub: '120 cm · gömme', t: 'light', s: 'linear', w: 1.2, d: .06, h: 0, mount: 'recessed', watt: 30},
     {k: 'spot', n: 'Spot', sub: 'Ø 10 · gömme', t: 'light', s: 'spot', w: .1, d: .1, h: 0, mount: 'recessed', watt: 9},
@@ -154,6 +164,11 @@ function palIcon(k) {
     case 'table': return S(`<rect x="5" y="8" width="34" height="15" rx="1.5" fill="#B99470" fill-opacity=".35"/>`);
     case 'desk': return S(`<rect x="7" y="7" width="30" height="13" rx="1.5" fill="#B99470" fill-opacity=".35"/><rect x="17" y="21" width="10" height="7" rx="3" stroke-width="1.2"/>`);
     case 'round': return S(`<circle cx="22" cy="15" r="11" fill="#B99470" fill-opacity=".35"/>`);
+    case 'stair': return S(`<rect x="14" y="2" width="16" height="26" fill="#B9AFA2" fill-opacity=".35"/><path d="M14 7h16M14 11h16M14 15h16M14 19h16M14 23h16" stroke-width="1"/><path d="M22 26V5m-3 3l3-3 3 3" stroke="${acc}" stroke-width="1.6"/>`);
+    case 'stairL': return S(`<path d="M8 28V4h28v10H18v14z" fill="#B9AFA2" fill-opacity=".35"/><path d="M8 24h10M8 20h10M8 16h10M22 4v10M26 4v10M30 4v10" stroke-width="1"/><path d="M13 26V9h19" stroke="${acc}" stroke-width="1.6"/><path d="M29 6l3 3-3 3" stroke="${acc}" stroke-width="1.6"/>`);
+    case 'stairU': return S(`<path d="M8 28V3h28v25H25V12h-6v16z" fill="#B9AFA2" fill-opacity=".35"/><path d="M8 24h11M8 20h11M8 16h11M25 24h11M25 20h11M25 16h11" stroke-width="1"/><path d="M13 26V8h17v18" stroke="${acc}" stroke-width="1.6"/><path d="M27 23l3 3 3-3" stroke="${acc}" stroke-width="1.6"/>`);
+    case 'spiral': return S(`<circle cx="22" cy="15" r="13" fill="#B9AFA2" fill-opacity=".35"/><circle cx="22" cy="15" r="2" fill="currentColor"/><path d="M22 15V2M22 15l9-9M22 15h13M22 15l9 9M22 15v13M22 15l-9 9" stroke-width="1"/><path d="M22 23a8 8 0 1 1 8-8" stroke="${acc}" stroke-width="1.6"/>`);
+    case 'lift': return S(`<rect x="12" y="3" width="20" height="23" fill="#8E9AA6" fill-opacity=".3" stroke-width="2"/><path d="M12 3l20 23M32 3L12 26" stroke-width="1"/><path d="M17 26h10" stroke="${acc}" stroke-width="3"/><path d="M19 10l3-3 3 3M19 17l3 3 3-3" stroke-width="1.3"/>`);
     case 'linear': return S(`<rect x="3" y="12" width="38" height="6" rx="1.5" fill="#F2C94C" fill-opacity=".55"/><path d="M6 15h32" stroke-width="1" stroke-dasharray="2 2"/><path d="M8 22l-2 4M16 22l-1 4M28 22l1 4M36 22l2 4" stroke="${acc}" stroke-width="1.3"/>`);
     case 'spot': return S(`<circle cx="22" cy="13" r="7" fill="#F2C94C" fill-opacity=".55"/><path d="M17 8l10 10M27 8L17 18" stroke-width="1.1"/><path d="M15 23l-2 4M22 23v4M29 23l2 4" stroke="${acc}" stroke-width="1.3"/>`);
     case 'pendant': return S(`<path d="M22 1v8" stroke-width="1.2"/><ellipse cx="22" cy="13" rx="14" ry="4.5" fill="#F2C94C" fill-opacity=".45" stroke-width="2"/><path d="M12 21l-2 5M22 21v5M32 21l2 5" stroke="${acc}" stroke-width="1.3"/>`);

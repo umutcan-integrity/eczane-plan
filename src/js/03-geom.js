@@ -6,7 +6,7 @@ function rotPt(x, y, deg) { const a = deg * D2R, c = Math.cos(a), s = Math.sin(a
 function toWorld(it, lx, ly) { const [x, y] = rotPt(lx, ly, it.rot || 0); return [it.cx + x, it.cy + y]; }
 function toLocal(it, wx, wy) { return rotPt(wx - it.cx, wy - it.cy, -(it.rot || 0)); }
 function localPoly(it, x0, y0, x1, y1) { return [toWorld(it, x0, y0), toWorld(it, x1, y0), toWorld(it, x1, y1), toWorld(it, x0, y1)]; }
-const isRound = it => (it.type === 'table' && it.style === 'round') || (it.type === 'zone' && it.style === 'circle') || (it.type === 'light' && it.style === 'pendant');
+const isRound = it => (it.type === 'table' && it.style === 'round') || (it.type === 'zone' && it.style === 'circle') || (it.type === 'light' && it.style === 'pendant') || (it.type === 'stair' && it.style === 'spiral');
 const isSolid = it => !!TYPES[it.type]?.solid;
 const isOpening = it => it.type === 'door' || it.type === 'window';
 function itemPoly(it) {
@@ -82,7 +82,14 @@ function shopRects(P) {
   }
   return out;
 }
-function shopArea(P) { return shopRects(P).reduce((s, r) => s + r.w * r.d, 0); }
+function shopArea(P) {
+  let a = shopRects(P).reduce((s, r) => s + r.w * r.d, 0);
+  if (P.levels) for (const h of levelDerived(P, P.cur).holes) { // merdiven boşlukları net alana girmez
+    const b = h.box, x0 = clamp(b.x0, 0, P.shop.w), x1 = clamp(b.x1, 0, P.shop.w), y0 = clamp(b.y0, 0, P.shop.d), y1 = clamp(b.y1, 0, P.shop.d);
+    if (x1 > x0 && y1 > y0) a -= (x1 - x0) * (y1 - y0);
+  }
+  return Math.max(0, a);
+}
 /* Dış sınır kenarları: {h, e (hat), a..b, n (dışa yön işareti)} */
 function outerEdges(P) {
   const {X, Y, ins} = shopGrid(P), nx = X.length - 1, ny = Y.length - 1, raw = [];
@@ -129,9 +136,13 @@ function rectMinus(base, cuts) {
    seg: {h, c: hat, a..b: aralık, t, outer, n: dışa yön (dış duvar), e/ea/eb: iç yüz hattı ve aralığı, open: []} */
 function computeWalls(P) {
   const to = OUTER_T, ti = INNER_T, eps = .004;
-  const segs = [];
+  const segs = [], overGround = mezzRailCheck(P);
   for (const e of outerEdges(P)) {
     let a = e.a, b = e.b;
+    if (overGround) { // asma kat: zemin katın iç boşluğuna bakan kenar → korkuluk
+      const smp = [.15, .5, .85].map(f => e.a + (e.b - e.a) * f), off = e.e + e.n * .35;
+      if (smp.filter(v => e.h ? overGround(v, off) : overGround(off, v)).length >= 2) { segs.push({h: e.h, c: r3(e.e + e.n * .025), a: r3(e.a), b: r3(e.b), t: .05, outer: 1, rail: 1, n: e.n, e: e.e, ea: e.a, eb: e.b}); continue; }
+    }
     const IN = (x, y) => inShop(P, x, y);
     if (e.h) {
       if (!IN(a - eps, e.e - e.n * eps)) a -= to;   // dış köşe: uzat
@@ -220,6 +231,7 @@ function segRange(s) {
 function nearestWall(segs, x, y, maxD) {
   let best = null, bd = maxD;
   for (const s of segs) {
+    if (s.rail) continue; // korkuluğa kapı/pencere oturmaz
     const along = s.h ? x : y, lc = s.h ? y : x;
     const [a, b] = segRange(s);
     const d = Math.hypot(along - clamp(along, a, b), lc - s.c);
@@ -281,6 +293,15 @@ function analyze(P, segs) {
   const walls = wallPieces(segs, o => o.type === 'door').map(rectPoly);
   _voidPolys = (P.voids || []).map(v => rectPoly({x0: v.x, y0: v.y, x1: v.x + v.w, y1: v.y + v.d}));
   const bad = new Set(), zoneBad = new Set(), issues = [];
+  // Başka katlardan gelen sabit engeller: merdiven boşlukları, asansör kuyuları
+  const der = P.levels ? levelDerived(P, P.cur) : {holes: [], ghosts: []};
+  const fixed = [...der.holes.map(h => ({nm: 'merdiven boşluğu', poly: h.poly})), ...der.ghosts.map(g => ({nm: 'asansör kuyusu', poly: itemPoly(g)}))];
+  for (const s of solids) for (const f of fixed) if (polyOverlap(s.poly, f.poly)) { bad.add(s.it.id); issues.push({id: s.it.id, t: `${nm(s.it)} ${f.nm} ile çakışıyor`}); }
+  if (P.levels) for (const it of P.items) {
+    if (it.type === 'stair') { const inf = stairInfo(P, P.cur, it); if (inf.warn.length) { issues.push({id: it.id, w: 1, t: `${nm(it)}: ${inf.warn[0]}`}); if (!inf.top) bad.add(it.id); } }
+    if (it.type === 'lift' && P.levels.length < 2) issues.push({id: it.id, w: 1, t: `${nm(it)}: tek katlı projede asansör gerekmez; kat ekleyince tüm katlarda kuyu oluşur.`});
+    if (it.type === 'lift') P.levels.forEach((lv, j) => { if (j === P.cur) return; const [dx, dy] = lvShift(P, P.cur, j), b = itemBox(it), v = lvView(P, j); if (![[b.x0, b.y0], [b.x1, b.y0], [b.x1, b.y1], [b.x0, b.y1]].every(([x, y]) => inShop(v, x + dx, y + dy))) issues.push({id: it.id, w: 1, t: `${nm(it)} kuyusu ${levelName(P, j)} sınırının dışında kalıyor`}); });
+  }
   for (let i = 0; i < solids.length; i++) for (let j = i + 1; j < solids.length; j++) {
     const a = solids[i], b = solids[j];
     if (polyOverlap(a.poly, b.poly)) { bad.add(a.it.id); bad.add(b.it.id); issues.push({id: a.it.id, t: `${nm(a.it)} ile ${nm(b.it)} üst üste`}); }
@@ -291,6 +312,7 @@ function analyze(P, segs) {
   }
   const blocker = (poly, self) => {
     for (const s of solids) if (s.it !== self && polyOverlap(poly, s.poly)) return nm(s.it);
+    for (const f of fixed) if (polyOverlap(poly, f.poly)) return f.nm;
     if (walls.some(w => polyOverlap(poly, w, 0.015))) return 'duvar';
     if (polyOutside(poly, W, D, 0.02) || polyInVoid(poly)) return 'dış duvar';
     return null;

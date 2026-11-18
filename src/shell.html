@@ -42,6 +42,7 @@
           <label class="fl"><span>Derinlik (m)</span><input class="inp" id="newD" inputmode="decimal" value="6,95"></label>
         </div>
         <div class="fl" id="newShapeWrap"><span>Dükkân şekli</span><div class="shapes" id="newShape"></div></div>
+        <div class="fl"><span>Katlar <small class="note">(sonradan da eklenebilir)</small></span><div class="chips" id="newFloors"></div></div>
         <div class="tpl" id="newTpl">
           <button type="button" data-v="empty" class="on"><b>Boş dükkân</b><small>Sadece dış duvarlar</small></button>
           <button type="button" data-v="sample"><b>Örnek eczane</b><small>Odalar, banko ve dolaplar hazır</small></button>
@@ -116,8 +117,11 @@
         <button class="tb" id="camVideo" title="Video al"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg><span class="lbl">Video</span></button>
         <button class="tb tog" id="camCeil" title="Tavanı ve armatürleri göster"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 4h18M12 4v4"/><path d="M7 13a5 5 0 0110 0z"/><path d="M8 17l-1.5 3M12 17.5V21M16 17l1.5 3"/></svg><span class="lbl">Tavan</span></button>
         <button class="tb tog" id="camNight" title="Akşam: dış ışığı kapat, yalnızca armatürler"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg><span class="lbl">Akşam</span></button>
+        <button class="tb" id="camLevels" hidden title="Katları göster: bu kata kadar / ayrık / yalnız bu kat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5M3 16.5L12 21l9-4.5"/></svg><span class="lbl" id="camLevelsLbl">Katlar</span></button>
         <button class="tb" id="camWalls" title="Duvar yüksekliği"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18M5 20V9h6v11M13 20v-7h6v7"/></svg><span class="lbl" id="camWallsLbl">Duvar: tam</span></button>
       </div>
+
+      <div class="float floorbar" id="floorBar"></div>
 
       <div class="hintpill" id="hintPill" hidden><span id="hintText"></span><button id="hintDone">Bitti</button></div>
 
@@ -136,6 +140,16 @@
 
       <div class="recbar" id="recBar" hidden><i></i><span id="recText">Kaydediliyor</span><button id="recStop">Durdur</button></div>
       <div class="walkhint" id="walkHint" hidden></div>
+      <div class="float walknav" id="walkNav" hidden>
+        <button class="tb" data-nav="left" title="45° sola dön (Q)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 12a8 8 0 102.3-5.6"/><path d="M4 4v5h5"/></svg></button>
+        <button class="tb" data-nav="level" title="Düz bak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M2 12h5M17 12h5"/></svg></button>
+        <button class="tb" data-nav="right" title="45° sağa dön (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 12a8 8 0 11-2.3-5.6"/><path d="M20 4v5h-5"/></svg></button>
+        <span class="tsep"></span>
+        <button class="tb" data-nav="home" title="Girişe dön"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg><span class="lbl">Giriş</span></button>
+        <button class="tb" data-nav="up" title="Üst kata çık"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg><span class="lbl" data-lbl="up">Üst kat</span></button>
+        <button class="tb" data-nav="down" title="Alt kata in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg><span class="lbl" data-lbl="down">Alt kat</span></button>
+      </div>
+      <div class="float liftpanel" id="liftPanel" hidden></div>
       <canvas class="minimap" id="minimap" hidden title="Haritaya dokun: oraya git"></canvas>
       <div class="crosshair" id="crosshair" hidden></div>
       <div class="joy" id="joy" hidden><div class="joy-knob" id="joyKnob"></div></div>

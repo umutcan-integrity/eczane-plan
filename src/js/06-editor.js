@@ -19,7 +19,7 @@ const Ed = {
     View3D.sceneDirty = true; View3D.orb = null; View3D.wkInit = false; View3D.mode = 'orbit';
     this.setView('2d', true);
     this.setTool('select');
-    Palette.render(); Props.render(); this.updateSaveUI(); this.updateUndoUI();
+    Palette.render(); Props.render(); this.updateSaveUI(); this.updateUndoUI(); this.updateLevelUI();
     Sheets.closeAll();
     requestAnimationFrame(() => Plan.resize());
     return true;
@@ -39,13 +39,13 @@ const Ed = {
     this.P = null; this.sel = null;
     return true;
   },
-  snap() { const P = this.P; return JSON.stringify({name: P.name, sign: P.sign, floor: P.floor, ceil: P.ceil, kroki: P.kroki, shop: P.shop, rooms: P.rooms, items: P.items, voids: P.voids, walls: P.walls}); },
+  snap() { const P = this.P; return JSON.stringify({name: P.name, sign: P.sign, kroki: P.kroki, levels: P.levels, cur: P.cur}); },
   restore(str) {
-    const o = JSON.parse(str);
-    Object.assign(this.P, {name: o.name, floor: o.floor, shop: o.shop, rooms: o.rooms, items: o.items, voids: o.voids || [], walls: o.walls || []});
+    const o = JSON.parse(str), lvChanged = o.cur !== this.P.cur || o.levels.length !== this.P.levels.length;
+    this.P.name = o.name; this.P.levels = o.levels; this.P.cur = clamp(o.cur, 0, o.levels.length - 1);
     if (o.kroki) this.P.kroki = o.kroki; else delete this.P.kroki;
-    if (o.ceil) this.P.ceil = o.ceil; else delete this.P.ceil;
     if (o.sign === undefined) delete this.P.sign; else this.P.sign = o.sign;
+    if (lvChanged) { this.updateLevelUI(); View3D.levelChanged(); }
     if (this.sel && !this.objOf(this.sel)) this.sel = null;
     if (this.multi.length) { this.multi = this.multi.filter(id => this.P.items.some(i => i.id === id)); if (this.multi.length < 2) this.multi = []; }
     $('#pnameText').textContent = this.P.name;
@@ -104,6 +104,7 @@ const Ed = {
   },
   selObj() { return this.objOf(this.sel); },
   select(sel) {
+    if (sel && sel.lv !== undefined && this.P && sel.lv !== this.P.cur) this.setLevel(sel.lv, {quiet: true});
     const hadMulti = this.multi.length > 0; this.multi = [];
     const same = !hadMulti && ((this.sel && sel && this.sel.id === sel.id) || (!this.sel && !sel));
     this.sel = sel && this.objOf(sel) ? {k: sel.k, id: sel.id} : null;
@@ -128,6 +129,69 @@ const Ed = {
     this.setMulti([...ids]);
   },
   selectAll() { const c = this.layer === 'ceil'; this.setMulti(this.P.items.filter(i => i.type !== 'zone' && isLight(i) === c).map(i => i.id)); },
+  /* ---------- Katlar ---------- */
+  setLevel(i, o = {}) {
+    const P = this.P; if (!P || i < 0 || i >= P.levels.length || i === P.cur) return;
+    const a = P.levels[P.cur], b = P.levels[i];
+    if (!o.walk) { this.multi = []; this.sel = null; $('#dockPropsLbl').textContent = 'Proje'; }
+    P.cur = i;
+    Plan.V.ox += (b.ox - a.ox) * Plan.V.s; Plan.V.oy += (b.oy - a.oy) * Plan.V.s;
+    Plan.measure = null; Plan.hover = null;
+    this.recompute();
+    this.updateLevelUI(); Props.render(); Ctx.place(); Plan.req();
+    View3D.levelChanged(o.walk);
+    if (!o.quiet) toast(`${levelName(P, i)} · kot ${levelElev(P, i) >= 0 ? '+' : ''}${fmtM(levelElev(P, i))} m`);
+  },
+  updateLevelUI() {
+    const bar = $('#floorBar'); if (!bar || !this.P) return;
+    const P = this.P; bar.innerHTML = '';
+    bar.append(h('button', {type: 'button', class: 'fb-add', title: 'Kat ekle (bodrum, asma kat, üst kat)', onclick: e => this.levelMenu(e.currentTarget), html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'}));
+    for (let i = P.levels.length - 1; i >= 0; i--) bar.append(h('button', {type: 'button', class: i === P.cur ? 'on' : '', title: levelName(P, i) + (i === P.cur ? ' · ayarlar' : ''), onclick: () => {
+      if (i === P.cur) { this.select(null); this.openProps(); Props.render(); setTimeout(() => $('#props .lvgrp')?.scrollIntoView({block: 'start', behavior: 'smooth'}), 30); }
+      else this.setLevel(i);
+    }}, levelShort(P, i)));
+    bar.classList.toggle('single', P.levels.length < 2);
+    $('#camLevels').hidden = P.levels.length < 2;
+  },
+  levelMenu(anchor) {
+    const P = this.P, hasM = P.levels.some(l => l.kind === 'mezzanine');
+    openMenu(anchor, [
+      {t: 'Üst kat ekle', icon: ICONS.lvUp, fn: () => this.addLevel('upper')},
+      hasM ? null : {t: 'Asma kat ekle', icon: ICONS.lvMez, fn: () => this.addLevel('mezzanine')},
+      {t: 'Bodrum kat ekle', icon: ICONS.lvDown, fn: () => this.addLevel('basement')},
+      '-',
+      {t: 'Kat ayarları', icon: ICONS.edit, fn: () => { this.select(null); this.openProps(); setTimeout(() => $('#props .lvgrp')?.scrollIntoView({block: 'start'}), 30); }},
+    ]);
+  },
+  addLevel(kind) {
+    const P = this.P;
+    if (kind === 'mezzanine' && P.levels.some(l => l.kind === 'mezzanine')) { toast('Projede zaten bir asma kat var'); return; }
+    let idx = -1;
+    this.change(() => { idx = levelAdd(P, kind); });
+    if (idx < 0) return;
+    this.setLevel(idx, {quiet: true});
+    Plan.fitted = false; Plan.fit();
+    if (kind === 'mezzanine' && P.levels[groundIdx(P)].shop.h < 2.5) toast('Asma kat altı yüksekliği düşük: zemin kat yüksekliğini kontrol et');
+    else toast(`${levelName(P, idx)} eklendi · ${kind === 'mezzanine' ? 'zemine bakan kenarlar korkuluk oldu' : 'dış sınır kopyalandı'}`);
+  },
+  async removeLevel(i) {
+    const P = this.P, lv = P.levels[i];
+    if (!lv || lv.kind === 'ground') { toast('Zemin kat silinemez'); return; }
+    const n = lv.items.length + lv.rooms.length;
+    if (!await confirmBox(`${levelName(P, i)} silinsin mi?`, n ? `Bu kattaki ${lv.rooms.length} oda ve ${lv.items.length} eşya da silinecek. Geri almak için ↶ kullanabilirsin.` : 'Kat kaldırılacak. Geri almak için ↶ kullanabilirsin.', 'Katı sil', true)) return;
+    const target = i === P.cur ? groundIdx(P) : P.cur;
+    const keep = P.levels[target];
+    this.sel = null; this.multi = [];
+    this.change(() => { P.levels.splice(i, 1); P.cur = P.levels.indexOf(keep); });
+    this.recompute(); this.updateLevelUI(); Props.render(); View3D.levelChanged(); Plan.req();
+    toast('Kat silindi · geri almak için ↶');
+  },
+  copyGroundOutline() {
+    const P = this.P, g = P.levels[groundIdx(P)], lv = curLevel(P);
+    if (lv === g) return;
+    this.change(() => { lv.shop.w = g.shop.w; lv.shop.d = g.shop.d; lv.ox = 0; lv.oy = 0; lv.voids = g.voids.map(v => Object.assign({}, v, {id: uid()})); reseatOpenings(P); });
+    Props.render(); toast('Zemin katın dış sınırı kopyalandı');
+  },
   /* Katman: zemin planı / tavan planı (aydınlatma) */
   setLayer(l, keepSel) {
     if (this.layer === l) return;
@@ -227,6 +291,8 @@ const Ed = {
     Sheets.closeAll();
     if (isOpening(it)) toast(`${it.name} en yakın duvara yerleşti · sürükleyerek duvar boyunca kaydır`);
     if (placedAtWindow) toast('Cam önü stand en yakın vitrin camının önüne yerleşti');
+    if (it.type === 'stair') toast(this.P.levels[this.P.cur + 1] ? `Merdiven ${levelName(this.P, this.P.cur + 1)}’a bağlandı · giriş (alt basamak) ön tarafta` : 'Merdiven bir üst kata bağlanır · sol taraftaki + ile kat ekle');
+    if (it.type === 'lift') toast(multiLevel(this.P) ? 'Asansör kuyusu tüm katlarda oluştu' : 'Asansör kuyusu, kat ekleyince tüm katlarda oluşur');
   },
   /* Cam önü stand: en yakın pencerenin içine, önü cama bakacak şekilde */
   placeAtWindow(it, x, y) {
@@ -313,6 +379,10 @@ const Ed = {
         for (const q of P.walls) { q.x1 = r3(q.x1 + dx); q.x2 = r3(q.x2 + dx); q.y1 = r3(q.y1 + dy); q.y2 = r3(q.y2 + dy); }
         for (const q of P.items) { q.cx = r3(q.cx + dx); q.cy = r3(q.cy + dy); }
         Plan.V.ox -= dx * Plan.V.s; Plan.V.oy -= dy * Plan.V.s;
+        // Diğer katlar dünyada yerinde kalsın: zemin kaydıysa diğerlerinin farkı, değilse bu katın farkı düzelir
+        const lv = curLevel(P);
+        if (lv.kind === 'ground') for (const o of P.levels) { if (o !== lv) { o.ox = r3(o.ox + dx); o.oy = r3(o.oy + dy); } }
+        else { lv.ox = r3(lv.ox - dx); lv.oy = r3(lv.oy - dy); }
       }
       const rr = {x: r.x + dx, y: r.y + dy, w: r.w, d: r.d}, old = {x: dx, y: dy, w: W, d: D};
       const NW = r3(nx1 - nx0), ND = r3(ny1 - ny0);
@@ -454,7 +524,9 @@ const Ed = {
     const mk = out => out.map(([x, y, rot]) => lightFix(makeItem(e, x, y, {rot})));
     let out = place(need);
     for (let k = 0; k < 3 && out.length; k++) { // ışık dağılımı hesabıyla hedefe yaklaştır
-      const L = luxGrid(Object.assign({}, P, {items: P.items.filter(i => !isLight(i)).concat(mk(out))}));
+      const tmp = lvView(P, P.cur), its = P.items.filter(i => !isLight(i)).concat(mk(out));
+      Object.defineProperty(tmp, 'items', {get: () => its});
+      const L = luxGrid(tmp);
       const v = L ? (L.sales || L.avg) : 0;
       if (!v || (v >= 470 && v <= 650)) break;
       need = Math.max(1, Math.round(need * target / v)); out = place(need);
@@ -642,7 +714,8 @@ const Props = {
     const areaEl = h('div', {class: 'big-area'});
     const drawArea = () => { areaEl.innerHTML = `<b>${fmtA(shopArea(P))}</b><span>m² dükkân alanı</span>`; };
     drawArea(); this.liveFns.push(drawArea);
-    root.append(this.grp('Dükkân',
+    root.append(this.levelGroup());
+    root.append(this.grp(multiLevel(P) ? 'Dükkân · ' + levelName(P, P.cur) : 'Dükkân',
       this.text('Proje adı', () => P.name, v => { P.name = v.slice(0, 60); $('#pnameText').textContent = P.name || 'Proje'; }, 'pname'),
       this.text('Tabela yazısı (3B cephede)', () => P.sign ?? P.name, v => { P.sign = v.slice(0, 60); }, 'psign'),
       h('p', {class: 'tip', style: 'margin-top:-4px'}, '“Eczanesi” yazmazsan kendisi eklenir. Boş bırakırsan tabela gösterilmez.'),
@@ -738,6 +811,7 @@ const Props = {
         if ((it.type === 'table' && v === 'round') || (it.type === 'zone' && v === 'circle')) { const m = Math.max(it.w, it.d); it.w = it.d = m; }
         if (it.type === 'human') { if (v === 'wheelchair') { it.w = .7; it.d = 1.2; it.h = 1.3; } else { it.w = .6; it.d = .4; it.h = 1.75; } }
         if (it.type === 'door' && v === 'double' && it.w < 1.2) it.w = 1.6;
+        if (it.type === 'stair' && def) { it.w = def.w; it.d = def.d; it.sw = def.sw || 1; }
         if (it.type === 'door' && v !== 'double' && it.w > 1.2) it.w = .9;
       });
       Props.render();
@@ -777,11 +851,12 @@ const Props = {
       size.append(h('div', {class: 'prow'},
         this.num(it.type === 'zone' ? 'Genişlik' : 'Genişlik', () => it.w, v => { it.w = v; }, {min: MIN_ITEM, max: 30, key: 'iw'}),
         this.num(it.type === 'zone' ? 'Uzunluk' : 'Derinlik', () => it.d, v => { it.d = v; }, {min: MIN_ITEM, max: 30, key: 'id'})));
-      if (it.type !== 'zone' && it.type !== 'column') size.append(h('div', {class: 'prow'}, this.num('Yükseklik', () => it.h, v => { it.h = v; }, {min: .1, max: 4, key: 'ih'}), h('div', {class: 'pf'})));
+      if (!['zone', 'column', 'stair', 'lift'].includes(it.type)) size.append(h('div', {class: 'prow'}, this.num('Yükseklik', () => it.h, v => { it.h = v; }, {min: .1, max: 4, key: 'ih'}), h('div', {class: 'pf'})));
       if (it.type === 'zone') size.append(this.chips([[.6, '60'], [.9, '90'], [1.2, '120'], [1.5, '150']], () => it.w, v => { Ed.change(() => { it.w = v; }); }));
     }
     root.append(size);
     if (it.type === 'cabinet') { const og = this.cabinetOpts(it); if (og) root.append(og); }
+    if (it.type === 'stair' || it.type === 'lift') root.append(this.stairOpts(it));
 
     // Yön
     if (!isRound(it)) {
@@ -915,6 +990,83 @@ const Props = {
       h('button', {type: 'button', class: 'btn' + (Ed.layer === 'ceil' ? '' : ' primary'), onclick: () => Ed.setLayer(Ed.layer === 'ceil' ? 'floor' : 'ceil'), html: ICONS.ceil + `<span>${Ed.layer === 'ceil' ? 'Zemine dön' : 'Tavan planı'}</span>`})));
     if (P.items.some(isLight)) g.append(h('button', {type: 'button', class: 'btn danger full', onclick: () => Ed.clearLights(), html: ICONS.del + '<span>Tüm armatürleri sil</span>'}));
     g.append(h('p', {class: 'tip', html: '<b>Tavan planı</b> (T) açıkken yalnızca armatürler seçilir; eşyalar soluk görünür. 3B’de <b>Akşam</b> modunu açınca ışıkların etkisini görürsün.'}));
+    return g;
+  },
+
+  /* Katlar: liste, ekle, etkin katın ayarları */
+  levelGroup() {
+    const P = Ed.P, L = P.levels, lv = curLevel(P), g = this.grp('Katlar');
+    g.classList.add('lvgrp');
+    const list = h('div', {class: 'rlist'});
+    let total = 0;
+    for (let i = L.length - 1; i >= 0; i--) {
+      const a = levelArea(P, i); total += a;
+      list.append(h('button', {class: 'ritem lvitem' + (i === P.cur ? ' on' : ''), type: 'button', onclick: () => Ed.setLevel(i)},
+        h('i', {class: 'lvb'}, levelShort(P, i)), h('span', {class: 't'}, h('b', null, levelName(P, i)), h('small', null, `kot ${levelElev(P, i) >= 0 ? '+' : ''}${fmtM(levelElev(P, i))} · h ${fmtM(L[i].shop.h)} m`)), h('span', {class: 'a'}, fmtA(a) + ' m²')));
+    }
+    g.append(list);
+    if (L.length > 1) g.append(h('div', {class: 'kv'}, h('span', null, 'Tüm katlar toplam net alan'), h('b', null, fmtA(total) + ' m²')));
+    const hasM = L.some(l => l.kind === 'mezzanine');
+    g.append(h('div', {class: 'acts stack'},
+      h('button', {type: 'button', class: 'btn', onclick: () => Ed.addLevel('upper'), html: ICONS.lvUp + '<span>Üst kat</span>'}),
+      h('button', {type: 'button', class: 'btn', disabled: hasM, title: hasM ? 'Projede zaten asma kat var' : 'Zemin katın içinde, çift yükseklikli bölüme asma kat', onclick: () => Ed.addLevel('mezzanine'), html: ICONS.lvMez + '<span>Asma kat</span>'}),
+      h('button', {type: 'button', class: 'btn', onclick: () => Ed.addLevel('basement'), html: ICONS.lvDown + '<span>Bodrum</span>'})));
+    if (L.length > 1) {
+      const i = P.cur, isG = lv.kind === 'ground';
+      const name = h('input', {type: 'text', value: lv.name || '', placeholder: levelName(P, i), maxlength: 40});
+      name.addEventListener('change', () => { Ed.change(() => { lv.name = name.value.trim().slice(0, 40); }); Ed.updateLevelUI(); Props.render(); });
+      name.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') name.blur(); });
+      const sub = h('div', {class: 'lvset'}, h('h5', null, levelName(P, i) + ' ayarları'), h('div', {class: 'pf'}, h('label', null, 'Kat adı (boş: otomatik)'), name));
+      const row = h('div', {class: 'prow'}, this.num('Kat yüksekliği', () => lv.shop.h, v => { lv.shop.h = v; for (const it of lv.items) if (it.type === 'column') it.h = v; }, {unit: 'm', min: 2.2, max: 8, key: 'lvh'}));
+      if (i > 0) row.append(this.num('Döşeme kalınlığı', () => lv.slab, v => { lv.slab = v; }, {min: .1, max: 1, key: 'lvslab'}));
+      else row.append(h('div', {class: 'pf'}));
+      sub.append(row);
+      if (!isG) {
+        sub.append(h('div', {class: 'prow'},
+          this.num('Konum farkı X', () => lv.ox, v => { lv.ox = v; }, {unit: 'm', min: -100, max: 100, key: 'lvox'}),
+          this.num('Konum farkı Y', () => lv.oy, v => { lv.oy = v; }, {unit: 'm', min: -100, max: 100, key: 'lvoy'})));
+        sub.append(h('p', {class: 'tip'}, 'Konum farkı, bu katın sol üst iç köşesinin zemin kata göre kaymasıdır. Silik kesik çizgi alt/üst katın duvarlarını gösterir; hizalamak için kullan.'));
+      }
+      const mz = mezzOver(P, i);
+      if (lv.kind === 'mezzanine') sub.append(h('p', {class: 'tip', html: 'Zemin kata bakan kenarlar <b>korkuluk</b> olarak çizilir; zemin katın asma kat dışındaki kısmı çift yükseklikli (galeri) olur. Çıkış için zemin kata merdiven koy.'}));
+      if (mz) sub.append(h('p', {class: 'tip'}, `Üstte asma kat var: galeri bölümünün tavanı ${fmtM(mz.top)} m.`));
+      sub.append(h('div', {class: 'kv'}, h('span', null, 'Kat kotu (döşeme üstü)'), h('b', null, `${levelElev(P, i) >= 0 ? '+' : ''}${fmtM(levelElev(P, i))} m`),
+        ...(L[i + 1] ? [h('span', null, 'Üst kata kat yüksekliği'), h('b', null, fmtM(floorToFloor(P, i)) + ' m')] : [])));
+      if (!isG) sub.append(h('div', {class: 'row2', style: 'margin-top:6px'},
+        h('button', {type: 'button', class: 'btn', onclick: () => Ed.copyGroundOutline()}, 'Zemin sınırını kopyala'),
+        h('button', {type: 'button', class: 'btn danger', onclick: () => Ed.removeLevel(i)}, 'Katı sil')));
+      g.append(sub);
+    } else g.append(h('p', {class: 'tip', html: 'Bodrum, asma kat ya da üst kat ekleyerek katları ayrı ayrı planla. Katları <b>merdiven</b> veya <b>asansörle</b> (Ekle → Merdiven & asansör) bağla; 3B’de tüm katlar birleşik görünür ve merdivenden yürüyerek geçilir.'}));
+    return g;
+  },
+  /* Merdiven / asansör bilgisi */
+  stairOpts(it) {
+    const P = Ed.P;
+    if (it.type === 'lift') {
+      const served = P.levels.map((l, j) => levelName(P, j)).reverse().join(' · ');
+      return this.grp('Asansör', h('div', {class: 'kv'}, h('span', null, 'Durduğu katlar'), h('b', {style: 'font-family:var(--font);text-align:right'}, served)),
+        h('p', {class: 'tip'}, 'Asansör kuyusu tüm katlarda aynı yerde oluşur (kapı ön tarafta). Kabin için en az 110 × 140 cm, engelli erişimi için kapı önünde 150 cm dönüş alanı önerilir. 3B gezintide asansörün önüne gelince kat seçebilirsin.'));
+    }
+    const g = this.grp('Merdiven'), inf = stairInfo(P, P.cur, it);
+    const kv = h('div', {class: 'kv'});
+    const draw = () => {
+      const I = stairInfo(P, P.cur, it); kv.innerHTML = '';
+      kv.append(h('span', null, 'Bağladığı kat'), h('b', {style: 'font-family:var(--font)'}, I.top ? `${levelName(P, P.cur)} → ${levelName(P, P.cur + 1)}` : 'üst kat yok'),
+        h('span', null, 'Kat yüksekliği'), h('b', null, fmtM(I.ff) + ' m'),
+        h('span', null, 'Rıht sayısı / yüksekliği'), h('b', null, `${I.n} × ${(I.r * 100).toFixed(1).replace('.', ',')} cm`),
+        h('span', null, 'Basamak derinliği'), h('b', null, fmtCm(I.going) + ' cm'),
+        h('span', null, 'Kol genişliği'), h('b', null, fmtCm(I.geom.width) + ' cm'));
+    };
+    draw(); this.liveFns.push(draw);
+    g.append(kv);
+    if (it.style === 'L' || it.style === 'U') g.append(h('div', {class: 'prow'}, this.num('Kol genişliği', () => it.sw || 1, v => { it.sw = v; }, {min: .6, max: 2.5, key: 'ssw'}), h('div', {class: 'pf'})));
+    if (it.style !== 'straight') g.append(h('button', {type: 'button', class: 'btn', onclick: () => { Ed.change(() => { it.flip = !it.flip; }); Props.render(); }}, it.style === 'spiral' ? 'Dönüş yönünü çevir' : 'Sağ/sol dönüşü çevir'));
+    if (it.style === 'straight') {
+      const need = r3((inf.n - 1) * .28);
+      if (Math.abs(need - it.d) > .02) g.append(h('button', {type: 'button', class: 'btn', onclick: () => { Ed.change(() => { it.d = need; }); Props.render(); }}, `Rahat eğime ayarla (boy ${fmtCm(need)} cm)`));
+    }
+    for (const w of inf.warn) g.append(h('div', {class: 'issue w'}, h('i', null, '!'), h('span', null, w)));
+    g.append(h('p', {class: 'tip', html: 'Merdiven bulunduğu katı <b>bir üst kata</b> bağlar; üst katta döşeme boşluğu ve korkuluk kendiliğinden oluşur. Giriş (alt basamak) <b>ön</b> taraftadır; yönü döndürerek ayarla.'}));
     return g;
   },
 
@@ -1080,6 +1232,9 @@ const ICONS = {
   open: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l4 4v13a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg>',
   grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>',
+  lvUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 20h16M4 14h16"/><rect x="6" y="3" width="12" height="7" rx="1" stroke-dasharray="2 2"/><path d="M12 7v-.01"/></svg>',
+  lvMez: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M3 21h18M3 3v18M21 3v18M3 11h10"/><path d="M13 11v-3" stroke-width="1.4"/><path d="M5 11v10" stroke-dasharray="2 2" stroke-width="1"/></svg>',
+  lvDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 4h16M4 10h16"/><rect x="6" y="14" width="12" height="7" rx="1" stroke-dasharray="2 2"/></svg>',
   ceil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 4h18M12 4v4"/><path d="M7 13a5 5 0 0110 0z"/><path d="M8 17l-1.5 3M12 17.5V21M16 17l1.5 3"/></svg>',
 };
 function ceilIcon(k) {
