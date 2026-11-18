@@ -216,7 +216,7 @@ const View3D = {
     this.clearRoot();
     this.signInfo = null; this.ceils = []; this.ceilMats = []; this.lamps = []; this.ownLights = false; this.lvY = [];
     this.scene.background = this.skyTex(dark);
-    const walk = this.mode === 'walk', mode = walk || L.length < 2 ? 'all' : (Settings.v.lvView || 'stack');
+    const walk = this.mode === 'walk', mode = walk || L.length < 2 ? 'all' : (Settings.v.lvView || 'explode');
     this.builtMode = mode;
     const show = L.map((l, i) => mode === 'all' || mode === 'explode' ? true : mode === 'single' ? i === cur : i <= cur);
     const realRoot = this.root, segs0 = Ed.segs, A0 = Ed.A;
@@ -256,7 +256,7 @@ const View3D = {
     if (walkSwitch && this.mode === 'walk') { this.buildColliders(); this.miniDirty = true; this.req(); return; }
     const o = this.orb, before = o ? o.ty : 0;
     this.sceneDirty = true;
-    if (Ed.view === '3d') { this.build(); if (o) { const p = this.lvOrigin(); o.ty = p.y + (before - (this._lastTy0 ?? before)); } this.req(); }
+    if (Ed.view === '3d') { this.build(); if (o && this.builtMode !== 'explode') { const p = this.lvOrigin(); o.ty = p.y + (before - (this._lastTy0 ?? before)); } this.req(); }
     this._lastTy0 = this.lvOrigin().y;
     if (this.mode === 'walk') { this.placeOnLevel(); }
   },
@@ -336,7 +336,13 @@ const View3D = {
       if (B > cur) addWall(s, cur, B, 0, top, dz);
     };
     for (const s of Ed.segs) {
-      if (s.rail) { if (wallH > .5) this.buildRail(root, s.h, s.c, s.a, s.b, glassM, railM); continue; }
+      if (s.rail) { // asma kat korkuluğu: merdivenin çıktığı yerde açıklık
+        if (wallH <= .5) continue;
+        let parts = [[s.a, s.b]];
+        for (const hl of der.holes) { const b = hl.box, on = s.h ? s.c > b.y0 - .2 && s.c < b.y1 + .2 : s.c > b.x0 - .2 && s.c < b.x1 + .2; if (!on) continue; const lo = s.h ? b.x0 : b.y0, hi = s.h ? b.x1 : b.y1; parts = parts.flatMap(([p, q]) => [[p, Math.min(q, lo)], [Math.max(p, hi), q]]).filter(([p, q]) => q - p > .05); }
+        for (const [p, q] of parts) this.buildRail(root, s.h, s.c, p, q, glassM, railM);
+        continue;
+      }
       if (mz && s.outer && wallMode === 'full') { // asma katlı zemin: galeri bölümünde dış duvar asma kat tavanına kadar
         const brk = new Set([s.a, s.b]), inn = s.e - s.n * .05;
         for (const r of mz.rects) for (const v of s.h ? [r.x, r.x + r.w] : [r.y, r.y + r.d]) if (v > s.a && v < s.b) brk.add(v);
@@ -1275,7 +1281,14 @@ const View3D = {
   resetCam() {
     const P = Ed.P; if (!P) return;
     const W = P.shop.w, D = P.shop.d, O = this.lvOrigin();
-    this.orb = {tx: O.x + W / 2, ty: O.y, tz: O.z + D / 2, theta: Math.PI / 2 + .55, phi: .92, dist: Math.max(W, D) * 1.15 + 2 + (this.builtMode === 'explode' ? P.levels.length * 2 : 0)};
+    if (this.builtMode === 'explode' && this.lvY && P.levels.length > 1) { // tüm katları kadraja al
+      const L = P.levels; let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
+      for (const l of L) { x0 = Math.min(x0, l.ox); z0 = Math.min(z0, l.oy); x1 = Math.max(x1, l.ox + l.shop.w); z1 = Math.max(z1, l.oy + l.shop.d); }
+      const y0 = Math.min(...this.lvY), y1 = Math.max(...this.lvY.map((y, i) => y + L[i].shop.h));
+      this.orb = {tx: (x0 + x1) / 2, ty: (y0 + y1) / 2 - .5, tz: (z0 + z1) / 2, theta: Math.PI / 2 + .55, phi: 1.0, dist: Math.max(x1 - x0, z1 - z0) * 1.05 + (y1 - y0) * 1.15 + 2};
+      this._lastTy0 = O.y; this.req(); return;
+    }
+    this.orb = {tx: O.x + W / 2, ty: O.y, tz: O.z + D / 2, theta: Math.PI / 2 + .55, phi: .92, dist: Math.max(W, D) * 1.15 + 2};
     this._lastTy0 = O.y;
     this.req();
   },
@@ -1387,7 +1400,7 @@ const View3D = {
     if (P.levels[P.cur].kind !== 'ground') {
       k.fy = levelElev(P, P.cur);
       const hl = levelDerived(P, P.cur).holes[0], O = this.lvOrigin();
-      if (hl) { const G = stairGeom(hl.it, stairRise(P, hl.lv).n), [x, y] = toWorld(hl.it, G.exit.x, G.exit.y), [dx, dy] = rotPt(G.exit.dx, G.exit.dy, hl.it.rot || 0); k.x = O.x + x + dx * .7; k.z = O.z + y + dy * .7; k.yaw = Math.atan2(dx, -dy); }
+      if (hl) { const G = stairGeom(hl.it, stairRise(P, hl.lv).n), [x, y] = toWorld(hl.it, G.exit.x, G.exit.y), [dx, dy] = rotPt(G.exit.dx, G.exit.dy, hl.it.rot || 0); k.x = O.x + x + dx * .7; k.z = O.z + y + dy * .7; const cx = O.x + P.shop.w / 2 - k.x, cz = O.z + P.shop.d / 2 - k.z; k.yaw = Math.atan2(cx, -cz); } // katın ortasına bak
       else { k.x = O.x + P.shop.w / 2; k.z = O.z + P.shop.d / 2; k.yaw = 0; }
       k.pitch = -.05; this.resolve(); return;
     }
