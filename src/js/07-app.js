@@ -343,6 +343,20 @@ const Theme = {
   },
 };
 
+/* Katlar arası merdiven tipi seçimi (son seçim hatırlanır) */
+function stairTypeDialog(kind, count) {
+  let sel = Settings.v.stairType || 'U';
+  const title = kind ? {upper: 'Üst kat ekle', mezzanine: 'Asma kat ekle', basement: 'Bodrum kat ekle'}[kind] : (count > 1 ? `${count} kat bağlantısına merdiven` : 'Merdiven yerleştir');
+  return modal(b => {
+    b.append(h('h2', null, title));
+    b.append(h('p', null, kind ? 'Yeni kat, komşu kata varsayılan bir merdivenle bağlanır; uygun boş köşeye kendiliğinden yerleşir. Konumunu, yönünü ve tipini sonradan değiştirebilirsin.' : 'Merdiven, uygun boş köşeye kendiliğinden yerleşir; sonradan taşıyıp tipini değiştirebilirsin.'));
+    const grid = h('div', {class: 'stairpick'});
+    const opts = [...STAIR_TYPES.map(([k, n, ic]) => [k, n, ic]), ...(kind ? [['none', 'Merdivensiz', null]] : [])];
+    const draw = () => { grid.innerHTML = ''; for (const [k, n, ic] of opts) grid.append(h('button', {type: 'button', class: sel === k ? 'on' : '', onclick: () => { sel = k; draw(); }, html: (ic ? palIcon(ic) : '<svg viewBox="0 0 44 30" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="12" y="4" width="20" height="22" stroke-dasharray="3 3"/><path d="M15 7l14 16M29 7L15 23"/></svg>') + `<span>${n}</span>`})); };
+    draw(); b.append(grid);
+  }, [{v: null, t: 'Vazgeç'}, {v: 'ok', t: kind ? 'Katı ekle' : 'Yerleştir', primary: 1}]).then(v => { if (v !== 'ok') return null; if (sel !== 'none') Settings.set('stairType', sel); return sel; });
+}
+
 function helpDialog() {
   return modal(b => {
     b.append(h('h2', null, 'Nasıl kullanılır?'));
@@ -367,9 +381,11 @@ const Home = {
   init() {
     const form = $('#newForm');
     this.shape = 'rect';
-    this.floors = new Set();
-    const fl = $('#newFloors');
-    for (const [k, t] of [['basement', '+ Bodrum kat'], ['mezzanine', '+ Asma kat'], ['upper', '+ Üst kat']]) fl.append(h('button', {type: 'button', 'data-v': k, onclick: e => { if (this.floors.has(k)) this.floors.delete(k); else this.floors.add(k); e.currentTarget.classList.toggle('on', this.floors.has(k)); }}, t));
+    this.floors = new Set(); this.stair = Settings.v.stairType || 'U';
+    const fl = $('#newFloors'), sp = $('#newStair'), stWrap = $('#newStairWrap');
+    const drawSt = () => { sp.innerHTML = ''; for (const [k, n] of [...STAIR_TYPES, ['none', 'Yok']]) sp.append(h('button', {type: 'button', class: this.stair === k ? 'on' : '', onclick: () => { this.stair = k; if (k !== 'none') Settings.set('stairType', k); drawSt(); }}, n.split(' ')[0])); };
+    drawSt();
+    for (const [k, t] of [['basement', '+ Bodrum kat'], ['mezzanine', '+ Asma kat'], ['upper', '+ Üst kat']]) fl.append(h('button', {type: 'button', 'data-v': k, onclick: e => { if (this.floors.has(k)) this.floors.delete(k); else this.floors.add(k); e.currentTarget.classList.toggle('on', this.floors.has(k)); stWrap.hidden = !this.floors.size; }}, t));
     const sh = $('#newShape');
     for (const [k, t] of SHAPES) sh.append(h('button', {type: 'button', class: 'btn' + (k === 'rect' ? ' on' : ''), 'data-v': k, title: t + ' şekli', html: shapeIcon(k) + `<span>${t}</span>`, onclick: e => { this.shape = k; $$('#newShape button').forEach(x => x.classList.toggle('on', x.dataset.v === k)); }}));
     $$('#newTpl button').forEach(b => b.onclick = () => {
@@ -390,7 +406,7 @@ const Home = {
       const p = this.tpl === 'sample' ? sampleProject(name) : newProject(name, w, d);
       if (this.tpl !== 'sample' && this.shape !== 'rect') p.voids = shapeVoids(this.shape, p.shop.w, p.shop.d);
       if (this.tpl !== 'sample') { Settings.set('lastW', w); Settings.set('lastD', d); }
-      for (const k of ['basement', 'mezzanine', 'upper']) if (this.floors.has(k)) levelAdd(p, k);
+      for (const k of ['basement', 'mezzanine', 'upper']) if (this.floors.has(k)) levelAdd(p, k, this.stair);
       p.cur = groundIdx(p);
       try { Store.save(p, makeThumb(p)); } catch (err) { toast('Depolama dolu; eski projelerden birini sil', 'err'); return; }
       $('#newName').value = '';
@@ -497,10 +513,10 @@ function bindEditor() {
   $('#camRender').onclick = () => renderDialog();
   $('#camVideo').onclick = () => videoDialog();
   $('#btnKroki').onclick = () => Kroki.dialog();
-  const lvl = {stack: 'Katlar: bu kata kadar', explode: 'Katlar: ayrık', single: 'Katlar: yalnız bu kat'};
-  $('#camLevelsLbl').textContent = lvl[Settings.v.lvView] || lvl.stack;
+  const lvl = {explode: 'Katlar: tümü (ayrık)', stack: 'Katlar: bu kata kadar', single: 'Katlar: yalnız bu kat'};
+  $('#camLevelsLbl').textContent = lvl[Settings.v.lvView] || lvl.explode;
   $('#camLevels').onclick = () => {
-    const order = ['stack', 'explode', 'single'], n = order[(order.indexOf(Settings.v.lvView || 'stack') + 1) % 3];
+    const order = ['explode', 'stack', 'single'], n = order[(order.indexOf(Settings.v.lvView || 'explode') + 1) % 3];
     Settings.set('lvView', n); $('#camLevelsLbl').textContent = lvl[n];
     if (View3D.mode !== 'walk') { View3D.build(); View3D.resetCam(); View3D.req(); }
     toast({stack: 'Seçili kat ve altındakiler', explode: 'Tüm katlar ayrık (patlatılmış) görünüm', single: 'Yalnız seçili kat'}[n]);

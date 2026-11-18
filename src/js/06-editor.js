@@ -163,16 +163,37 @@ const Ed = {
       {t: 'Kat ayarları', icon: ICONS.edit, fn: () => { this.select(null); this.openProps(); setTimeout(() => $('#props .lvgrp')?.scrollIntoView({block: 'start'}), 30); }},
     ]);
   },
-  addLevel(kind) {
+  /* Kat ekle: merdiven tipi sorulur (hatırlanır); sonradan konumu/tipi değiştirilebilir */
+  async addLevel(kind, stair) {
     const P = this.P;
     if (kind === 'mezzanine' && P.levels.some(l => l.kind === 'mezzanine')) { toast('Projede zaten bir asma kat var'); return; }
+    if (stair === undefined) { stair = await stairTypeDialog(kind); if (stair == null) return; }
     let idx = -1;
-    this.change(() => { idx = levelAdd(P, kind); });
+    this.change(() => { idx = levelAdd(P, kind, stair); });
     if (idx < 0) return;
     this.setLevel(idx, {quiet: true});
     Plan.fitted = false; Plan.fit();
-    if (kind === 'mezzanine' && P.levels[groundIdx(P)].shop.h < 2.5) toast('Asma kat altı yüksekliği düşük: zemin kat yüksekliğini kontrol et');
-    else toast(`${levelName(P, idx)} eklendi · ${kind === 'mezzanine' ? 'zemine bakan kenarlar korkuluk oldu' : 'dış sınır kopyalandı'}`);
+    const lo = kind === 'basement' ? 0 : idx - 1, st = stair !== 'none' && stairBetween(P, lo);
+    if (stair !== 'none' && !st) toast(`${levelName(P, idx)} eklendi · merdiven için uygun boş yer bulunamadı; Ekle → Merdiven ile elle koy`, 'err');
+    else if (st && st._crowded) { delete st._crowded; toast(`${levelName(P, idx)} eklendi · merdiven için tamamen boş yer yoktu: çakışan eşyalar Kontrol listesinde, merdiveni ya da eşyaları taşı`, 'err'); }
+    else toast(`${levelName(P, idx)} eklendi${st ? ` · ${STAIR_TYPES.find(t => t[0] === st.style)?.[1].split(' ')[0] || ''} merdivenle ${levelName(P, lo)}’a bağlandı` : ''}`);
+  },
+  /* Merdiveni olmayan her kat çiftine varsayılan merdiven */
+  async fillStairs() {
+    const P = this.P, miss = [];
+    for (let i = 0; i < P.levels.length - 1; i++) if (!stairBetween(P, i)) miss.push(i);
+    if (!miss.length) { toast('Tüm katlar zaten merdivenle bağlı'); return; }
+    const style = await stairTypeDialog(null, miss.length); if (style == null || style === 'none') return;
+    let ok = 0;
+    this.change(() => { for (const i of miss) { const it = autoStair(P, i, style); if (it) { ok++; delete it._crowded; } } });
+    this.recompute(); Props.render(); View3D.markDirty(); Plan.req();
+    toast(ok === miss.length ? `${ok} merdiven yerleşti` : `${ok}/${miss.length} merdiven yerleşti · kalanlar için yer bulunamadı`, ok === miss.length ? '' : 'err');
+  },
+  /* Bir bağlantının merdivenini göster/seç */
+  selectStair(lo) {
+    const st = stairBetween(this.P, lo); if (!st) return;
+    if (this.layer === 'ceil') this.setLayer('floor');
+    this.setLevel(lo, {quiet: true}); this.select({k: 'item', id: st.id}); this.openProps();
   },
   async removeLevel(i) {
     const P = this.P, lv = P.levels[i];
@@ -811,7 +832,7 @@ const Props = {
         if ((it.type === 'table' && v === 'round') || (it.type === 'zone' && v === 'circle')) { const m = Math.max(it.w, it.d); it.w = it.d = m; }
         if (it.type === 'human') { if (v === 'wheelchair') { it.w = .7; it.d = 1.2; it.h = 1.3; } else { it.w = .6; it.d = .4; it.h = 1.75; } }
         if (it.type === 'door' && v === 'double' && it.w < 1.2) it.w = 1.6;
-        if (it.type === 'stair' && def) { it.w = def.w; it.d = def.d; it.sw = def.sw || 1; }
+        if (it.type === 'stair') { const dm = stairDims(v, stairRise(Ed.P, Ed.P.cur).n); it.w = dm.w; it.d = dm.d; it.sw = dm.sw; }
         if (it.type === 'door' && v !== 'double' && it.w > 1.2) it.w = .9;
       });
       Props.render();
@@ -1006,6 +1027,16 @@ const Props = {
     }
     g.append(list);
     if (L.length > 1) g.append(h('div', {class: 'kv'}, h('span', null, 'Tüm katlar toplam net alan'), h('b', null, fmtA(total) + ' m²')));
+    if (L.length > 1) { // katlar arası bağlantılar
+      const con = h('div', {class: 'rlist lvcon'});
+      for (let i = L.length - 2; i >= 0; i--) {
+        const st = stairBetween(P, i), lift = L.some(l => l.items.some(it => it.type === 'lift'));
+        con.append(h('div', {class: 'lvc' + (st ? '' : ' miss')},
+          h('span', {class: 't'}, h('b', null, `${levelShort(P, i)} → ${levelShort(P, i + 1)}`), h('small', null, st ? `${(STAIR_TYPES.find(t => t[0] === st.style) || [0, 'Merdiven'])[1]} merdiven` + (lift ? ' · asansör' : '') : (lift ? 'yalnız asansör' : 'bağlantı yok'))),
+          st ? h('button', {type: 'button', class: 'btn', onclick: () => Ed.selectStair(i)}, 'Düzenle') : h('button', {type: 'button', class: 'btn primary', onclick: async () => { const style = await stairTypeDialog(null, 1); if (!style || style === 'none') return; let it = null; Ed.change(() => { it = autoStair(P, i, style); if (it) delete it._crowded; }); if (!it) toast('Uygun boş yer bulunamadı; Ekle → Merdiven ile elle koy', 'err'); Ed.recompute(); Props.render(); View3D.markDirty(); Plan.req(); }}, 'Merdiven koy')));
+      }
+      g.append(h('div', {class: 'pf'}, h('label', null, 'Katlar arası geçiş'), con));
+    }
     const hasM = L.some(l => l.kind === 'mezzanine');
     g.append(h('div', {class: 'acts stack'},
       h('button', {type: 'button', class: 'btn', onclick: () => Ed.addLevel('upper'), html: ICONS.lvUp + '<span>Üst kat</span>'}),

@@ -163,10 +163,10 @@ function stairInfo(P, i, it) {
   if (G.width < .9) warn.push(`Kol genişliği ${fmtCm(G.width)} cm: en az 90 cm (kamuya açık alanda 120 cm) önerilir.`);
   if (R.top) {
     const up = lvView(P, i + 1), [dx, dy] = lvShift(P, i, i + 1);
-    const ex = toWorld(it, G.exit.x, G.exit.y), ax = ex[0] + dx + G.exit.dx * .3, ay = ex[1] + dy + G.exit.dy * .3;
+    const ex = toWorld(it, G.exit.x, G.exit.y), [edx, edy] = rotPt(G.exit.dx, G.exit.dy, it.rot || 0), ax = ex[0] + dx + edx * .05, ay = ex[1] + dy + edy * .05;
     const b = itemBox(it);
     const inside = [[b.x0, b.y0], [b.x1, b.y0], [b.x1, b.y1], [b.x0, b.y1]].every(([x, y]) => inShop(up, x + dx, y + dy));
-    if (!inside) warn.push(`Merdiven boşluğu ${levelName(P, i + 1)} sınırının dışına taşıyor.`);
+    if (!inside && P.levels[i + 1].kind !== 'mezzanine') warn.push(`Merdiven boşluğu ${levelName(P, i + 1)} sınırının dışına taşıyor.`);
     else if (!inShop(up, ax, ay)) warn.push(`Merdivenin çıkışı ${levelName(P, i + 1)} içinde değil: yönünü çevir.`);
   }
   return Object.assign({}, R, {geom: G, going, warn});
@@ -214,7 +214,82 @@ function mezzOver(P, i) {
   return {lv: j, rects: shopRects(lvView(P, j)).map(r => ({x: r3(r.x + dx), y: r3(r.y + dy), w: r.w, d: r.d})), top: L[i].shop.h + L[j].slab + L[j].shop.h, slab: L[j].slab};
 }
 /* Kat ekle (veri): bodrum en alta, asma kat zeminin hemen üstüne, üst kat en üste. Eklenen katın sırası döner. */
-function levelAdd(P, kind) {
+/* ---------- Varsayılan merdiven ---------- */
+const STAIR_TYPES = [['U', 'U (çift kollu)', 'stairU'], ['L', 'L dönüşlü', 'stairL'], ['straight', 'Düz', 'stair'], ['spiral', 'Döner', 'spiral']];
+/* Rahat eğimli (≈ 27 cm basamak) merdiven ölçüleri */
+function stairDims(style, n) {
+  const g = .27, q = v => r3(Math.ceil(v / .05) * .05);
+  if (style === 'straight') return {w: 1.0, d: q((n - 1) * g), sw: 1};
+  if (style === 'L') { const s1 = Math.ceil((n - 2) * .55), s2 = n - 2 - s1; return {w: q(1 + s2 * g), d: q(1 + s1 * g), sw: 1}; }
+  if (style === 'U') return {w: 2.1, d: q(1 + Math.ceil((n - 2) / 2) * g), sw: 1};
+  return {w: 2.0, d: 2.0, sw: 1};
+}
+/* Alt kat (lo) ile üstündeki katı bağlayan merdiveni en uygun yere koy: duvar dibi/köşe, girişten uzak,
+   eşya/duvar/kapı açılımıyla çakışmayan, önünde 1 m boşluk olan, çıkışı üst katta açık alana denk gelen yer. */
+function autoStair(P, lo, style = 'U') {
+  const L = P.levels; if (!L[lo] || !L[lo + 1]) return null;
+  const R = stairRise(P, lo), dims = stairDims(style, R.n);
+  const key = (STAIR_TYPES.find(t => t[0] === style) || STAIR_TYPES[0])[2];
+  const lv = lvView(P, lo), up = lvView(P, lo + 1), [dx, dy] = lvShift(P, lo, lo + 1), mezz = L[lo + 1].kind === 'mezzanine';
+  const segs = computeWalls(lv), useg = computeWalls(up).filter(sg => !sg.rail), W = lv.shop.w, D = lv.shop.d; // korkuluk merdivene açılır
+  const derLo = levelDerived(P, lo), derUp = levelDerived(P, lo + 1);
+  const obs = list => list.map(p => ({p, b: polyBox(p)}));
+  const fixed = it => isSolid(it) && ['column', 'stair', 'lift'].includes(it.type);
+  const movable = it => isSolid(it) && !fixed(it);
+  const zones = v => [...v.items.filter(isSolid).flatMap(it => ['f', 'b'].map(sd => clearPoly(it, sd)).filter(Boolean)), ...v.items.filter(it => it.type === 'zone').map(itemPoly)];
+  // Kesin engeller: duvar, kapı açılımı, kolon/merdiven/asansör, boşluklar
+  const hardLo = obs([...lv.items.filter(fixed).map(itemPoly), ...wallPieces(segs, o => o.type === 'door').map(rectPoly), ...lv.items.filter(i => i.type === 'door').flatMap(swingPolys), ...derLo.holes.map(h => h.poly), ...derLo.ghosts.map(itemPoly)]);
+  const hardUp = obs([...up.items.filter(fixed).map(itemPoly), ...wallPieces(useg, o => o.type === 'door').map(rectPoly), ...up.items.filter(i => i.type === 'door').flatMap(swingPolys), ...derUp.ghosts.map(itemPoly)]);
+  // Yumuşak engeller: taşınabilir eşyalar ve insan geçişleri (önce hiç çakışmayan yer aranır)
+  const itLo = obs(lv.items.filter(movable).map(itemPoly)), znLo = obs(zones(lv)), itUp = obs(up.items.filter(movable).map(itemPoly)), znUp = obs(zones(up));
+  const softLo = [...itLo, ...znLo], softUp = [...itUp, ...znUp];
+  const hits = (poly, list, all) => { const b = polyBox(poly); let n = 0; for (const o of list) if (o.b.x0 < b.x1 - .01 && o.b.x1 > b.x0 + .01 && o.b.y0 < b.y1 - .01 && o.b.y1 > b.y0 + .01 && polyOverlap(poly, o.p)) { n++; if (!all) return n; } return n; };
+  const doors = lv.items.filter(i => i.type === 'door' && (() => { const s = wallOf(i, segs); return s && s.outer; })());
+  const inPoly = (pts, v) => pts.every(([x, y]) => inShop(v, x, y));
+  const base = makeItem(CATALOG_BY_KEY[key], 0, 0, {w: dims.w, d: dims.d, sw: dims.sw});
+  const shrink = (pts, k) => { const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length; return pts.map(([x, y]) => [x + (cx - x) * k, y + (cy - y) * k]); };
+  const onWall = (mx, my) => !inShop(lv, mx, my) || segs.some(s => { const r = segRect(s, s.a, s.b); return mx > r.x0 - .02 && mx < r.x1 + .02 && my > r.y0 - .02 && my < r.y1 + .02; });
+  let best = null;
+  // 0: her şey boş · 1: (asma kat) boşluk kısmen galeride olabilir · 2: en az eşyayla çakışan yer
+  for (const relax of [0, 1, 2]) {
+    if (relax === 1 && !mezz) continue;
+    for (const rot of [0, 90, 180, 270]) for (const flip of style === 'straight' ? [false] : [false, true]) {
+      const t0 = Object.assign({}, base, {rot, flip}), G = stairGeom(t0, R.n), [hx, hy] = halfExt(t0);
+      for (let cy = hy; cy <= D - hy + 1e-6; cy += .25) for (let cx = hx; cx <= W - hx + 1e-6; cx += .25) {
+        const it = Object.assign({}, t0, {cx: r3(cx), cy: r3(cy)}), poly = itemPoly(it);
+        if (!inPoly(shrink(poly, .02), lv) || hits(poly, hardLo)) continue;
+        const [ex, ey] = toWorld(it, G.entry.x, G.entry.y), [edx, edy] = rotPt(G.entry.dx, G.entry.dy, rot), [px, py] = [-edy, edx], hw = Math.min(G.width, 1.2) / 2, fd = 1.2;
+        const front = [[ex + px * hw, ey + py * hw], [ex - px * hw, ey - py * hw], [ex - px * hw - edx * fd, ey - py * hw - edy * fd], [ex + px * hw - edx * fd, ey + py * hw - edy * fd]];
+        if (!inPoly(shrink(front, .03), lv) || hits(front, hardLo)) continue;
+        const [xx, xy] = toWorld(it, G.exit.x, G.exit.y), [xdx, xdy] = rotPt(G.exit.dx, G.exit.dy, rot);
+        if (!inShop(up, xx + dx + xdx * .05, xy + dy + xdy * .05) || !inShop(up, xx + dx + xdx * .6, xy + dy + xdy * .6)) continue; // çıkış üst katın döşemesine otursun
+        const upPoly = poly.map(([x, y]) => [x + dx, y + dy]);
+        if (!relax && !inPoly(shrink(upPoly, .02), up)) continue;
+        if (relax === 2 && !mezz && !inPoly(shrink(upPoly, .02), up)) continue;
+        if (hits(upPoly, hardUp)) continue;
+        const soft = relax === 2 ? 3 * (hits(poly, itLo, true) + hits(front, itLo, true) + hits(upPoly, itUp, true)) + hits(poly, znLo, true) + hits(front, znLo, true) + hits(upPoly, znUp, true) : (hits(poly, softLo) || hits(front, softLo) || hits(upPoly, softUp));
+        if (relax < 2 && soft) continue;
+        // puan: duvara/köşeye yaslı, girişten uzak, odaların dışında; gevşek aramada çakışma cezası
+        const b = itemBox(it); let sc = 0;
+        for (const [mx, my] of [[(b.x0 + b.x1) / 2, b.y0 - .1], [(b.x0 + b.x1) / 2, b.y1 + .1], [b.x0 - .1, (b.y0 + b.y1) / 2], [b.x1 + .1, (b.y0 + b.y1) / 2]]) if (onWall(mx, my)) sc += 2;
+        for (const d of doors) sc += Math.min(Math.hypot(d.cx - it.cx, d.cy - it.cy), 8) * .35;
+        if (lv.rooms.some(r => it.cx > r.x && it.cx < r.x + r.w && it.cy > r.y && it.cy < r.y + r.d)) sc -= 1.5;
+        if (relax === 1) sc -= 3;
+        if (relax === 2) sc -= 4 * soft;
+        if (!best || sc > best.sc) best = {sc, it, relax, soft};
+      }
+    }
+    if (best) break;
+  }
+  if (!best) return null;
+  const it = Object.assign({}, best.it, {id: nextId(P, 'i'), name: `Merdiven (${levelName(P, lo)} → ${levelName(P, lo + 1)})`});
+  if (best.relax === 2) it._crowded = best.soft;
+  L[lo].items.push(it);
+  return it;
+}
+/* Katlar arası bağlantı: alt kattaki ilk merdiven */
+const stairBetween = (P, lo) => P.levels[lo] && P.levels[lo].items.find(it => it.type === 'stair');
+function levelAdd(P, kind, stair) {
   const L = P.levels, g = groundIdx(P);
   if (kind === 'mezzanine' && L.some(l => l.kind === 'mezzanine')) return -1;
   const idx = kind === 'basement' ? 0 : kind === 'mezzanine' ? g + 1 : L.length;
@@ -232,6 +307,10 @@ function levelAdd(P, kind) {
   }
   L.splice(idx, 0, lv);
   if (idx <= P.cur && L.length > 1) P.cur++;
+  if (stair && stair !== 'none') { // yeni katı komşusuna merdivenle bağla
+    const lo = kind === 'basement' ? 0 : idx - 1;
+    if (!stairBetween(P, lo)) autoStair(P, lo, stair);
+  }
   return idx;
 }
 /* Kat listesi için toplam/özet alanlar */

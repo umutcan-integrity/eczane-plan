@@ -484,3 +484,15 @@ dialog.modal.wide{width:min(960px,calc(100vw - 28px))}
 .stage.walking .walkhint{bottom:64px}
 @media (max-width:900px){ .walknav{right:8px;bottom:8px;max-width:calc(100% - 150px);flex-wrap:wrap;justify-content:flex-end} .walknav .lbl{display:none} .stage.walking .walkhint{display:none} }
 @media (max-width:900px){ .stage.walking canvas.minimap{top:auto;bottom:66px;right:8px;width:120px} }
+
+.stairpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.stairpick button{border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r-sm);padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:600;font-size:13px;color:var(--ink)}
+.stairpick button svg{width:52px;height:36px}
+.stairpick button.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent) inset}
+.lvcon{gap:6px}
+.lvc{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:var(--r-xs);padding:6px 6px 6px 10px;background:var(--surface)}
+.lvc .t{flex:1;min-width:0;display:flex;flex-direction:column}
+.lvc .t b{font-size:13px}
+.lvc .t small{font-size:11.5px;color:var(--muted)}
+.lvc.miss{border-color:var(--warn)}
+.lvc .btn{min-height:32px;padding:0 10px;font-size:12.5px}
