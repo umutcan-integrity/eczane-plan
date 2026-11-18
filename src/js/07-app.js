@@ -59,8 +59,9 @@ function openMenu(anchor, items) {
 }
 
 /* ---------- Görüntü üretimi ---------- */
-function makeThumb(P) {
+function makeThumb(P0) {
   try {
+    const P = P0.levels ? lvView(P0, groundIdx(P0)) : P0;
     const cw = 320, ch = 200, c = document.createElement('canvas');
     c.width = cw; c.height = ch;
     const W = P.shop.w + OUTER_T * 2 + .4, D = P.shop.d + OUTER_T * 2 + .4;
@@ -94,7 +95,7 @@ function planPNG(P) {
   const g = c.getContext('2d');
   g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, cw, ch + head);
   g.drawImage(planCanvas(P, cw, ch), 0, head);
-  sheetTitle(g, P, 60, 50, cw - 120, 'Ölçülü yerleşim planı');
+  sheetTitle(g, P, 60, 50, cw - 120, multiLevel(P) ? 'Ölçülü yerleşim planı · ' + levelName(P, P.cur) : 'Ölçülü yerleşim planı');
   return c;
 }
 function sheetTitle(g, P, x, y, w, sub) {
@@ -104,22 +105,23 @@ function sheetTitle(g, P, x, y, w, sub) {
   g.textAlign = 'left'; g.textBaseline = 'alphabetic';
   g.fillStyle = '#1B211F'; g.font = `800 50px ${getFont()}`; g.fillText(P.name, x + L + 28, y + 50);
   g.fillStyle = '#626C67'; g.font = `500 26px ${getFont()}`;
-  g.fillText(`${sub} · ${fmtM(P.shop.w)} × ${fmtM(P.shop.d)} m · ${fmtA(shopArea(P))} m² · tavan ${fmtM(P.shop.h)} m · ${new Date().toLocaleDateString('tr-TR')}`, x + L + 28, y + 88);
+  const lvTxt = P.levels && P.levels.length > 1 ? `${P.levels.length} kat · toplam ${fmtA(P.levels.reduce((a, l, i) => a + levelArea(P, i), 0))} m² · ` : `${fmtM(P.shop.w)} × ${fmtM(P.shop.d)} m · ${fmtA(shopArea(P))} m² · tavan ${fmtM(P.shop.h)} m · `;
+  g.fillText(`${sub} · ${lvTxt}${new Date().toLocaleDateString('tr-TR')}`, x + L + 28, y + 88);
   g.textAlign = 'right'; g.fillStyle = '#98A09B'; g.font = `600 22px ${getFont()}`;
   g.fillText('Ölçüler: toplam m · parçalar cm', x + w, y + 50);
   g.fillText('Eczane Plan', x + w, y + 84);
 }
 async function exportPlanPNG() {
   const c = planPNG(Ed.P);
-  c.toBlob(b => download(safeFile(Ed.P.name) + '-olculu-plan.png', b), 'image/png');
+  c.toBlob(b => download(safeFile(Ed.P.name) + (multiLevel(Ed.P) ? '-' + safeFile(levelName(Ed.P, Ed.P.cur)) : '') + '-olculu-plan.png', b), 'image/png');
   toast('Ölçülü plan indiriliyor');
 }
 function equipmentList(P) {
-  const order = {counter: 0, cabinet: 1, table: 2, fixture: 3, column: 4, door: 5, window: 6, light: 7};
+  const order = {counter: 0, cabinet: 1, table: 2, fixture: 3, stair: 4, lift: 5, column: 6, door: 7, window: 8, light: 9};
   const map = new Map();
-  for (const it of P.items) {
+  for (const it of P.levels ? P.levels.flatMap(l => l.items) : P.items) {
     if (!(it.type in order)) continue;
-    const size = isLight(it) ? (it.style === 'spot' ? `Ø10 · ${it.watt} W · ${it.cct}K` : it.style === 'linear' ? `${fmtCm(it.w)} cm · ${Math.round(lightWatt(it))} W · ${it.cct}K` : `Ø${fmtCm(it.w)} · ${it.watt} W · ${it.cct}K`) : it.type === 'door' || it.type === 'window' ? `${fmtCm(it.w)} × ${fmtCm(it.h)}` : `${fmtCm(it.w)} × ${fmtCm(it.d)} × ${fmtCm(it.type === 'column' ? P.shop.h : it.h)}`;
+    const size = it.type === 'stair' ? (it.style === 'spiral' ? `Ø${fmtCm(it.w)}` : `${fmtCm(it.w)} × ${fmtCm(it.d)}`) : it.type === 'lift' ? `${fmtCm(it.w)} × ${fmtCm(it.d)} kuyu` : isLight(it) ? (it.style === 'spot' ? `Ø10 · ${it.watt} W · ${it.cct}K` : it.style === 'linear' ? `${fmtCm(it.w)} cm · ${Math.round(lightWatt(it))} W · ${it.cct}K` : `Ø${fmtCm(it.w)} · ${it.watt} W · ${it.cct}K`) : it.type === 'door' || it.type === 'window' ? `${fmtCm(it.w)} × ${fmtCm(it.h)}` : `${fmtCm(it.w)} × ${fmtCm(it.d)} × ${fmtCm(it.type === 'column' ? P.shop.h : it.h)}`;
     const key = [it.type, it.style, it.name, size].join('|');
     const e = map.get(key) || {it, size, n: 0}; e.n += isLight(it) && it.style === 'spot' ? it.cnt || 1 : 1; map.set(key, e);
   }
@@ -136,7 +138,14 @@ async function exportSheet() {
   sheetTitle(g, P, M, M - 20, SW - 2 * M, 'Yerleşim ve 3B sunum');
   g.fillStyle = '#E1E4DE'; g.fillRect(M, M + headH - 10, SW - 2 * M, 3);
   const py = M + headH + 20, pw = 2560, ph = SH - py - M - 30;
-  g.drawImage(planCanvas(P, pw, ph), M, py);
+  if (multiLevel(P)) { // her kat ayrı plan: üstten alta
+    const n = P.levels.length, cols = n > 2 ? 2 : 1, rows = Math.ceil(n / cols), cw = (pw - (cols - 1) * 30) / cols, chh = (ph - (rows - 1) * 30) / rows;
+    for (let q = 0; q < n; q++) {
+      const i = n - 1 - q, x = M + (q % cols) * (cw + 30), y = py + Math.floor(q / cols) * (chh + 30);
+      g.drawImage(planCanvas(lvView(P, i), Math.round(cw), Math.round(chh - 46)), x, y + 46);
+      g.fillStyle = '#1B211F'; g.font = `800 34px ${getFont()}`; g.textAlign = 'left'; g.fillText(`${levelName(P, i)} · kot ${levelElev(P, i) >= 0 ? '+' : ''}${fmtM(levelElev(P, i))} m · ${fmtA(levelArea(P, i))} m²`, x + 10, y + 34);
+    }
+  } else g.drawImage(planCanvas(P, pw, ph), M, py);
   const rx = M + pw + 60, rw = SW - M - rx;
   const cap = (t, y) => { g.fillStyle = '#626C67'; g.font = `700 24px ${getFont()}`; g.textAlign = 'left'; g.textBaseline = 'alphabetic'; g.fillText(t.toLocaleUpperCase('tr-TR'), rx, y); };
   const rr = (img, x, y, w, h) => { g.save(); g.beginPath(); g.roundRect(x, y, w, h, 18); g.clip(); g.drawImage(img, x, y, w, h); g.restore(); g.strokeStyle = '#E1E4DE'; g.lineWidth = 2; g.beginPath(); g.roundRect(x, y, w, h, 18); g.stroke(); };
@@ -343,8 +352,8 @@ function helpDialog() {
       ['Sürükle (boş alan)', 'Planı kaydır'], ['İki parmak / tekerlek', 'Yakınlaştır'], ['Çift dokun', 'Özellikleri aç'],
       ['V · O · M', 'Seç · Oda çiz · Ölç'], ['R', 'Döndür / kapı yönünü çevir'], ['Ctrl+D', 'Yanına kopyala'], ['Del', 'Sil'],
       ['Oklar', '5 cm kaydır (Shift: 1 cm)'], ['Ctrl+Z / Ctrl+Y', 'Geri al / yinele'], ['Ctrl+S', 'Kaydet'], ['1 · 2', '2B / 3B'],
-      ['G · S · B', 'Izgara · mıknatıs · boşluklar'], ['T', 'Tavan planı (aydınlatma) aç / kapat'], ['Alt + sürükle', 'Yapışmadan taşı'],
-      ['3B Gez: W A S D', 'Yürü (Shift koş, Q/E dön)'], ['3B Gez: fare', 'Tıkla → fareyle bak, Esc bırak'],
+      ['G · S · B', 'Izgara · mıknatıs · boşluklar'], ['T', 'Tavan planı (aydınlatma) aç / kapat'], ['PgUp · PgDn', 'Üst / alt kata geç'], ['Alt + sürükle', 'Yapışmadan taşı'],
+      ['3B Gez: W A S D', 'Yürü (Shift koş, Q/E dön)'], ['3B Gez: fare', 'Sürükle → etrafına bak · zemine tıkla → oraya yürü'], ['3B Gez: merdiven', 'Alt basamaktan yürüyerek çık; üstte boşluğun ağzından in'],
     ];
     for (const [k, v] of rows) dl.append(h('dt', null, k), h('dd', null, v));
     b.append(dl);
@@ -358,6 +367,9 @@ const Home = {
   init() {
     const form = $('#newForm');
     this.shape = 'rect';
+    this.floors = new Set();
+    const fl = $('#newFloors');
+    for (const [k, t] of [['basement', '+ Bodrum kat'], ['mezzanine', '+ Asma kat'], ['upper', '+ Üst kat']]) fl.append(h('button', {type: 'button', 'data-v': k, onclick: e => { if (this.floors.has(k)) this.floors.delete(k); else this.floors.add(k); e.currentTarget.classList.toggle('on', this.floors.has(k)); }}, t));
     const sh = $('#newShape');
     for (const [k, t] of SHAPES) sh.append(h('button', {type: 'button', class: 'btn' + (k === 'rect' ? ' on' : ''), 'data-v': k, title: t + ' şekli', html: shapeIcon(k) + `<span>${t}</span>`, onclick: e => { this.shape = k; $$('#newShape button').forEach(x => x.classList.toggle('on', x.dataset.v === k)); }}));
     $$('#newTpl button').forEach(b => b.onclick = () => {
@@ -378,6 +390,8 @@ const Home = {
       const p = this.tpl === 'sample' ? sampleProject(name) : newProject(name, w, d);
       if (this.tpl !== 'sample' && this.shape !== 'rect') p.voids = shapeVoids(this.shape, p.shop.w, p.shop.d);
       if (this.tpl !== 'sample') { Settings.set('lastW', w); Settings.set('lastD', d); }
+      for (const k of ['basement', 'mezzanine', 'upper']) if (this.floors.has(k)) levelAdd(p, k);
+      p.cur = groundIdx(p);
       try { Store.save(p, makeThumb(p)); } catch (err) { toast('Depolama dolu; eski projelerden birini sil', 'err'); return; }
       $('#newName').value = '';
       Router.go(p.id);
@@ -398,7 +412,7 @@ const Home = {
       const card = h('div', {class: 'card proj', role: 'button', tabindex: 0},
         h('div', {class: 'th'}, e.thumb ? h('img', {src: e.thumb, alt: '', loading: 'lazy'}) : h('span', {class: 'note'}, 'Önizleme yok')),
         i === 0 ? h('span', {class: 'badge'}, 'SON PROJE') : null,
-        h('div', {class: 'meta'}, h('span', {class: 'nm'}, e.name), h('span', {class: 'sub'}, `${fmtM(e.w)} × ${fmtM(e.d)} m · ${relTime(e.updated)}`)),
+        h('div', {class: 'meta'}, h('span', {class: 'nm'}, e.name), h('span', {class: 'sub'}, `${fmtM(e.w)} × ${fmtM(e.d)} m${e.levels > 1 ? ` · ${e.levels} kat` : ''} · ${relTime(e.updated)}`)),
         more);
       card.addEventListener('click', ev => { if (!more.contains(ev.target)) Router.go(e.id); });
       card.addEventListener('keydown', ev => { if (ev.key === 'Enter') Router.go(e.id); });
@@ -420,7 +434,7 @@ const Home = {
 
 /* ---------- Yönlendirme (#/p/<id>) ---------- */
 const Router = {
-  cur: null,
+  cur: undefined, // ilk açılışta ana ekran da çizilsin (null ile karşılaştırılmasın)
   go(id) { location.hash = '#/p/' + id; },
   home() { if (location.hash) location.hash = ''; else this.route(); },
   async route() {
@@ -483,6 +497,15 @@ function bindEditor() {
   $('#camRender').onclick = () => renderDialog();
   $('#camVideo').onclick = () => videoDialog();
   $('#btnKroki').onclick = () => Kroki.dialog();
+  const lvl = {stack: 'Katlar: bu kata kadar', explode: 'Katlar: ayrık', single: 'Katlar: yalnız bu kat'};
+  $('#camLevelsLbl').textContent = lvl[Settings.v.lvView] || lvl.stack;
+  $('#camLevels').onclick = () => {
+    const order = ['stack', 'explode', 'single'], n = order[(order.indexOf(Settings.v.lvView || 'stack') + 1) % 3];
+    Settings.set('lvView', n); $('#camLevelsLbl').textContent = lvl[n];
+    if (View3D.mode !== 'walk') { View3D.build(); View3D.resetCam(); View3D.req(); }
+    toast({stack: 'Seçili kat ve altındakiler', explode: 'Tüm katlar ayrık (patlatılmış) görünüm', single: 'Yalnız seçili kat'}[n]);
+  };
+  $$('#walkNav [data-nav]').forEach(b => b.onclick = () => View3D.nav(b.dataset.nav));
   const wl = {full: 'Duvar: tam', half: 'Duvar: yarım', none: 'Duvar: yok'};
   $('#camWallsLbl').textContent = wl[Settings.v.walls] || wl.full;
   $('#camWalls').onclick = () => {
@@ -521,7 +544,13 @@ function onKey(e) {
   if (k === ' ' && Ed.view === '2d') { Plan.space = true; Plan.cv.style.cursor = 'grab'; e.preventDefault(); return; }
   if (k === '1') return Ed.setView('2d');
   if (k === '2') return Ed.setView('3d');
-  if (Ed.view !== '2d') { if (k === 'Escape') Ed.select(null); return; }
+  if (Ed.view !== '2d') {
+    if (k === 'Escape') Ed.select(null);
+    if ((k === 'PageUp' || k === 'PageDown') && View3D.mode === 'walk') View3D.nav(k === 'PageUp' ? 'up' : 'down');
+    else if (k === 'PageUp' && Ed.P.levels[Ed.P.cur + 1]) Ed.setLevel(Ed.P.cur + 1);
+    else if (k === 'PageDown' && Ed.P.levels[Ed.P.cur - 1]) Ed.setLevel(Ed.P.cur - 1);
+    return;
+  }
   switch (k) {
     case 'Delete': case 'Backspace': if (Ed.sel || Ed.multi.length) { e.preventDefault(); Ed.remove(); } break;
     case 'Escape': if (Ed.tool !== 'select') Ed.setTool('select'); else { Ed.select(null); Sheets.closeAll(); } break;
@@ -537,6 +566,8 @@ function onKey(e) {
     case 's': case 'S': $('#togSnap').click(); break;
     case 'b': case 'B': $('#togClear').click(); break;
     case 't': case 'T': Ed.setLayer(Ed.layer === 'ceil' ? 'floor' : 'ceil'); break;
+    case 'PageUp': if (Ed.P.levels[Ed.P.cur + 1]) { e.preventDefault(); Ed.setLevel(Ed.P.cur + 1); } break;
+    case 'PageDown': if (Ed.P.levels[Ed.P.cur - 1]) { e.preventDefault(); Ed.setLevel(Ed.P.cur - 1); } break;
     case '+': case '=': Plan.zoomAt(Plan.w / 2, Plan.h / 2, 1.25); break;
     case '-': Plan.zoomAt(Plan.w / 2, Plan.h / 2, .8); break;
     case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown': {

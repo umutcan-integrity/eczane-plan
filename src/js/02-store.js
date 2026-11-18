@@ -34,7 +34,8 @@ const Store = {
     localStorage.setItem(K_PROJ + p.id, JSON.stringify(p));
     const l = this.index().filter(e => e.id !== p.id);
     const old = this.index().find(e => e.id === p.id);
-    l.unshift({id: p.id, name: p.name, updated: p.updated, w: p.shop.w, d: p.shop.d, rooms: p.rooms.length, items: p.items.length, thumb: thumb || old?.thumb || ''});
+    const G = p.levels ? p.levels[groundIdx(p)] : p;
+    l.unshift({id: p.id, name: p.name, updated: p.updated, w: G.shop.w, d: G.shop.d, rooms: G.rooms.length, items: G.items.length, levels: p.levels ? p.levels.length : 1, thumb: thumb || old?.thumb || ''});
     try { this.writeIndex(l); }
     catch (e) { l[0].thumb = ''; this.writeIndex(l); }
   },
@@ -51,8 +52,7 @@ const Store = {
 /* Proje oluştur / doğrula */
 function newProject(name, w, d) {
   const now = Date.now();
-  return {v: 2, id: uid(), name: name || 'Yeni proje', created: now, updated: now,
-    shop: {w: r3(w), d: r3(d), h: 2.8}, floor: 'seramik', rooms: [], items: [], voids: [], walls: [], seq: 1};
+  return bindLevels({v: 3, id: uid(), name: name || 'Yeni proje', created: now, updated: now, levels: [newLevel('ground', w, d, 2.8)], cur: 0, seq: 1});
 }
 function makeItem(e, cx, cy, extra = {}) {
   const t = TYPES[e.t];
@@ -60,67 +60,83 @@ function makeItem(e, cx, cy, extra = {}) {
     id: '', type: e.t, style: e.s || '', name: e.n, cx: r3(cx), cy: r3(cy), w: e.w, d: e.d, h: e.h, rot: 0,
     color: e.color || t.color, clear: e.clear || 0, clearB: e.clearB || 0, elev: e.elev || 0, flip: false,
     rows: e.rows || 0, cols: e.cols || 0, split: 0, label: e.label || '', upper: !!e.upper,
-  }, e.t === 'light' ? {mount: e.mount || 'recessed', watt: e.watt || 10, cnt: 1, sp: .9, cct: 4000, model: e.model || 'ring', drop: e.drop || 0} : {}, extra);
+  }, e.t === 'light' ? {mount: e.mount || 'recessed', watt: e.watt || 10, cnt: 1, sp: .9, cct: 4000, model: e.model || 'ring', drop: e.drop || 0} : {},
+  e.t === 'stair' ? {sw: e.sw || 1} : {}, extra);
 }
 function nextId(p, pre) { p.seq = (p.seq || 1) + 1; return pre + p.seq.toString(36) + Math.random().toString(36).slice(2, 4); }
 
 function normalizeProject(o) {
   if (!o || typeof o !== 'object') return null;
   const num = (v, d, min = -1e4, max = 1e4) => (typeof v === 'number' && isFinite(v)) ? clamp(v, min, max) : d;
-  const shop = o.shop || {};
   const p = {
-    v: 2, id: typeof o.id === 'string' && o.id ? o.id : uid(), name: String(o.name || 'Proje').slice(0, 80),
-    created: num(o.created, Date.now(), 0, 1e15), updated: num(o.updated, Date.now(), 0, 1e15),
-    shop: {w: num(shop.w, 10, 1, 200), d: num(shop.d, 6, 1, 200), h: num(shop.h, 2.8, 2, 8)},
-    rooms: [], items: [], seq: num(o.seq, 1, 0, 1e9),
+    v: 3, id: typeof o.id === 'string' && o.id ? o.id : uid(), name: String(o.name || 'Proje').slice(0, 80),
+    created: num(o.created, Date.now(), 0, 1e15), updated: num(o.updated, Date.now(), 0, 1e15), seq: num(o.seq, 1, 0, 1e9), levels: [], cur: 0,
   };
   if (typeof o.sign === 'string') p.sign = o.sign.slice(0, 60);
-  p.voids = (Array.isArray(o.voids) ? o.voids : []).filter(v => v && typeof v === 'object').map(v => ({id: typeof v.id === 'string' ? v.id : uid(), x: num(v.x, 0), y: num(v.y, 0), w: num(v.w, 1, .05, 200), d: num(v.d, 1, .05, 200)}));
-  p.walls = (Array.isArray(o.walls) ? o.walls : []).filter(v => v && typeof v === 'object').map(v => ({id: typeof v.id === 'string' ? v.id : uid(), x1: num(v.x1, 0), y1: num(v.y1, 0), x2: num(v.x2, 1), y2: num(v.y2, 0), t: num(v.t, INNER_T, .05, .6)}))
-    .filter(w => Math.abs(w.x1 - w.x2) < .001 || Math.abs(w.y1 - w.y2) < .001);
-  p.floor = FLOOR_BY_KEY[o.floor] ? o.floor : 'seramik';
-  if (o.ceil && typeof o.ceil === 'object') {
-    const t = CEILINGS.some(c => c[0] === o.ceil.type) ? o.ceil.type : 'grid';
-    p.ceil = {type: t, color: /^#[0-9a-f]{6}$/i.test(o.ceil.color) ? o.ceil.color : CEIL_COLORS[t][0]};
-  }
   if (o.kroki && typeof o.kroki === 'object') {
     const k = o.kroki, str = (v, n) => typeof v === 'string' ? v.slice(0, n) : undefined;
     p.kroki = {title: str(k.title, 60), name: str(k.name, 80), pharmacist: str(k.pharmacist, 80), address: str(k.address, 400), salesName: str(k.salesName, 60),
       scale: [50, 100, 200, 250, 500].includes(+k.scale) ? +k.scale : 'auto', rot: [0, 90, 180, 270].includes(+k.rot) && k.rot !== 'auto' ? +k.rot : 'auto',
-      north: isFinite(+k.north) ? normRot(+k.north) : 0, sign: k.sign !== false, items: k.items !== false};
+      north: isFinite(+k.north) ? normRot(+k.north) : 0, sign: k.sign !== false, items: k.items !== false, floors: k.floors === 'all' ? 'all' : 'cur'};
     for (const key in p.kroki) if (p.kroki[key] === undefined) delete p.kroki[key];
   }
   const ids = new Set();
   const fresh = pre => { let id; do { id = pre + Math.random().toString(36).slice(2, 8); } while (ids.has(id)); return id; };
-  for (const r of Array.isArray(o.rooms) ? o.rooms : []) {
-    if (!r || typeof r !== 'object') continue;
-    let id = typeof r.id === 'string' && r.id && !ids.has(r.id) ? r.id : fresh('r'); ids.add(id);
-    p.rooms.push({id, name: String(r.name ?? 'Oda').slice(0, 60), x: num(r.x, 0), y: num(r.y, 0), w: num(r.w, 3, MIN_ROOM, 200), d: num(r.d, 3, MIN_ROOM, 200),
-      color: /^#[0-9a-f]{6}$/i.test(r.color) ? r.color : ROOM_COLORS[p.rooms.length % ROOM_COLORS.length], floor: FLOOR_BY_KEY[r.floor] ? r.floor : ''});
-  }
-  for (const it of Array.isArray(o.items) ? o.items : []) {
-    if (!it || typeof it !== 'object' || !TYPES[it.type]) continue;
-    let id = typeof it.id === 'string' && it.id && !ids.has(it.id) ? it.id : fresh('i'); ids.add(id);
-    const styles = STYLES[it.type];
-    const n = {
-      id, type: it.type, style: styles ? (styles.some(s => s[0] === it.style) ? it.style : styles[0][0]) : '',
-      name: String(it.name ?? TYPES[it.type].n).slice(0, 60),
-      cx: num(it.cx, 1), cy: num(it.cy, 1), w: num(it.w, 1, MIN_ITEM, 100), d: num(it.d, .5, 0.02, 100), h: num(it.h, 1, 0, 10),
-      rot: normRot(num(it.rot, 0)), color: /^#[0-9a-f]{6}$/i.test(it.color) ? it.color : TYPES[it.type].color,
-      clear: num(it.clear, 0, 0, 5), clearB: num(it.clearB, 0, 0, 5), elev: num(it.elev, 0, 0, 5), flip: !!it.flip,
-      rows: Math.round(num(it.rows, 0, 0, 16)), cols: Math.round(num(it.cols, 0, 0, 8)), split: num(it.split, 0, 0, 3),
-      label: String(it.label ?? '').slice(0, 30), upper: !!it.upper,
-    };
-    if (n.type === 'light') {
-      const mounts = LIGHT_MOUNTS[n.style];
-      Object.assign(n, {mount: mounts ? (mounts.some(m => m[0] === it.mount) ? it.mount : mounts[0][0]) : '', watt: num(it.watt, 10, 1, 500),
-        cnt: Math.round(num(it.cnt, 1, 1, 12)), sp: num(it.sp, .9, .2, 5), cct: CCTS.some(c => c[0] === +it.cct) ? +it.cct : 4000,
-        model: PENDANT_MODELS.some(m => m[0] === it.model) ? it.model : 'ring', drop: num(it.drop, 0, 0, 3)});
-      lightFix(n);
+  /* Bir katın verisi (eski tek katlı biçimde proje kökünde durur) */
+  const level = (L, kind) => {
+    const shop = L.shop || {}, K = LEVEL_KINDS[kind] || LEVEL_KINDS.ground;
+    const lv = {id: typeof L.id === 'string' && L.id ? L.id : uid(), kind, name: typeof L.name === 'string' && L !== o ? L.name.slice(0, 40) : '',
+      slab: num(L.slab, K.slab, .1, 1), ox: num(L.ox, 0, -200, 200), oy: num(L.oy, 0, -200, 200),
+      shop: {w: num(shop.w, 10, 1, 200), d: num(shop.d, 6, 1, 200), h: num(shop.h, K.h, 2, 8)}, rooms: [], items: []};
+    if (kind === 'ground') { lv.ox = 0; lv.oy = 0; }
+    lv.voids = (Array.isArray(L.voids) ? L.voids : []).filter(v => v && typeof v === 'object').map(v => ({id: typeof v.id === 'string' ? v.id : uid(), x: num(v.x, 0), y: num(v.y, 0), w: num(v.w, 1, .05, 200), d: num(v.d, 1, .05, 200)}));
+    lv.walls = (Array.isArray(L.walls) ? L.walls : []).filter(v => v && typeof v === 'object').map(v => ({id: typeof v.id === 'string' ? v.id : uid(), x1: num(v.x1, 0), y1: num(v.y1, 0), x2: num(v.x2, 1), y2: num(v.y2, 0), t: num(v.t, INNER_T, .05, .6)}))
+      .filter(w => Math.abs(w.x1 - w.x2) < .001 || Math.abs(w.y1 - w.y2) < .001);
+    lv.floor = FLOOR_BY_KEY[L.floor] ? L.floor : 'seramik';
+    if (L.ceil && typeof L.ceil === 'object') {
+      const t = CEILINGS.some(c => c[0] === L.ceil.type) ? L.ceil.type : 'grid';
+      lv.ceil = {type: t, color: /^#[0-9a-f]{6}$/i.test(L.ceil.color) ? L.ceil.color : CEIL_COLORS[t][0]};
     }
-    p.items.push(n);
-  }
-  return p;
+    for (const r of Array.isArray(L.rooms) ? L.rooms : []) {
+      if (!r || typeof r !== 'object') continue;
+      let id = typeof r.id === 'string' && r.id && !ids.has(r.id) ? r.id : fresh('r'); ids.add(id);
+      lv.rooms.push({id, name: String(r.name ?? 'Oda').slice(0, 60), x: num(r.x, 0), y: num(r.y, 0), w: num(r.w, 3, MIN_ROOM, 200), d: num(r.d, 3, MIN_ROOM, 200),
+        color: /^#[0-9a-f]{6}$/i.test(r.color) ? r.color : ROOM_COLORS[lv.rooms.length % ROOM_COLORS.length], floor: FLOOR_BY_KEY[r.floor] ? r.floor : ''});
+    }
+    for (const it of Array.isArray(L.items) ? L.items : []) {
+      if (!it || typeof it !== 'object' || !TYPES[it.type]) continue;
+      let id = typeof it.id === 'string' && it.id && !ids.has(it.id) ? it.id : fresh('i'); ids.add(id);
+      const styles = STYLES[it.type];
+      const n = {
+        id, type: it.type, style: styles ? (styles.some(s => s[0] === it.style) ? it.style : styles[0][0]) : '',
+        name: String(it.name ?? TYPES[it.type].n).slice(0, 60),
+        cx: num(it.cx, 1), cy: num(it.cy, 1), w: num(it.w, 1, MIN_ITEM, 100), d: num(it.d, .5, 0.02, 100), h: num(it.h, 1, 0, 10),
+        rot: normRot(num(it.rot, 0)), color: /^#[0-9a-f]{6}$/i.test(it.color) ? it.color : TYPES[it.type].color,
+        clear: num(it.clear, 0, 0, 5), clearB: num(it.clearB, 0, 0, 5), elev: num(it.elev, 0, 0, 5), flip: !!it.flip,
+        rows: Math.round(num(it.rows, 0, 0, 16)), cols: Math.round(num(it.cols, 0, 0, 8)), split: num(it.split, 0, 0, 3),
+        label: String(it.label ?? '').slice(0, 30), upper: !!it.upper,
+      };
+      if (n.type === 'light') {
+        const mounts = LIGHT_MOUNTS[n.style];
+        Object.assign(n, {mount: mounts ? (mounts.some(m => m[0] === it.mount) ? it.mount : mounts[0][0]) : '', watt: num(it.watt, 10, 1, 500),
+          cnt: Math.round(num(it.cnt, 1, 1, 12)), sp: num(it.sp, .9, .2, 5), cct: CCTS.some(c => c[0] === +it.cct) ? +it.cct : 4000,
+          model: PENDANT_MODELS.some(m => m[0] === it.model) ? it.model : 'ring', drop: num(it.drop, 0, 0, 3)});
+        lightFix(n);
+      }
+      if (n.type === 'stair') { n.sw = num(it.sw, 1, .6, 2.5); if (n.style === 'spiral') n.d = n.w; }
+      lv.items.push(n);
+    }
+    return lv;
+  };
+  if (Array.isArray(o.levels) && o.levels.length) {
+    for (const L of o.levels) if (L && typeof L === 'object') p.levels.push(level(L, LEVEL_KINDS[L.kind] ? L.kind : 'upper'));
+    let g = p.levels.findIndex(l => l.kind === 'ground');
+    if (g < 0) { g = 0; p.levels[0].kind = 'ground'; }
+    p.levels.forEach((l, i) => { if (l.kind === 'ground' && i !== g) l.kind = i < g ? 'basement' : 'upper'; if (i < g) l.kind = 'basement'; if (i > g && l.kind === 'basement') l.kind = 'upper'; if (l.kind === 'mezzanine' && i !== g + 1) l.kind = 'upper'; });
+    p.levels[g].ox = p.levels[g].oy = 0;
+    p.cur = clamp(Math.round(num(o.cur, g)), 0, p.levels.length - 1);
+  } else p.levels.push(level(o, 'ground'));
+  return bindLevels(p);
 }
 
 /* Aydınlatma ölçü tutarlılığı: spot sırası genişliği, avize daire */

@@ -90,9 +90,23 @@ function drawPlan(ctx, P, V, o) {
     });
   }
 
+  // Katlar arası: komşu kat silueti, merdiven boşlukları, asansör kuyuları
+  const der = P.levels ? levelDerived(P, P.cur) : null;
+  if (o.onion) for (const g of o.onion) {
+    ctx.save(); ctx.setLineDash(g.dash.map(v => v * px)); ctx.strokeStyle = rgba(C.muted.startsWith('#') ? C.muted : '#6F7974', .75); ctx.lineWidth = 1.2 * px;
+    for (const r of g.pieces) ctx.strokeRect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0);
+    ctx.restore();
+  }
+  if (der) {
+    for (const hl of der.holes) drawHole(ctx, P, hl, C, px);
+    for (const gh of der.ghosts) withItem(ctx, gh, () => drawLift(ctx, gh, C, px, true));
+  }
+
   // Katı eşyalar
   for (const it of P.items) if (isSolid(it)) {
-    withItem(ctx, it, () => drawSolid(ctx, it, C, px, A.bad.has(it.id)));
+    if (it.type === 'stair') withItem(ctx, it, () => drawStair(ctx, P, it, C, px, A.bad.has(it.id)));
+    else if (it.type === 'lift') withItem(ctx, it, () => drawLift(ctx, it, C, px, false, A.bad.has(it.id)));
+    else withItem(ctx, it, () => drawSolid(ctx, it, C, px, A.bad.has(it.id)));
   }
 
   // Tavan katmanı: zemin soluklaşır, tavan deseni ve aydınlık haritası çizilir
@@ -110,6 +124,11 @@ function drawPlan(ctx, P, V, o) {
   // Duvarlar
   ctx.fillStyle = C.wall;
   for (const r of wallPieces(segs)) ctx.fillRect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0);
+  for (const sg of segs) if (sg.rail) { // asma kat korkuluğu: ince kesik çift çizgi
+    const r = segRect(sg, sg.a, sg.b);
+    ctx.fillStyle = C.floor.startsWith('#') ? C.floor : '#FFFFFF'; ctx.fillRect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0);
+    ctx.strokeStyle = C.wall; ctx.lineWidth = 1.6 * px; ctx.setLineDash([6 * px, 3 * px]); ctx.strokeRect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0); ctx.setLineDash([]);
+  }
 
   // Kapı ve pencereler
   for (const it of P.items) if (isOpening(it)) {
@@ -313,6 +332,67 @@ function drawSolid(ctx, it, C, px, bad) {
   }
 }
 
+/* Merdiven: basamaklar, YUKARI oku, yürüme çizgisi */
+function stairPath2D(ctx, G, px, C, up, label) {
+  const pts = G.path;
+  ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+  ctx.strokeStyle = C.accent; ctx.lineWidth = 1.6 * px; ctx.stroke();
+  const [ax, ay] = up ? pts[pts.length - 1] : pts[0], [bx, by] = up ? pts[pts.length - 2] : pts[1];
+  const L = Math.hypot(ax - bx, ay - by) || 1, ux = (ax - bx) / L, uy = (ay - by) / L, k = 9 * px;
+  ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax - ux * k - uy * k * .6, ay - uy * k + ux * k * .6); ctx.lineTo(ax - ux * k + uy * k * .6, ay - uy * k - ux * k * .6); ctx.closePath();
+  ctx.fillStyle = C.accent; ctx.fill();
+  const [sx, sy] = up ? pts[0] : pts[pts.length - 1];
+  ctx.beginPath(); ctx.arc(sx, sy, 3 * px, 0, 7); ctx.fill();
+  if (label && 1 / px > 22) {
+    ctx.save(); ctx.translate(sx, sy); ctx.scale(px, px);
+    ctx.font = `700 9.5px ${getFont()}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = C.accent;
+    ctx.fillText(label, 0, 12); ctx.restore();
+  }
+}
+function drawStair(ctx, P, it, C, px, bad) {
+  const R = stairRise(P, P.cur), G = stairGeom(it, R.n);
+  ctx.fillStyle = rgba(it.color, C.dark ? .28 : .3);
+  pathPoly(ctx, itemPoly({...it, cx: 0, cy: 0, rot: 0})); if (it.style !== 'spiral') ctx.fill();
+  ctx.strokeStyle = bad || !R.top ? C.danger : C.ink; ctx.lineWidth = 1 * px;
+  for (const t of G.treads) { pathPoly(ctx, t.poly); ctx.fillStyle = t.landing ? rgba(it.color, .45) : rgba(it.color, C.dark ? .32 : .38); ctx.fill(); ctx.stroke(); }
+  if (it.style === 'spiral') { ctx.beginPath(); ctx.arc(0, 0, it.w / 2, 0, 7); ctx.lineWidth = 1.6 * px; ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, .07, 0, 7); ctx.fillStyle = C.ink; ctx.fill(); }
+  else { ctx.lineWidth = 1.8 * px; pathPoly(ctx, itemPoly({...it, cx: 0, cy: 0, rot: 0})); ctx.stroke(); }
+  stairPath2D(ctx, G, px, C, true, 'YUKARI');
+  if (!R.top) { ctx.setLineDash([5 * px, 4 * px]); ctx.strokeStyle = C.danger; ctx.lineWidth = 2 * px; pathPoly(ctx, itemPoly({...it, cx: 0, cy: 0, rot: 0})); ctx.stroke(); ctx.setLineDash([]); }
+}
+/* Üst kattaki merdiven boşluğu: tarama, silik basamaklar, AŞAĞI oku, korkuluk */
+function drawHole(ctx, P, hl, C, px) {
+  const b = hl.box, it = hl.it, G = stairGeom(it, stairRise(P, hl.lv).n);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+  ctx.fillStyle = C.bg; ctx.fill(); ctx.clip();
+  ctx.beginPath(); const st = Math.max(.1, 8 * px);
+  for (let k = b.x0 - (b.y1 - b.y0); k < b.x1; k += st) { ctx.moveTo(k, b.y1); ctx.lineTo(k + (b.y1 - b.y0), b.y0); }
+  ctx.strokeStyle = rgba(C.muted.startsWith('#') ? C.muted : '#6F7974', .25); ctx.lineWidth = px; ctx.stroke();
+  ctx.restore();
+  withItem(ctx, it, () => {
+    ctx.setLineDash([3 * px, 3 * px]); ctx.strokeStyle = rgba(C.ink.startsWith('#') ? C.ink : '#333333', .5); ctx.lineWidth = px;
+    for (const t of G.treads) { pathPoly(ctx, t.poly); ctx.stroke(); }
+    ctx.setLineDash([]);
+    stairPath2D(ctx, {path: [...G.path].reverse()}, px, C, true, 'AŞAĞI');
+  });
+  // korkuluk: çıkış kenarı hariç
+  ctx.strokeStyle = C.wall; ctx.lineWidth = Math.max(.04, 3 * px);
+  const E = {t: [[b.x0, b.y0], [b.x1, b.y0]], b: [[b.x0, b.y1], [b.x1, b.y1]], l: [[b.x0, b.y0], [b.x0, b.y1]], r: [[b.x1, b.y0], [b.x1, b.y1]]};
+  ctx.beginPath(); for (const k in E) if (k !== hl.edge) { ctx.moveTo(...E[k][0]); ctx.lineTo(...E[k][1]); } ctx.stroke();
+}
+function drawLift(ctx, it, C, px, ghost, bad) {
+  const w = it.w, d = it.d, t = .08;
+  ctx.save(); if (ghost) ctx.globalAlpha = .75;
+  ctx.fillStyle = rgba(it.color || '#8E9AA6', .25); ctx.fillRect(-w / 2, -d / 2, w, d);
+  ctx.fillStyle = C.wall; // kuyu duvarları
+  ctx.fillRect(-w / 2, -d / 2, w, t); ctx.fillRect(-w / 2, -d / 2, t, d); ctx.fillRect(w / 2 - t, -d / 2, t, d);
+  ctx.fillRect(-w / 2, d / 2 - t, w * .2, t); ctx.fillRect(w / 2 - w * .2, d / 2 - t, w * .2, t);
+  ctx.beginPath(); ctx.moveTo(-w / 2 + t, -d / 2 + t); ctx.lineTo(w / 2 - t, d / 2 - t); ctx.moveTo(w / 2 - t, -d / 2 + t); ctx.lineTo(-w / 2 + t, d / 2 - t);
+  ctx.strokeStyle = bad ? C.danger : C.ink; ctx.lineWidth = px; ctx.stroke();
+  ctx.fillStyle = C.accent; ctx.fillRect(-w * .3, d / 2 - t * .6, w * .6, t * .5); // kapı
+  ctx.restore();
+}
 /* Armatür sembolleri (tavan planı) */
 function lightTag(it) {
   if (it.style === 'linear') return `L${fmtCm(it.w)}` + (it.mount === 'suspended' ? ' sarkıt' : '');
@@ -478,13 +558,31 @@ const Plan = {
     const P = Ed.P; if (!P || Ed.view !== '2d' || !this.w) { Ctx.place(); return; }
     this.C = planColors();
     const ctx = this.ctx;
-    drawPlan(ctx, P, this.V, {w: this.w, h: this.h, dpr: this.dpr, C: this.C, segs: Ed.segs, A: Ed.A,
+    drawPlan(ctx, P, this.V, {w: this.w, h: this.h, dpr: this.dpr, C: this.C, segs: Ed.segs, A: Ed.A, onion: this.onion(P),
       grid: Settings.v.grid, clear: Settings.v.clear, labels: true, dims: true, layer: Ed.layer,
       lux: Ed.layer === 'ceil' && Settings.v.luxMap ? luxGrid(P) : null});
     this.overlay(ctx);
     Ctx.place();
   },
 
+  /* Komşu katların duvarları (kesik çizgi): hizalama için */
+  onion(P) {
+    if (!multiLevel(P)) return null;
+    const out = [];
+    for (const [j, dash] of [[P.cur - 1, [5, 4]], [P.cur + 1, [2, 3]]]) {
+      if (!P.levels[j]) continue;
+      const L = P.levels[j], key = JSON.stringify([j, P.cur, L.ox, L.oy, P.levels[P.cur].ox, P.levels[P.cur].oy, L.shop, L.voids, L.rooms.map(r => [r.x, r.y, r.w, r.d]), L.walls]);
+      this._onion = this._onion || new Map();
+      let c = this._onion.get(j + ':' + P.cur);
+      if (!c || c.key !== key) {
+        const [dx, dy] = lvShift(P, j, P.cur);
+        c = {key, pieces: wallPieces(computeWalls(lvView(P, j))).map(r => ({x0: r.x0 + dx, y0: r.y0 + dy, x1: r.x1 + dx, y1: r.y1 + dy}))};
+        this._onion.set(j + ':' + P.cur, c);
+      }
+      out.push({pieces: c.pieces, dash});
+    }
+    return out;
+  },
   /* Seçim, tutamaklar, mesafeler, kılavuzlar, ölçü */
   overlay(ctx) {
     const C = this.C, P = Ed.P, s = this.V.s;
@@ -901,6 +999,12 @@ const Plan = {
     const dbl = last && now - last.t < 350 && Math.hypot(last.x - a.x, last.y - a.y) < 24 && hit && last.id === hit.id;
     this.lastTap = {t: now, x: a.x, y: a.y, id: hit && hit.id};
     if (!onSel) Ed.select(hit);
+    if (!hit && !onSel && multiLevel(Ed.P)) { // boşluğa / başka kattan gelen asansöre dokunuldu: nereden düzenleneceğini söyle
+      const [wx, wy] = this.toW(a.x, a.y), der = levelDerived(Ed.P, Ed.P.cur);
+      const hl = der.holes.find(q => wx > q.box.x0 && wx < q.box.x1 && wy > q.box.y0 && wy < q.box.y1);
+      const gh = der.ghosts.find(q => { const b = itemBox(q); return wx > b.x0 && wx < b.x1 && wy > b.y0 && wy < b.y1; });
+      if (hl || gh) toast(`${hl ? 'Merdiven' : 'Asansör'} ${levelName(Ed.P, (hl || gh).lv)}’da · düzenlemek için o kata geç (sol taraftaki kat düğmeleri)`);
+    }
     if (dbl) Ed.openProps(true);
   },
   wheel(e) {

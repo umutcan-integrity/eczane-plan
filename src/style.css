@@ -455,3 +455,32 @@ dialog.modal.wide{width:min(960px,calc(100vw - 28px))}
 .shapes.ceils .btn{flex-direction:row;justify-content:flex-start;gap:8px;min-height:44px;padding:4px 10px;font-size:12.5px;white-space:normal;text-align:left;line-height:1.15}
 .shapes.ceils .btn svg{width:30px;height:24px}
 .kv .kv-full{grid-column:1/-1;font-size:12.5px;line-height:1.35}
+
+/* ---------- Katlar ---------- */
+.floorbar{left:12px;top:64px;flex-direction:column;gap:3px;padding:4px;align-items:stretch}
+.floorbar button{min-width:38px;height:36px;border:0;border-radius:var(--r-xs);background:transparent;font:800 14px/1 var(--font);color:var(--muted);display:inline-flex;align-items:center;justify-content:center}
+.floorbar button:hover{background:var(--surface-3);color:var(--ink)}
+.floorbar button.on{background:var(--accent);color:var(--accent-ink)}
+.floorbar .fb-add{color:var(--accent);height:30px}
+.floorbar .fb-add svg{width:18px;height:18px}
+.floorbar.single button:not(.fb-add){opacity:.75}
+.stage.is3d .floorbar{top:118px}
+@media (max-width:900px){ .floorbar{left:8px;top:58px} .floorbar button{min-width:34px;height:32px;font-size:13px} .stage.is3d .floorbar{top:112px} }
+.ritem.lvitem{grid-template-columns:28px 1fr auto}
+.ritem.lvitem .lvb{width:28px;height:28px;border-radius:8px;background:var(--surface-3);font:800 13px/28px var(--font);text-align:center;font-style:normal;color:var(--ink)}
+.ritem.lvitem.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.ritem.lvitem.on .lvb{background:var(--accent);color:var(--accent-ink)}
+.lvset{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);border-radius:var(--r-sm);padding:10px;background:var(--surface-2)}
+.lvset h5{margin:0;font-size:13px}
+.lvset .pf input[type=text]{width:100%;min-height:38px;border:1px solid var(--line-2);border-radius:var(--r-xs);background:var(--surface);padding:0 10px;font-size:15px}
+.acts.stack .btn:disabled{opacity:.4;cursor:default}
+/* Gezinti kontrolleri */
+.walknav{right:12px;bottom:12px;align-items:center}
+.walknav .tb{min-width:38px;justify-content:center}
+.liftpanel{left:50%;top:50%;transform:translate(-50%,-50%);flex-direction:column;gap:6px;padding:12px;min-width:200px;z-index:8}
+.liftpanel h4{margin:0 0 4px;font-size:14px;text-align:center}
+.liftpanel button{min-height:40px;border:1px solid var(--line-2);border-radius:var(--r-xs);background:var(--surface);font-weight:700;color:var(--ink)}
+.liftpanel button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.stage.walking .walkhint{bottom:64px}
+@media (max-width:900px){ .walknav{right:8px;bottom:8px;max-width:calc(100% - 150px);flex-wrap:wrap;justify-content:flex-end} .walknav .lbl{display:none} .stage.walking .walkhint{display:none} }
+@media (max-width:900px){ .stage.walking canvas.minimap{top:auto;bottom:66px;right:8px;width:120px} }

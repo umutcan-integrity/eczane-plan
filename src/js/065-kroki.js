@@ -10,7 +10,7 @@ const Kroki = {
   opts(P) {
     const sign = (P.sign ?? P.name ?? '').trim().toLocaleUpperCase('tr-TR');
     const name = sign ? (/ECZANE/.test(sign) ? sign : sign + ' ECZANESİ') : '';
-    return Object.assign({title: 'ECZANE RÖLÖVE PLANI', name, pharmacist: '', address: '', scale: 'auto', rot: 'auto', north: 0, sign: true, items: true, salesName: 'ECZANE SATIŞ ALANI'}, P.kroki || {});
+    return Object.assign({title: 'ECZANE RÖLÖVE PLANI', name, pharmacist: '', address: '', scale: 'auto', rot: 'auto', north: 0, sign: true, items: true, salesName: 'ECZANE SATIŞ ALANI', floors: P.levels && P.levels.length > 1 ? 'all' : 'cur'}, P.kroki || {});
   },
 
   /* Net alanlar: 2 cm ızgarada duvar/kolon düşülerek hesaplanır */
@@ -25,7 +25,8 @@ const Kroki = {
     for (const {r, i} of rooms) fill(r.x, r.y, r.x + r.w, r.y + r.d, i + 1);
     for (const w of wallPieces(segs, () => false)) fill(w.x0, w.y0, w.x1, w.y1, -1);
     for (const v of P.voids || []) fill(v.x - .05, v.y - .05, v.x + v.w + .05, v.y + v.d + .05, -1);
-    for (const it of P.items) if (it.type === 'column') { const b = itemBox(it); fill(b.x0, b.y0, b.x1, b.y1, -1); }
+    for (const it of P.items) if (it.type === 'column' || it.type === 'lift') { const b = itemBox(it); fill(b.x0, b.y0, b.x1, b.y1, -1); }
+    if (P.levels) { const der = levelDerived(P, P.cur); for (const hl of der.holes) fill(hl.box.x0, hl.box.y0, hl.box.x1, hl.box.y1, -1); for (const gh of der.ghosts) { const b = itemBox(gh); fill(b.x0, b.y0, b.x1, b.y1, -1); } }
     const cnt = new Float64Array(P.rooms.length + 1);
     for (let k = 0; k < g.length; k++) if (g[k] >= 0) cnt[g[k]]++;
     const a = c * c;
@@ -53,7 +54,10 @@ const Kroki = {
     }
     const roomAreas = P.rooms.map((r, i) => ({r, a: cnt[i + 1] * a}));
     const sales = cnt[0] * a;
-    return {sales, rooms: roomAreas, useful: sales + roomAreas.reduce((s, x) => s + x.a, 0), net: shopArea(P), pole};
+    let net = shopArea(P);
+    for (const it of P.items) if (it.type === 'lift') net -= it.w * it.d;
+    if (P.levels) for (const gh of levelDerived(P, P.cur).ghosts) net -= gh.w * gh.d;
+    return {sales, rooms: roomAreas, useful: sales + roomAreas.reduce((s, x) => s + x.a, 0), net: Math.max(0, net), pole};
   },
 
   /* Etiket yerleri: her bölgede duvar ve eşyalardan en uzak nokta (5 cm ızgara) */
@@ -108,6 +112,8 @@ const Kroki = {
     if (/reçete/i.test(it.name)) return {small: it.name.toLocaleLowerCase('tr-TR')};
     switch (it.type) {
       case 'counter': return {t: 'BANKO'};
+      case 'stair': return it.style === 'spiral' ? null : {t: 'MERDİVEN'};
+      case 'lift': return {t: 'ASANSÖR'};
       case 'table': return {t: 'MASA'};
       case 'cabinet':
         switch (it.style) {
@@ -186,6 +192,22 @@ const Kroki = {
       g.save(); g.translate(it.cx, it.cy); g.rotate(it.rot * D2R);
       g.lineWidth = wl(.18); g.strokeStyle = INK; g.fillStyle = '#FFFFFF';
       const w = it.w, d = it.d;
+      if (it.type === 'stair') {
+        const G = stairGeom(it, stairRise(P, P.cur).n);
+        if (it.style === 'spiral') { g.beginPath(); g.arc(0, 0, w / 2, 0, Math.PI * 2); g.fill(); g.stroke(); }
+        else { g.beginPath(); g.rect(-w / 2, -d / 2, w, d); g.fill(); g.stroke(); }
+        g.lineWidth = wl(.12);
+        for (const t of G.treads) { g.beginPath(); t.poly.forEach(([x, y], q) => q ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.stroke(); }
+        g.lineWidth = wl(.14); g.beginPath(); G.path.forEach(([x, y], q) => q ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke();
+        const [ax, ay] = G.path[G.path.length - 1], [bx, by] = G.path[G.path.length - 2], L = Math.hypot(ax - bx, ay - by) || 1, ux = (ax - bx) / L, uy = (ay - by) / L, k2 = wl(1.6);
+        g.fillStyle = INK; g.beginPath(); g.moveTo(ax, ay); g.lineTo(ax - ux * k2 - uy * k2 * .5, ay - uy * k2 + ux * k2 * .5); g.lineTo(ax - ux * k2 + uy * k2 * .5, ay - uy * k2 - ux * k2 * .5); g.closePath(); g.fill();
+        g.restore(); continue;
+      }
+      if (it.type === 'lift') {
+        g.beginPath(); g.rect(-w / 2, -d / 2, w, d); g.fill(); g.lineWidth = wl(.3); g.stroke();
+        g.lineWidth = wl(.12); g.beginPath(); g.moveTo(-w / 2, -d / 2); g.lineTo(w / 2, d / 2); g.moveTo(w / 2, -d / 2); g.lineTo(-w / 2, d / 2); g.stroke();
+        g.restore(); continue;
+      }
       if (it.type === 'fixture') {
         if (it.style === 'toilet') {
           const t = Math.min(.2, d * .28);
@@ -205,6 +227,20 @@ const Kroki = {
         }
       }
       g.restore();
+    }
+    // Üst katta merdiven boşluğu (tarama) ve başka kattan gelen asansör kuyusu
+    if (P.levels) {
+      const der = levelDerived(P, P.cur);
+      for (const hl of der.holes) {
+        const b = hl.box;
+        g.save(); g.beginPath(); g.rect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0); g.fillStyle = '#FFFFFF'; g.fill(); g.lineWidth = wl(.25); g.strokeStyle = INK; g.stroke(); g.clip();
+        g.beginPath(); for (let q = b.x0 - (b.y1 - b.y0); q < b.x1; q += wl(1.4)) { g.moveTo(q, b.y1); g.lineTo(q + (b.y1 - b.y0), b.y0); } g.lineWidth = wl(.08); g.stroke(); g.restore();
+      }
+      for (const gh of der.ghosts) {
+        g.save(); g.translate(gh.cx, gh.cy); g.rotate(gh.rot * D2R); g.fillStyle = '#FFFFFF'; g.strokeStyle = INK;
+        g.beginPath(); g.rect(-gh.w / 2, -gh.d / 2, gh.w, gh.d); g.fill(); g.lineWidth = wl(.3); g.stroke();
+        g.lineWidth = wl(.12); g.beginPath(); g.moveTo(-gh.w / 2, -gh.d / 2); g.lineTo(gh.w / 2, gh.d / 2); g.moveTo(gh.w / 2, -gh.d / 2); g.lineTo(-gh.w / 2, gh.d / 2); g.stroke(); g.restore();
+      }
     }
     // Duvarlar: birleşik çift çizgi (siyah genişletilmiş + beyaz iç)
     const pieces = wallPieces(segs);
@@ -269,7 +305,14 @@ const Kroki = {
       if (fs >= 1.1) text(L.t, px, py, fs, {rot: ang, base: 'middle'});
     }
 
-    // Oda adları ve alanları
+    if (P.levels) {
+      const der = levelDerived(P, P.cur);
+      for (const hl of der.holes) { const b = hl.box, [px, py] = toPage((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2), wpg = (th % 180 === 0 ? b.x1 - b.x0 : b.y1 - b.y0) * k; const fs = Math.min(1.8, (wpg - 1) / tw('BOŞLUK', 1)); if (fs > .9) text('BOŞLUK', px, py, fs, {base: 'middle'}); }
+      for (const gh of der.ghosts) { const [px, py] = toPage(gh.cx, gh.cy); const fs = Math.min(1.8, (Math.min(gh.w, gh.d) * k - 1) / tw('ASANSÖR', 1)); if (fs > .9) text('ASANSÖR', px, py, fs, {base: 'middle'}); }
+    }
+
+    // Oda adları ve alanları (zemin dışındaki katta açık alan kat adıyla anılır)
+    const salesLbl = P.levels && P.levels[P.cur].kind !== 'ground' ? `${levelName(P, P.cur).toLocaleUpperCase('tr-TR')} ALANI` : (o.salesName || 'ECZANE SATIŞ ALANI');
     const A = this.areas(P, segs);
     const roomText = (lines, cxp, cyp, wpg, hpg, maxFs) => {
       let fs = maxFs;
@@ -292,7 +335,7 @@ const Kroki = {
       const lp = LP[0], pos = lp ? [lp.x, lp.y] : A.pole;
       if (pos) {
         const [px, py] = toPage(...pos), free = lp ? lp.r * k * 2 : 40;
-        roomText([o.salesName || 'ECZANE SATIŞ ALANI', `A = ${fm2(A.sales)} m2`, `H = ${fm2(H)} m`], px, py, Math.min(Math.max(free * 1.6, 18), Math.min(W, D) * k * 1.1), Math.max(free * 1.2, 10), 3.0);
+        roomText([salesLbl, `A = ${fm2(A.sales)} m2`, `H = ${fm2(H)} m`], px, py, Math.min(Math.max(free * 1.6, 18), Math.min(W, D) * k * 1.1), Math.max(free * 1.2, 10), 3.0);
       }
     }
 
@@ -360,7 +403,9 @@ const Kroki = {
     const title = (o.title || 'ECZANE RÖLÖVE PLANI').toLocaleUpperCase('tr-TR');
     let tfs = Math.min(7.6, 64 / tw(title, 1));
     text(title, cx, 46, tfs);
-    text(`ÖLÇEK:1/${den}`, cx, 46 + tfs * 1.18, tfs);
+    const multi = P.levels && P.levels.length > 1;
+    if (multi) { const ln = `${levelName(P, P.cur).toLocaleUpperCase('tr-TR')} · ÖLÇEK:1/${den}`; text(ln, cx, 46 + tfs * 1.18, Math.min(tfs, 64 / tw(ln, 1))); }
+    else text(`ÖLÇEK:1/${den}`, cx, 46 + tfs * 1.18, tfs);
     let y = 46 + tfs * 1.18 + 15;
     if (o.name) { const fs = Math.min(3.8, 64 / tw(o.name, 1)); text(o.name, cx, y, fs); y += 9.5; }
     const ph = `ECZACI ADI: ${(o.pharmacist || '').toLocaleUpperCase('tr-TR')}`;
@@ -376,7 +421,7 @@ const Kroki = {
     // Alan tablosu
     const tx0 = 125, tx1 = 192;
     let ty = Math.max(y + 6, 126);
-    const rows = [[o.salesName || 'ECZANE SATIŞ ALANI', A.sales], ...A.rooms.map(x => [x.r.name.toLocaleUpperCase('tr-TR'), x.a])];
+    const rows = [[salesLbl, A.sales], ...A.rooms.map(x => [x.r.name.toLocaleUpperCase('tr-TR'), x.a])];
     const rfs = rows.length > 8 ? 1.9 : 2.3, pitch = rfs * 1.9;
     let yy = ty + 4.6;
     for (const [n, a] of rows) {
@@ -392,7 +437,14 @@ const Kroki = {
     const s2 = s1 + 8.6;
     line(tx0, s2, tx1, s2, .2);
     text(`TOPLAM NET ALAN:   ${fm2(A.net)} m2`, (tx0 + tx1) / 2, s2 + 5.6, 2.8);
-    const tb = s2 + 8.6;
+    let tb = s2 + 8.6;
+    if (multi) { // tüm katların net alanı
+      let all = 0; const cur = P.cur;
+      for (let i = 0; i < P.levels.length; i++) { const v = lvView(P, i); all += this.areas(v, computeWalls(v)).net; }
+      line(tx0, tb, tx1, tb, .2);
+      text(`TÜM KATLAR NET ALAN: ${fm2(all)} m2`, (tx0 + tx1) / 2, tb + 5.6, 2.6);
+      tb += 8.6;
+    }
     rect(tx0, ty, tx1 - tx0, tb - ty, .25);
     // İmza tablosu
     if (o.sign) {
@@ -407,14 +459,20 @@ const Kroki = {
   },
 
   /* ---------- Dışa aktarma ---------- */
+  /* Basılacak katlar: 'cur' etkin kat, 'all' alttan üste tüm katlar */
+  levelsFor(P, o) { return P.levels && o.floors === 'all' ? P.levels.map((l, i) => i) : [P.cur]; },
+  renderAt(P, o, i, dpi) { const v = P.levels ? lvView(P, i) : P; return this.render(v, o, dpi); },
   async pdf(P, o) {
-    const {canvas} = this.render(P, o, 300);
-    const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', .94));
-    const jpg = new Uint8Array(await blob.arrayBuffer());
-    return makePdf(jpg, canvas.width, canvas.height, `${o.name || P.name} - Rölöve Planı`);
+    const pages = [];
+    for (const i of this.levelsFor(P, o)) {
+      const {canvas} = this.renderAt(P, o, i, 300);
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', .94));
+      pages.push({jpg: new Uint8Array(await blob.arrayBuffer()), w: canvas.width, h: canvas.height});
+    }
+    return makePdf(pages, `${o.name || P.name} - Rölöve Planı`);
   },
   async png(P, o) {
-    const {canvas} = this.render(P, o, 300);
+    const {canvas} = this.renderAt(P, o, P.cur, 300);
     return new Promise(r => canvas.toBlob(r, 'image/png'));
   },
 
@@ -425,7 +483,7 @@ const Kroki = {
     const save = () => Ed.change(() => { P.kroki = Object.assign({}, o); }, 'kroki');
     let tmr = 0;
     const prev = h('div', {class: 'kprev'});
-    const refresh = () => { clearTimeout(tmr); tmr = setTimeout(() => { try { const {canvas, den} = this.render(P, o, 70); prev.innerHTML = ''; prev.append(h('img', {src: canvas.toDataURL('image/png'), alt: 'Kroki önizleme'})); scaleNote.textContent = `Ölçek 1/${den} · A4 dikey`; } catch (e) { prev.textContent = 'Önizleme oluşturulamadı'; } }, 120); };
+    const refresh = () => { clearTimeout(tmr); tmr = setTimeout(() => { try { const {canvas, den} = this.renderAt(P, o, P.cur, 70); prev.innerHTML = ''; prev.append(h('img', {src: canvas.toDataURL('image/png'), alt: 'Kroki önizleme'})); scaleNote.textContent = `Ölçek 1/${den} · A4 dikey`; } catch (e) { prev.textContent = 'Önizleme oluşturulamadı'; } }, 120); };
     const scaleNote = h('small', {class: 'note'});
     const field = (label, key, area) => {
       const inp = area ? h('textarea', {class: 'inp ta', rows: 3}) : h('input', {class: 'inp', maxlength: 80});
@@ -450,6 +508,7 @@ const Kroki = {
       left.append(chips('Ölçek', 'scale', [['auto', 'Otomatik'], [50, '1/50'], [100, '1/100'], [200, '1/200']]));
       left.append(chips('Plan yönü', 'rot', [['auto', 'Giriş altta'], [0, '0°'], [90, '90°'], [180, '180°'], [270, '270°']]));
       left.append(chips('Kuzey (planda)', 'north', [[0, '↑'], [45, '↗'], [90, '→'], [135, '↘'], [180, '↓'], [225, '↙'], [270, '←'], [315, '↖']]));
+      if (P.levels && P.levels.length > 1) left.append(chips('Katlar (PDF)', 'floors', [['cur', 'Yalnız ' + levelName(P, P.cur)], ['all', `Tüm katlar · ${P.levels.length} sayfa`]]));
       left.append(sw('items', 'Raf, banko, stand çizimleri', 'Eşyalar RAF / BANKO / STAND yazılarıyla çizilir'));
       left.append(sw('sign', 'İmza tablosu', 'Mimar · İl/İlçe Sağlık · Eczacı Odası'));
       right.append(prev, scaleNote);
@@ -462,25 +521,31 @@ const Kroki = {
   },
 };
 
-/* Tek sayfalık PDF: A4, JPEG gömülü */
-function makePdf(jpg, wpx, hpx, title) {
+/* PDF: A4 sayfalar, her sayfada bir JPEG (pages: [{jpg, w, h}]) */
+function makePdf(pages, title) {
+  if (pages instanceof Uint8Array) pages = [{jpg: pages, w: arguments[1], h: arguments[2]}], title = arguments[3];
   const enc = new TextEncoder(), parts = [], offs = [];
   let len = 0;
   const push = d => { const b = typeof d === 'string' ? enc.encode(d) : d; parts.push(b); len += b.length; };
   const obj = (n, body) => { offs[n] = len; push(`${n} 0 obj\n`); for (const b of [].concat(body)) push(b); push('\nendobj\n'); };
-  const W = 595.28, H = 841.89;
+  const W = 595.28, H = 841.89, N = pages.length;
   const hex = s => { let r = 'FEFF'; for (const ch of s) { const c = ch.codePointAt(0); if (c > 0xFFFF) continue; r += c.toString(16).toUpperCase().padStart(4, '0'); } return `<${r}>`; };
+  // 1 katalog, 2 sayfalar, her sayfa için 3 nesne (sayfa, görüntü, içerik), sonda bilgi
+  const pageObj = i => 3 + i * 3, info = 3 + N * 3;
   push('%PDF-1.4\n%âãÏÓ\n');
   obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
-  obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
-  obj(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 4 0 R >> /ProcSet [/PDF /ImageC] >> /Contents 5 0 R >>`);
-  obj(4, [`<< /Type /XObject /Subtype /Image /Width ${wpx} /Height ${hpx} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n`, jpg, '\nendstream']);
-  const content = `q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
-  obj(5, `<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
-  obj(6, `<< /Title ${hex(title)} /Producer (Eczane Plan) /CreationDate (D:${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)}) >>`);
+  obj(2, `<< /Type /Pages /Kids [${pages.map((_, i) => pageObj(i) + ' 0 R').join(' ')}] /Count ${N} >>`);
+  pages.forEach((pg, i) => {
+    const po = pageObj(i);
+    obj(po, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 ${po + 1} 0 R >> /ProcSet [/PDF /ImageC] >> /Contents ${po + 2} 0 R >>`);
+    obj(po + 1, [`<< /Type /XObject /Subtype /Image /Width ${pg.w} /Height ${pg.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${pg.jpg.length} >>\nstream\n`, pg.jpg, '\nendstream']);
+    const content = `q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
+    obj(po + 2, `<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+  });
+  obj(info, `<< /Title ${hex(title)} /Producer (Eczane Plan) /CreationDate (D:${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)}) >>`);
   const xref = len;
-  let x = 'xref\n0 7\n0000000000 65535 f \n';
-  for (let i = 1; i <= 6; i++) x += String(offs[i]).padStart(10, '0') + ' 00000 n \n';
-  push(x + `trailer\n<< /Size 7 /Root 1 0 R /Info 6 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  let x = `xref\n0 ${info + 1}\n0000000000 65535 f \n`;
+  for (let i = 1; i <= info; i++) x += String(offs[i]).padStart(10, '0') + ' 00000 n \n';
+  push(x + `trailer\n<< /Size ${info + 1} /Root 1 0 R /Info ${info} 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
   return new Blob(parts, {type: 'application/pdf'});
 }
