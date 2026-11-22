@@ -15,8 +15,15 @@ js = '\n'.join(open(os.path.join('src/js', f), encoding='utf-8').read() for f in
 out = shell.replace('/*@CSS@*/', css).replace('/*@JS@*/', js)
 open('index.html', 'w', encoding='utf-8').write(out)
 
+# Dolap Tasarımı (bağımsız uygulama, dolap/ klasörü; kendi build.py'si ile de derlenebilir)
+if os.path.exists('dolap/build.py'):
+    r = subprocess.run([sys.executable, 'dolap/build.py'])
+    if r.returncode:
+        sys.exit(r.returncode)
+dolap_html = open('dolap/index.html', encoding='utf-8').read() if os.path.exists('dolap/index.html') else ''
+
 # Service worker: içerik değişince önbellek adı değişsin
-ver = hashlib.sha1(out.encode('utf-8')).hexdigest()[:10]
+ver = hashlib.sha1((out + dolap_html).encode('utf-8')).hexdigest()[:10]
 sw = open('src/sw.js', encoding='utf-8').read().replace('@VERSION@', ver)
 open('sw.js', 'w', encoding='utf-8').write(sw)
 

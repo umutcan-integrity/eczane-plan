@@ -1,0 +1,2084 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="description" content="Dolap ölçülerini gir: yan, raf, tabla, arkalık, kapak ve çekmece kesim ölçüleri milimetrik hesaplansın; 3B gör, levha planı çıkar.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Dolap Tasarımı</title>
+<script>
+/* Tema, ilk boyamadan önce (yoksa ana uygulamanın teması) */
+(function(){try{var s=JSON.parse(localStorage.getItem('dolap.v1.settings')||'null')||JSON.parse(localStorage.getItem('eczplan.v2.settings')||'{}');var m=s.mode||'auto';var r=document.documentElement;if(m==='glass'){r.dataset.glass='1';m='dark';}if(m==='auto')m=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';r.dataset.mode=m;}catch(e){}})();
+</script>
+<style>
+:root{
+  --bg:#F3F4F1; --surface:#FFFFFF; --surface-2:#F5F6F3; --surface-3:#ECEEE9;
+  --line:#E1E4DE; --line-2:#CBD0C8; --ink:#1B211F; --muted:#626C67; --faint:#98A09B;
+  --accent:#1F7A5A; --accent-ink:#FFFFFF;
+  --accent-soft:color-mix(in srgb,var(--accent) 12%,var(--surface));
+  --danger:#C23A2B; --warn:#B26B12; --ok:#2E8555; --info:#3B6FB6;
+  --danger-soft:color-mix(in srgb,var(--danger) 11%,var(--surface));
+  --warn-soft:color-mix(in srgb,var(--warn) 13%,var(--surface));
+  --ok-soft:color-mix(in srgb,var(--ok) 11%,var(--surface));
+  --scene-bg:#E6E9E4; --dimL:#C2410C; --dimW:#1D4ED8; --dimT:#7E22CE;
+  --shadow:0 1px 2px rgba(20,30,26,.06),0 8px 24px rgba(20,30,26,.10);
+  --shadow-lg:0 2px 6px rgba(20,30,26,.08),0 20px 50px rgba(20,30,26,.18);
+  --r:14px; --r-sm:10px; --r-xs:8px;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --side:372px; --bar-h:56px;
+  color-scheme:light;
+}
+:root[data-mode="dark"]{
+  --bg:#121615; --surface:#1B201E; --surface-2:#212725; --surface-3:#29302D;
+  --line:#2C3431; --line-2:#3D4743; --ink:#E6EBE8; --muted:#9AA59F; --faint:#6A756F;
+  --accent:#3DBE8B; --accent-ink:#0E1512;
+  --danger:#EE7462; --warn:#E2A94C; --ok:#4CC38A; --info:#7EA6E0;
+  --scene-bg:#161B19; --dimL:#FB923C; --dimW:#60A5FA; --dimT:#C084FC;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 8px 24px rgba(0,0,0,.35);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.4),0 20px 50px rgba(0,0,0,.5);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 var(--font);-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-user-select:none;user-select:none}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+svg{flex:none}
+.grow{flex:1}
+a{color:inherit}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:0 14px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);font-weight:600;white-space:nowrap;transition:background .15s,border-color .15s;text-decoration:none}
+.btn:hover{background:var(--surface-2)}
+.btn svg{width:18px;height:18px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{background:color-mix(in srgb,var(--accent) 88%,#000)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--surface-3)}
+.btn.danger{color:var(--danger)}
+.btn.sm{min-height:32px;padding:0 10px;font-size:13px}
+.btn.full{width:100%}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:var(--r-sm);border:1px solid transparent;background:transparent;color:var(--ink);padding:0;flex:none}
+.icon-btn:hover{background:var(--surface-3)}
+.icon-btn:disabled{opacity:.35;cursor:default;background:transparent}
+.icon-btn svg{width:20px;height:20px}
+.icon-btn.sm{width:32px;height:32px}
+.icon-btn.sm svg{width:17px;height:17px}
+.seg{display:inline-flex;background:var(--surface-3);border-radius:var(--r-sm);padding:3px;gap:2px}
+.seg button{justify-content:center;border:0;background:transparent;border-radius:calc(var(--r-sm) - 3px);padding:0 14px;min-height:32px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.seg.sm button{min-height:28px;padding:0 10px;font-size:12.5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{border:1px solid var(--line-2);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600;min-height:32px;display:inline-flex;align-items:center;gap:6px}
+.chips button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--ink);box-shadow:0 0 0 1px var(--accent) inset}
+.chips button:disabled{opacity:.4;cursor:default}
+.chips.blocks{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr))}
+.chips.blocks button{border-radius:var(--r-sm);flex-direction:column;padding:8px 6px 7px;gap:4px;font-size:12px;line-height:1.2;text-align:center}
+.chips.blocks button svg{width:40px;height:34px}
+
+/* ---------- top bar ---------- */
+.app{position:fixed;inset:0;display:grid;grid-template-columns:var(--side) minmax(0,1fr);grid-template-rows:var(--bar-h) minmax(0,1fr);background:var(--bg)}
+.bar{grid-column:1/-1;display:flex;align-items:center;gap:6px;padding:0 10px;padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right));background:var(--surface);border-bottom:1px solid var(--line);z-index:20;min-width:0}
+.logo{display:inline-flex;text-decoration:none}
+.logo i{width:34px;height:34px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:inline-flex;align-items:center;justify-content:center}
+.logo i svg{width:20px;height:20px}
+.apptabs{display:inline-flex;background:var(--surface-3);border-radius:999px;padding:3px;gap:2px;margin:0 4px;flex:none}
+.apptabs a{text-decoration:none;font-weight:650;font-size:13.5px;color:var(--muted);padding:6px 13px;border-radius:999px;white-space:nowrap}
+.apptabs a:hover{color:var(--ink)}
+.apptabs a.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.jobname{display:flex;flex-direction:column;align-items:flex-start;min-width:0;border:0;background:transparent;padding:3px 8px;border-radius:var(--r-xs);text-align:left;max-width:26vw}
+.jobname:hover{background:var(--surface-3)}
+.jobname b{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.jobname small{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:5px;white-space:nowrap}
+.jobname small i{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
+.jobname small i.dirty{background:var(--warn)}
+.mtabs{display:none}
+
+/* ---------- side / form ---------- */
+.side{background:var(--surface);border-right:1px solid var(--line);overflow:auto;overscroll-behavior:contain;min-height:0;padding-bottom:30px}
+.cabs{padding:12px 12px 4px;display:flex;flex-direction:column;gap:6px}
+.cabs-head{display:flex;align-items:center;gap:6px;margin-bottom:2px}
+.cabs-head b{flex:1;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.cab{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 6px 7px 10px;background:var(--surface);cursor:pointer;min-height:50px}
+.cab:hover{border-color:var(--line-2)}
+.cab.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent) inset}
+.cab .ic{width:30px;height:34px;flex:none;color:var(--muted)}
+.cab.on .ic{color:var(--accent)}
+.cab .tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.cab .tx b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cab .tx small{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.cab .qty{font-size:12px;font-weight:700;background:var(--surface-3);border-radius:999px;padding:2px 8px;white-space:nowrap}
+.cab .warnb{width:9px;height:9px;border-radius:50%;background:var(--danger);flex:none}
+.cab .warnb.w{background:var(--warn)}
+.form{padding:4px 12px}
+.grp{border-top:1px solid var(--line);padding:4px 0}
+.grp>summary{list-style:none;display:flex;align-items:center;gap:8px;padding:10px 2px;cursor:pointer;font-weight:700;font-size:14.5px;-webkit-user-select:none;user-select:none}
+.grp>summary::-webkit-details-marker{display:none}
+.grp>summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--faint);border-bottom:2px solid var(--faint);transform:rotate(45deg);margin:-4px 4px 0 auto;transition:transform .15s}
+.grp[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
+.grp>summary small{font-weight:500;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grp .body{display:flex;flex-direction:column;gap:12px;padding:2px 2px 14px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row.r3{grid-template-columns:1fr 1fr 1fr}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld>span{font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fld>small{font-size:11.5px;color:var(--faint);line-height:1.3}
+.inpw{position:relative;display:flex;align-items:center}
+.inpw i{position:absolute;right:10px;font-style:normal;font-size:12px;color:var(--faint);pointer-events:none}
+.inp{width:100%;min-height:40px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);padding:0 34px 0 11px;font-size:15px;font-variant-numeric:tabular-nums}
+.inp.txt{padding-right:11px}
+.inp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.inp.bad{border-color:var(--danger);box-shadow:0 0 0 3px var(--danger-soft)}
+.inp::placeholder{color:var(--faint)}
+select.inp{padding-right:28px;appearance:auto}
+.chk{display:flex;align-items:center;gap:9px;font-weight:600;font-size:13.5px;cursor:pointer;min-height:32px}
+.chk input{width:18px;height:18px;accent-color:var(--accent);margin:0}
+.step{display:inline-flex;align-items:center;border:1px solid var(--line-2);border-radius:var(--r-sm);overflow:hidden;background:var(--surface);height:40px}
+.step button{width:36px;height:100%;border:0;background:transparent;font-size:18px;font-weight:600;color:var(--muted)}
+.step button:hover{background:var(--surface-3);color:var(--ink)}
+.step b{min-width:30px;text-align:center;font-variant-numeric:tabular-nums;font-size:15px}
+.lblrow{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.lblrow>span{font-size:12.5px;font-weight:600;color:var(--muted)}
+.tip{font-size:12px;color:var(--muted);line-height:1.4;margin:0}
+.secs{display:flex;flex-direction:column;gap:10px}
+.sec{border:1px solid var(--line);border-radius:var(--r-sm);padding:10px;display:flex;flex-direction:column;gap:10px;background:var(--surface-2)}
+.sec-h{display:flex;align-items:center;gap:8px}
+.sec-h b{flex:1;font-size:13.5px}
+.sec-h small{color:var(--muted);font-variant-numeric:tabular-nums}
+.sec .row{gap:8px}
+.mats{display:flex;flex-direction:column;gap:10px}
+.mat{border:1px solid var(--line);border-radius:var(--r-sm);padding:10px;display:flex;flex-direction:column;gap:8px}
+.mat-h{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
+.sw{display:flex;flex-wrap:wrap;gap:6px}
+.sw button{width:26px;height:26px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line-2);padding:0}
+.sw button.on{box-shadow:0 0 0 2px var(--accent)}
+
+/* özet / uyarılar */
+.sum{border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface-2);padding:10px 12px;display:flex;flex-direction:column;gap:6px;margin:6px 0 10px}
+.sum h4{margin:0;font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px}
+.kv span{color:var(--muted)}
+.kv b{font-variant-numeric:tabular-nums;font-weight:650;text-align:right}
+.iss{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.35;padding:7px 9px;border-radius:var(--r-xs);background:var(--danger-soft)}
+.iss::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--danger);flex:none;margin-top:5px}
+.iss.warn{background:var(--warn-soft)}
+.iss.warn::before{background:var(--warn)}
+.iss.info{background:var(--surface-3)}
+.iss.info::before{background:var(--info)}
+.iss.ok{background:var(--ok-soft)}
+.iss.ok::before{background:var(--ok)}
+
+/* ---------- main ---------- */
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;position:relative}
+.vtabs{display:flex;justify-content:center;padding:10px 12px 0;position:absolute;left:0;right:0;top:0;z-index:6;pointer-events:none}
+.vtabs .seg{pointer-events:auto;box-shadow:var(--shadow)}
+.stage{flex:1;position:relative;min-height:0;background:var(--scene-bg);overflow:hidden;touch-action:none}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none}
+.lbls{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;transform:translate(-50%,-50%);background:var(--surface);color:var(--ink);border:1.5px solid currentColor;border-radius:7px;padding:1px 7px;font-size:12px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;box-shadow:0 2px 8px rgba(0,0,0,.15);will-change:transform}
+.lbl em{font-style:normal;font-weight:600;opacity:.75;margin-right:4px}
+.lbl.L{color:var(--dimL)}.lbl.W{color:var(--dimW)}.lbl.T{color:var(--dimT)}
+.lbl.o{color:var(--ink);border-color:var(--line-2)}
+.lbl.pn{color:var(--muted);border-color:transparent;background:color-mix(in srgb,var(--surface) 85%,transparent);font-weight:600;font-size:11px;box-shadow:none}
+.float{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.tools{position:absolute;left:12px;bottom:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px;max-width:calc(100% - 24px)}
+.tools .sep{width:1px;height:24px;background:var(--line);margin:0 2px}
+.tools .tb{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;border-radius:var(--r-xs);min-height:32px;padding:0 10px;font-weight:600;font-size:13px;color:var(--ink)}
+.tools .tb:hover{background:var(--surface-3)}
+.tools .tb.on{background:var(--accent-soft);color:var(--ink);box-shadow:inset 0 0 0 1px var(--accent)}
+.tools .tb svg{width:17px;height:17px}
+.hint3d{position:absolute;left:12px;top:12px;max-width:min(300px,30%)!important;text-align:left!important;border-radius:12px!important;font-size:12px;color:var(--muted);background:color-mix(in srgb,var(--surface) 80%,transparent);padding:5px 10px;border-radius:999px;pointer-events:none;max-width:46%;text-align:right}
+.loading3d{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:600;pointer-events:none}
+.pcard{position:absolute;right:12px;top:60px;width:330px;max-height:calc(100% - 120px);overflow:auto;padding:14px 14px 12px;display:flex;flex-direction:column;gap:10px;z-index:5}
+.pc-h{display:flex;align-items:flex-start;gap:8px}
+.pc-h div{flex:1;min-width:0}
+.pc-h b{display:block;font-size:16px;line-height:1.25}
+.pc-h small{color:var(--muted);font-size:12px}
+.pc-cut{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.pc-cut .n{font-size:24px;font-weight:780;letter-spacing:-.01em}
+.pc-cut .n.L{color:var(--dimL)}.pc-cut .n.W{color:var(--dimW)}.pc-cut .n.T{color:var(--dimT)}
+.pc-cut .x{color:var(--faint);font-weight:600}
+.pc-cut .u{color:var(--muted);font-size:12px;margin-left:2px}
+.pc-tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.pc-f{font-size:12.5px;line-height:1.45;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-xs);padding:8px 10px;font-variant-numeric:tabular-nums}
+.pc-f div+div{margin-top:3px}
+.pc-f b{font-weight:700}
+.pc-n{font-size:12.5px;line-height:1.4;margin:0;padding-left:18px;color:var(--ink)}
+.pc-n li+li{margin-top:3px}
+.ovr{display:flex;gap:6px;align-items:flex-end}
+.ovr .fld{flex:1}
+.badge{display:inline-flex;align-items:center;font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:2px 7px;background:var(--warn-soft);color:var(--warn);vertical-align:middle}
+.badge.off{background:var(--surface-3);color:var(--muted)}
+
+/* ---------- kesim listesi / levha ---------- */
+.pane{flex:1;overflow:auto;padding:62px 18px 40px;min-height:0}
+.pane-in{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.ptool{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.ptool h2{margin:0;font-size:19px;margin-right:auto}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.mgrp{overflow:hidden}
+.mgrp-h{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.mgrp-h b{font-size:15px}
+.mgrp-h .chipx{width:16px;height:16px;border-radius:5px;border:1px solid var(--line-2);flex:none}
+.mgrp-h small{color:var(--muted);font-variant-numeric:tabular-nums}
+.tbl-w{overflow-x:auto}
+table.cl{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+table.cl th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface-2)}
+table.cl td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.cl tr:last-child td{border-bottom:0}
+table.cl tbody tr{cursor:pointer}
+table.cl tbody tr:hover td{background:var(--surface-2)}
+table.cl tbody tr.on td{background:var(--accent-soft)}
+table.cl td.num,table.cl th.num{text-align:right;white-space:nowrap}
+table.cl td.big{font-weight:780;font-size:15px}
+table.cl td.no{color:var(--muted);font-weight:700;width:36px}
+table.cl td .sub{display:block;color:var(--muted);font-size:11.5px;font-weight:500}
+table.cl td.off{opacity:.45;text-decoration:line-through}
+.bsvg{width:44px;height:26px;display:block}
+.bsvg rect{fill:var(--surface-3);stroke:var(--line-2)}
+.bsvg line{stroke:var(--accent);stroke-width:3.2;stroke-linecap:round}
+.btxt{font-size:11px;color:var(--muted);white-space:nowrap}
+.tot{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tot div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px}
+.tot span{display:block;font-size:11.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.tot b{font-size:20px;font-variant-numeric:tabular-nums}
+.sheets{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;padding:14px 16px 16px}
+.sheet{display:flex;flex-direction:column;gap:6px}
+.sheet-t{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.sheet-t b{color:var(--ink)}
+.sheet svg{width:100%;height:auto;display:block;border-radius:6px;background:var(--surface-3)}
+.sheet svg .pl{fill:color-mix(in srgb,var(--surface-3) 70%,var(--line-2))}
+.sheet svg .us{fill:url(#hatch)}
+.sheet svg .pt{fill:var(--surface);stroke:var(--ink);stroke-width:2.2;cursor:pointer}
+.sheet svg .pt:hover,.sheet svg .pt.on{fill:var(--accent-soft);stroke:var(--accent)}
+.sheet svg text{fill:var(--ink);font-family:var(--font);font-variant-numeric:tabular-nums;pointer-events:none}
+.sheet svg .gr{stroke:var(--muted);stroke-width:2;opacity:.5}
+.pnote{font-size:12.5px;color:var(--muted);margin:0}
+
+/* ---------- modal / menu / toast ---------- */
+dialog.modal{border:0;padding:0;border-radius:18px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow-lg);width:min(460px,calc(100vw - 28px));max-height:calc(100dvh - 40px)}
+dialog.modal.wide{width:min(760px,calc(100vw - 28px))}
+dialog.modal::backdrop{background:rgba(10,15,13,.42);backdrop-filter:blur(2px)}
+.mhead{display:flex;align-items:center;gap:8px;padding:18px 20px 6px}
+.mhead h3{margin:0;font-size:18px;flex:1}
+.mbody{padding:8px 20px;display:flex;flex-direction:column;gap:12px;overflow:auto;max-height:calc(100dvh - 190px)}
+.mbody p{margin:0;color:var(--muted)}
+.mfoot{display:flex;gap:8px;justify-content:flex-end;padding:12px 20px 18px;flex-wrap:wrap}
+.menu{position:fixed;z-index:120;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-lg);padding:6px;min-width:220px;display:flex;flex-direction:column}
+.menu button{display:flex;align-items:center;gap:10px;border:0;background:transparent;text-align:left;padding:9px 12px;border-radius:9px;font-weight:550}
+.menu button:hover{background:var(--surface-3)}
+.menu button svg{width:18px;height:18px;color:var(--muted)}
+.menu hr{border:0;border-top:1px solid var(--line);margin:5px 4px}
+.menu .mseg{padding:6px 8px}
+.menu .mseg .seg{display:flex}
+.menu .mseg .seg button{flex:1;padding:0 6px}
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,10px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:16px;font-weight:600;font-size:14px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:200;box-shadow:var(--shadow-lg);max-width:calc(100vw - 32px);text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.err{background:var(--danger);color:#fff}
+.presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.presets button{border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r-sm);padding:10px;display:flex;gap:10px;align-items:center;text-align:left}
+.presets button:hover{border-color:var(--accent);background:var(--accent-soft)}
+.presets svg{width:38px;height:44px;flex:none;color:var(--accent)}
+.presets b{display:block;font-size:13.5px}
+.presets small{color:var(--muted);font-size:11.5px;line-height:1.3;display:block}
+.jobs{display:flex;flex-direction:column;gap:6px}
+.job{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 8px 8px 12px}
+.job.on{border-color:var(--accent)}
+.job div{flex:1;min-width:0;cursor:pointer}
+.job b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.job small{color:var(--muted);font-size:12px}
+.help h4{margin:6px 0 2px;font-size:14px}
+.help p,.help li{font-size:13px;color:var(--ink);line-height:1.5}
+.help ul{margin:0;padding-left:18px}
+
+/* ---------- yazdırma ---------- */
+.print{display:none}
+@media print{
+  @page{size:A4;margin:12mm}
+  html,body{height:auto;background:#fff!important;color:#000}
+  .app,dialog,.menu,.toast{display:none!important}
+  .print{display:block;font:10.5pt/1.35 var(--font);color:#000}
+  .print h1{font-size:17pt;margin:0 0 2mm}
+  .print h2{font-size:12.5pt;margin:6mm 0 2mm;break-after:avoid}
+  .print .meta{color:#444;font-size:9.5pt;margin-bottom:4mm}
+  .print table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;margin-bottom:3mm}
+  .print th,.print td{border:0.3mm solid #999;padding:1.2mm 2mm;text-align:left;font-size:9.5pt}
+  .print th{background:#eee;font-size:8.5pt;text-transform:uppercase}
+  .print td.num,.print th.num{text-align:right}
+  .print td.big{font-weight:800;font-size:10.5pt}
+  .print tr{break-inside:avoid}
+  .print .psheets{display:grid;grid-template-columns:1fr 1fr;gap:5mm}
+  .print .psheet{break-inside:avoid;font-size:9pt}
+  .print .psheet svg{width:100%;height:auto;max-height:110mm;border:0.3mm solid #999}
+  .print .psheet svg .pl{fill:#ddd}.print .psheet svg .us{fill:#f2f2f2}.print .psheet svg .pt{fill:#fff;stroke:#000;stroke-width:2.5}
+  .print .psheet svg text{fill:#000;font-family:Arial,sans-serif}
+  .print .pbreak{break-before:page}
+  .print .bsvg{width:30px;height:18px}.print .bsvg rect{fill:#eee;stroke:#999}.print .bsvg line{stroke:#000;stroke-width:3.5}
+}
+
+/* ---------- mobil ---------- */
+@media (max-width:900px){
+  .app{grid-template-columns:1fr;grid-template-rows:var(--bar-h) auto minmax(0,1fr)}
+  .mtabs{display:flex;margin:8px 10px 0;grid-row:2}
+  .mtabs button{flex:1;padding:0 4px}
+  .side,.main{grid-row:3;grid-column:1}
+  .side{border-right:0;background:var(--bg)}
+  .app[data-m="form"] .main{display:none}
+  .app:not([data-m="form"]) .side{display:none}
+  .vtabs{display:none}
+  .pane{padding:12px 12px 40px}
+  .cabs,.form{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+  .grp{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:2px 12px;margin-bottom:8px}
+  .stage{margin-top:8px}
+  .pcard{left:10px;right:10px;top:auto;bottom:62px;width:auto;max-height:52%}
+  .hint3d{display:none}
+  .tools{left:8px;bottom:8px;right:8px;max-width:none;justify-content:center}
+  .jobname{max-width:30vw}
+  .hide-s{display:none!important}
+}
+@media (max-width:560px){
+  .bar{gap:2px;padding-left:max(6px,env(safe-area-inset-left));padding-right:max(6px,env(safe-area-inset-right))}
+  .logo{display:none}
+  .apptabs a{padding:6px 9px;font-size:12.5px}
+  #btnPrint span{display:none}
+  #btnPrint{padding:0 10px}
+  .jobname{max-width:24vw;padding:3px 4px}
+  .icon-btn{width:36px}
+}
+@media (max-width:400px){
+  .apptabs a:first-child{max-width:64px;overflow:hidden;text-overflow:ellipsis}
+  #btnRedo{display:none}
+}
+
+/* ---------- şeffaf tema ---------- */
+:root[data-glass]{
+  --bg:#0A1020;
+  --surface:rgba(255,255,255,.075); --surface-2:rgba(255,255,255,.11); --surface-3:rgba(255,255,255,.15);
+  --line:rgba(255,255,255,.13); --line-2:rgba(255,255,255,.22);
+  --ink:#F3F6FC; --muted:rgba(226,233,245,.72); --faint:rgba(226,233,245,.46);
+  --danger:#FF7A6B; --warn:#F5B95A; --ok:#4ADE9A;
+  --scene-bg:#0C1324;
+  --glass:linear-gradient(155deg,rgba(255,255,255,.14),rgba(255,255,255,.04) 60%);
+  --glass-tint:rgba(18,26,48,.42);
+  --glass-blur:blur(24px) saturate(170%);
+  --glass-edge:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 1px rgba(255,255,255,.04);
+  --shadow:0 10px 30px rgba(0,0,0,.28);
+  --shadow-lg:0 24px 60px rgba(0,0,0,.45);
+  --r:22px; --r-sm:14px; --r-xs:11px;
+}
+:root[data-glass] body{background:var(--bg)}
+:root[data-glass] body::before{content:"";position:fixed;inset:-10%;z-index:-1;pointer-events:none;background:
+  radial-gradient(38% 34% at 10% 6%,color-mix(in srgb,var(--accent) 40%,transparent),transparent 72%),
+  radial-gradient(42% 38% at 94% 14%,rgba(99,102,241,.40),transparent 72%),
+  radial-gradient(48% 42% at 80% 94%,rgba(217,70,239,.24),transparent 72%),
+  radial-gradient(44% 40% at 6% 90%,rgba(14,165,233,.28),transparent 72%),
+  linear-gradient(180deg,#0C1426,#090E1B)}
+:root[data-glass] .app{background:transparent}
+:root[data-glass] :is(.bar,.side,.float,.card,.menu,dialog.modal,.toast,.tot div){background:var(--glass),var(--glass-tint);border:1px solid var(--line);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);box-shadow:var(--shadow),var(--glass-edge)}
+:root[data-glass] .bar{margin:10px 10px 0;border-radius:22px}
+:root[data-glass] .side{margin:10px 0 10px 10px;border-radius:24px}
+:root[data-glass] .main{margin:10px;border-radius:24px;overflow:hidden}
+:root[data-glass] .stage{background:var(--scene-bg)}
+:root[data-glass] .btn{border-radius:999px;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+:root[data-glass] .btn:hover{background:rgba(255,255,255,.15)}
+:root[data-glass] .btn.primary{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 80%,#fff),var(--accent));border-color:color-mix(in srgb,var(--accent) 65%,#fff);color:var(--accent-ink);box-shadow:0 8px 22px color-mix(in srgb,var(--accent) 38%,transparent),inset 0 1px 0 rgba(255,255,255,.45)}
+:root[data-glass] .btn.ghost{background:transparent;border-color:transparent;box-shadow:none}
+:root[data-glass] .icon-btn{border-radius:50%;border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+:root[data-glass] .icon-btn:hover{background:rgba(255,255,255,.15)}
+:root[data-glass] :is(.seg,.apptabs){background:rgba(0,0,0,.24);border-radius:999px;box-shadow:inset 0 1px 2px rgba(0,0,0,.3),inset 0 0 0 1px rgba(255,255,255,.07)}
+:root[data-glass] .seg button{border-radius:999px}
+:root[data-glass] :is(.seg button,.apptabs a).on{background:rgba(255,255,255,.2);color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 4px 12px rgba(0,0,0,.25)}
+:root[data-glass] .chips button.on,:root[data-glass] .cab.on{background:color-mix(in srgb,var(--accent) 22%,transparent);border-color:color-mix(in srgb,var(--accent) 75%,#fff)}
+:root[data-glass] :is(.inp,.step,.chips button,.cab,.sec,.mat,.sum,.pc-f,.presets button,.job){background:rgba(255,255,255,.06)}
+:root[data-glass] .lbl{background:rgba(12,19,36,.86)}
+:root[data-glass] dialog.modal{background:var(--glass),rgba(16,24,44,.62);border-radius:26px}
+:root[data-glass] .menu{background:var(--glass),rgba(16,24,44,.6);border-radius:20px}
+:root[data-glass] .logo i{border-radius:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 65%,#fff),var(--accent) 55%,color-mix(in srgb,var(--accent) 55%,#7C3AED))}
+:root[data-glass] table.cl th{background:rgba(255,255,255,.06)}
+@media (max-width:900px){
+  :root[data-glass] .side{margin:0;border-radius:0;background:transparent;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+  :root[data-glass] .main{margin:8px 0 0;border-radius:0}
+  :root[data-glass] .grp{background:var(--glass),var(--glass-tint);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border-radius:22px}
+  :root[data-glass] .bar{margin:8px 8px 0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+@media (max-width:1100px){.hint3d{display:none}}
+
+</style>
+</head>
+<body>
+<div id="app" class="app" data-m="form">
+  <header class="bar">
+    <a class="logo" href="../" title="Ana sayfa"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M12 3v18M5 11h7"/><path d="M9.5 14v3M14.5 14v3" stroke-linecap="round"/></svg></i></a>
+    <nav class="apptabs" aria-label="Uygulamalar"><a href="../">Eczane Plan</a><a class="on" aria-current="page" href="./">Dolap Tasarımı</a></nav>
+    <button class="jobname" id="jobName" title="İşi yeniden adlandır"><b id="jobText">İş</b><small><i id="saveDot"></i><span id="saveText">Kaydedildi</span></small></button>
+    <div class="grow"></div>
+    <button class="icon-btn" id="btnUndo" title="Geri al (Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg></button>
+    <button class="icon-btn" id="btnRedo" title="Yinele (Ctrl+Y)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 000 11H13"/></svg></button>
+    <button class="btn hide-s" id="btnJobs" title="Kayıtlı işler"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><span>İşler</span></button>
+    <button class="btn primary" id="btnPrint" title="Kesim listesini yazdır / PDF kaydet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></svg><span>Yazdır</span></button>
+    <button class="icon-btn" id="btnMenu" title="Menü"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+  </header>
+
+  <nav class="mtabs seg" id="mtabs">
+    <button data-v="form" class="on">Ölçüler</button>
+    <button data-v="3d">3B</button>
+    <button data-v="cut">Kesim</button>
+    <button data-v="nest">Levha</button>
+  </nav>
+
+  <aside class="side" id="side">
+    <div class="cabs" id="cabs"></div>
+    <div class="form" id="form"></div>
+  </aside>
+
+  <main class="main" id="main">
+    <div class="vtabs"><div class="seg" id="viewSeg">
+      <button data-v="3d" class="on">3B görünüm</button>
+      <button data-v="cut">Kesim listesi</button>
+      <button data-v="nest">Levha planı</button>
+    </div></div>
+    <section class="stage" id="v3d">
+      <canvas id="cv"></canvas>
+      <div class="lbls" id="lbls"></div>
+      <div class="tools float" id="tools3d"></div>
+      <div class="pcard float" id="pcard" hidden></div>
+      <div class="hint3d" id="hint3d">Sürükle: döndür · Tekerlek / iki parmak: yakınlaş · Sağ tık / iki parmak: kaydır · <b>Parçaya dokun: ölçüleri gör</b></div>
+      <div class="loading3d" id="load3d">3B hazırlanıyor…</div>
+    </section>
+    <section class="pane" id="vcut" hidden></section>
+    <section class="pane" id="vnest" hidden></section>
+  </main>
+</div>
+
+<div id="print" class="print"></div>
+<dialog id="modal" class="modal"></dialog>
+<div id="menu" class="menu" hidden></div>
+<div id="toast" class="toast"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   Dolap Tasarımı — bağımsız uygulama (ana eczane planından ayrı)
+   Tüm ölçüler milimetre (mm). Koordinat: x sağa (genişlik), y yukarı
+   (yükseklik), z öne (derinlik); dolabın sol-arka-alt köşesi (0,0,0).
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  if (attrs) for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'style') el.style.cssText = v;
+    else if (k === 'html') el.innerHTML = v;
+    else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
+    else if (k in el && typeof v !== 'string' && k !== 'list') el[k] = v;
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of kids.flat(9)) if (c != null && c !== false) el.append(c.nodeType ? c : String(c));
+  return el;
+}
+const SVGNS = 'http://www.w3.org/2000/svg';
+function sv(tag, attrs, ...kids) {
+  const el = document.createElementNS(SVGNS, tag);
+  if (attrs) for (const [k, v] of Object.entries(attrs)) if (v != null && v !== false) el.setAttribute(k, v);
+  for (const c of kids.flat(9)) if (c != null && c !== false) el.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return el;
+}
+const icon = (d, sw = 1.9) => { const s = sv('svg', {viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': sw, 'stroke-linecap': 'round', 'stroke-linejoin': 'round'}); s.innerHTML = d; return s; };
+const IC = {
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  down: '<path d="M12 4v12m0 0l-5-5m5 5l5-5"/><path d="M4 20h16"/>',
+  up: '<path d="M12 16V4m0 0L7 9m5-5l5 5"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/>',
+  table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/>',
+  print: '<path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-1 .6-1.5 1.1-1.5 2.2M12 17h.01"/>',
+  folder: '<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>',
+  file: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  door: '<rect x="6" y="3" width="12" height="18" rx="1"/><path d="M14.5 12h.01"/>',
+  explode: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><rect x="9" y="9" width="6" height="6" rx="1"/>',
+  ruler: '<path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/>',
+  cube: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>',
+  eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  front: '<rect x="5" y="4" width="14" height="16" rx="1"/>',
+  side: '<path d="M8 4h8l3 3v13H8z"/>',
+  top: '<rect x="4" y="7" width="16" height="10" rx="1"/><path d="M4 7l3-3h10l3 3"/>',
+  focus: '<circle cx="12" cy="12" r="3"/><path d="M3 8V5a2 2 0 012-2h3M16 3h3a2 2 0 012 2v3M21 16v3a2 2 0 01-2 2h-3M8 21H5a2 2 0 01-2-2v-3"/>',
+};
+
+const uid = () => Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const r1 = v => Math.round(v * 10) / 10;
+const clone = o => JSON.parse(JSON.stringify(o));
+/* mm yazımı: ondalık virgül, binlik ayırıcı yok (2800 → "2800", 559.2 → "559,2") */
+function fmt(v, d = 1) {
+  if (v == null || !isFinite(v)) return '–';
+  const x = Math.round(v * 10 ** d) / 10 ** d;
+  return x.toLocaleString('tr-TR', {maximumFractionDigits: d, useGrouping: false});
+}
+const fmt2 = v => fmt(v, 2);
+/* Girdi: "600", "559,5", "600-18*2" gibi basit hesaplar da kabul edilir */
+function evalNum(s) {
+  if (typeof s === 'number') return s;
+  s = String(s || '').trim().replace(/\s+/g, '').replace(/,/g, '.').replace(/[x×]/g, '*').replace(/−/g, '-');
+  if (!s) return NaN;
+  if (!/^[0-9+\-*/().]+$/.test(s)) return NaN;
+  try { const v = Function('"use strict";return(' + s + ')')(); return typeof v === 'number' && isFinite(v) ? v : NaN; } catch (e) { return NaN; }
+}
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+function toast(msg, kind) {
+  const t = $('#toast'); t.textContent = msg; t.className = 'toast show' + (kind === 'err' ? ' err' : '');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), kind === 'err' ? 4200 : 2400);
+}
+function download(name, data, type = 'text/plain') {
+  const blob = data instanceof Blob ? data : new Blob([data], {type});
+  const a = h('a', {href: URL.createObjectURL(blob), download: name}); document.body.append(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+const fileSafe = s => String(s || 'dolap').replace(/[\\/:*?"<>|]+/g, '-').trim().slice(0, 60) || 'dolap';
+
+/* ---------- modal ---------- */
+const Modal = {
+  open({title, body, actions = [], wide = false, onClose}) {
+    const d = $('#modal'); d.className = 'modal' + (wide ? ' wide' : ''); d.innerHTML = '';
+    return new Promise(res => {
+      let done = false;
+      const close = v => { if (done) return; done = true; d.close(); onClose && onClose(v); res(v); };
+      const head = h('div', {class: 'mhead'}, h('h3', null, title), h('button', {class: 'icon-btn sm', type: 'button', 'aria-label': 'Kapat', onclick: () => close(null)}, icon(IC.x)));
+      const b = h('div', {class: 'mbody'}, body);
+      const foot = actions.length ? h('div', {class: 'mfoot'}, actions.map(a => h('button', {type: 'button', class: 'btn' + (a.primary ? ' primary' : '') + (a.danger ? ' danger' : ''), onclick: () => { const v = a.value !== undefined ? a.value : a.onClick ? a.onClick() : true; if (v !== false) close(v); }}, a.t))) : null;
+      d.append(head, b, foot || '');
+      d.onclose = () => close(null);
+      d.onclick = e => { if (e.target === d) close(null); };
+      d.showModal();
+      const f = d.querySelector('input,select'); if (f) setTimeout(() => { f.focus(); f.select && f.select(); }, 30);
+      Modal.close = close;
+    });
+  },
+  close() {},
+  confirm(text, okText = 'Tamam', danger = false) { return Modal.open({title: 'Emin misin?', body: h('p', null, text), actions: [{t: 'Vazgeç', value: false}, {t: okText, primary: !danger, danger, value: true}]}); },
+  prompt(title, value = '', label = '') {
+    const inp = h('input', {class: 'inp txt', value, maxlength: 80, onkeydown: e => { if (e.key === 'Enter') { e.preventDefault(); Modal.close(inp.value.trim()); } }});
+    return Modal.open({title, body: h('label', {class: 'fld'}, label && h('span', null, label), inp), actions: [{t: 'Vazgeç', value: null}, {t: 'Kaydet', primary: true, onClick: () => inp.value.trim()}]});
+  },
+};
+
+/* ---------- açılır menü ---------- */
+const Menu = {
+  show(anchor, items) {
+    const m = $('#menu'); m.innerHTML = '';
+    for (const it of items) {
+      if (it === '-') { m.append(h('hr')); continue; }
+      if (it.el) { m.append(it.el); continue; }
+      m.append(h('button', {type: 'button', onclick: () => { Menu.hide(); it.fn(); }}, it.ic ? icon(it.ic) : null, it.t));
+    }
+    m.hidden = false;
+    const r = anchor.getBoundingClientRect(), mw = m.offsetWidth, mh = m.offsetHeight;
+    m.style.left = clamp(r.right - mw, 8, innerWidth - mw - 8) + 'px';
+    m.style.top = (r.bottom + 6 + mh > innerHeight ? Math.max(8, r.top - mh - 6) : r.bottom + 6) + 'px';
+    setTimeout(() => document.addEventListener('pointerdown', Menu._out = e => { if (!m.contains(e.target)) Menu.hide(); }, {once: false}), 0);
+  },
+  hide() { $('#menu').hidden = true; if (Menu._out) document.removeEventListener('pointerdown', Menu._out); Menu._out = null; },
+};
+
+/* =====================================================================
+   Veri modeli: iş (job) → dolaplar (cabinet) → bölmeler (section)
+   ===================================================================== */
+const FINISHES = {
+  beyaz: ['Beyaz', '#F2F1EC'], krem: ['Krem', '#E9DFCB'], gri: ['Açık gri', '#C8CCCB'], tas: ['Taş gri', '#9A9C97'],
+  antrasit: ['Antrasit', '#41464B'], siyah: ['Siyah', '#232528'], mese: ['Meşe', '#C49A6C'], kayin: ['Kayın', '#D8B48C'],
+  ceviz: ['Ceviz', '#7B5539'], yesil: ['Adaçayı', '#8FA58C'], mavi: ['Gece mavisi', '#33475E'], arka: ['Arkalık (ham)', '#DCD3C2'],
+};
+const MAT_KEYS = ['body', 'back', 'front', 'drawer'];
+const MAT_NAMES = {body: 'Gövde', back: 'Arkalık / çekmece tabanı', front: 'Kapak ve çekmece önü', drawer: 'Çekmece kutusu'};
+const DEF_MATS = () => ({
+  body: {label: 'MDF Lam Beyaz', color: 'beyaz', L: 2800, W: 2100, grain: false},
+  back: {label: 'Arkalık MDF', color: 'arka', L: 2800, W: 2100, grain: false},
+  front: {label: 'MDF Lam Meşe', color: 'mese', L: 2800, W: 2100, grain: true},
+  drawer: {label: 'MDF Lam Beyaz', color: 'beyaz', L: 2800, W: 2100, grain: false},
+});
+
+const SEC_DEF = {w: 0, shelves: 1, shelfType: 'adj', drawers: 0, drawerH: 0, hanger: false, door: 'auto', hinge: 'L'};
+const S = o => Object.assign({}, SEC_DEF, o);
+/* Bölmeden bağımsız tüm yapı ayarları (dolaplar arası "ayarları uygula" bunları kopyalar) */
+const CAB_DEF = {
+  name: 'Dolap', qty: 1, W: 600, H: 820, D: 560,
+  t: 18,                 // gövde kalınlığı
+  build: 'sides',        // sides: yanlar tam boy · top: üst tabla yanların üstünde · over: alt+üst tabla tam
+  top: 'panel',          // panel: üst tabla · rails: ön/arka kuşak · none: üst yok
+  railW: 100,            // kuşak eni
+  base: 'legs',          // none · legs: ayak + klipsli baza · plinth: yanlar yere iner · frame: baza kasası · wall: duvara asma
+  baseH: 100, plinthSet: 40,
+  back: 'groove',        // groove: kanallı · nailed: arkadan çakma · inset: gömme (tam kalınlık) · none
+  backT: 8, grooveD: 8, grooveO: 15, backTol: 1,
+  overlay: 'full',       // full: tam bindirme · half: yarım bindirme · inset: gömme kapak
+  frontT: 18, gap: 3, edge: 1.5,
+  shelfGap: 1, shelfSet: 20,
+  drawerT: 18, railGap: 13, railType: 'ball',
+  bandBody: 0.8, bandFront: 1, bandDrawer: 0.8, deduct: true,
+};
+const STRUCT_KEYS = Object.keys(CAB_DEF).filter(k => !['name', 'qty', 'W', 'H', 'D'].includes(k));
+
+const PRESETS = [
+  {k: 'base', n: 'Alt dolap', d: 'Mutfak; ayak + baza, kuşaklı, 1 raf', o: {W: 600, H: 820, D: 560, base: 'legs', baseH: 100, top: 'rails', sections: [S({shelves: 1})]}},
+  {k: 'drawers', n: 'Çekmeceli alt dolap', d: '3 eşit çekmece, ayaklı', o: {W: 600, H: 820, D: 560, base: 'legs', baseH: 100, top: 'rails', sections: [S({shelves: 0, drawers: 3})]}},
+  {k: 'sink', n: 'Evye alt dolabı', d: 'Çift kapak, rafsız, kuşaklı', o: {W: 800, H: 820, D: 560, base: 'legs', baseH: 100, top: 'rails', sections: [S({shelves: 0, door: '2'})]}},
+  {k: 'wall', n: 'Üst dolap', d: 'Duvara asma, 1 raf', o: {W: 800, H: 720, D: 320, base: 'wall', top: 'panel', sections: [S({shelves: 1})]}},
+  {k: 'tall', n: 'Boy dolabı (kiler)', d: 'Ayaklı, 4 raf, tek kapak', o: {W: 600, H: 2100, D: 560, base: 'legs', baseH: 100, top: 'panel', sections: [S({shelves: 4, door: '1'})]}},
+  {k: 'wardrobe', n: 'Gardırop', d: 'Askı + raflı/çekmeceli bölme', o: {W: 1000, H: 2200, D: 580, base: 'plinth', baseH: 80, top: 'panel', sections: [S({shelves: 1, hanger: true, hinge: 'L'}), S({shelves: 4, drawers: 2, drawerH: 180, hinge: 'R'})]}},
+  {k: 'chest', n: 'Şifonyer / komodin', d: '4 çekmece, bazalı', o: {W: 800, H: 850, D: 450, base: 'plinth', baseH: 60, top: 'panel', build: 'top', sections: [S({shelves: 0, drawers: 4})]}},
+  {k: 'book', n: 'Kitaplık / açık raf', d: 'Kapaksız, 4 raf', o: {W: 800, H: 2000, D: 320, base: 'plinth', baseH: 60, top: 'panel', sections: [S({shelves: 4, door: 'none'})]}},
+  {k: 'pharmacy', n: 'Eczane raf dolabı', d: 'İki bölmeli açık raf, sabit raflı', o: {W: 1000, H: 2100, D: 400, base: 'plinth', baseH: 100, top: 'panel', sections: [S({shelves: 6, shelfType: 'fixed', door: 'none'}), S({shelves: 6, shelfType: 'fixed', door: 'none'})]}},
+  {k: 'blank', n: 'Boş gövde', d: 'Sadece kasa, raf ve kapak yok', o: {W: 600, H: 720, D: 560, base: 'none', top: 'panel', sections: [S({shelves: 0, door: 'none'})]}},
+];
+
+function newCab(key = 'base', job) {
+  const p = PRESETS.find(x => x.k === key) || PRESETS[0];
+  const c = Object.assign(clone(CAB_DEF), {id: uid(), sections: [S()], over: {}}, clone(p.o));
+  c.name = p.n;
+  if (job) { const same = job.cabs.filter(x => x.name.startsWith(p.n)).length; if (same) c.name = `${p.n} ${same + 1}`; }
+  return c;
+}
+function normalizeCab(c) {
+  c = Object.assign(clone(CAB_DEF), c || {});
+  if (!c.id) c.id = uid();
+  for (const k of Object.keys(CAB_DEF)) if (typeof CAB_DEF[k] === 'number') { const v = Number(c[k]); c[k] = isFinite(v) ? v : CAB_DEF[k]; }
+  c.qty = Math.max(1, Math.round(c.qty));
+  if (!Array.isArray(c.sections) || !c.sections.length) c.sections = [S()];
+  c.sections = c.sections.slice(0, 12).map(s => { const o = Object.assign({}, SEC_DEF, s); for (const k of ['w', 'shelves', 'drawers', 'drawerH']) o[k] = Math.max(0, Number(o[k]) || 0); o.shelves = Math.min(30, Math.round(o.shelves)); o.drawers = Math.min(12, Math.round(o.drawers)); o.hanger = !!o.hanger; return o; });
+  if (!c.over || typeof c.over !== 'object') c.over = {};
+  c.deduct = c.deduct !== false;
+  return c;
+}
+function newJob(name = 'Yeni iş') {
+  const j = {id: uid(), name, created: Date.now(), updated: Date.now(), mats: DEF_MATS(), kerf: 4, trim: 10, cabs: [], cur: null};
+  const c = newCab('base', j); j.cabs.push(c); j.cur = c.id;
+  return j;
+}
+function normalizeJob(j) {
+  j = Object.assign({id: uid(), name: 'İş', created: Date.now(), updated: Date.now(), kerf: 4, trim: 10}, j || {});
+  const dm = DEF_MATS(); j.mats = j.mats || {};
+  for (const k of MAT_KEYS) { j.mats[k] = Object.assign({}, dm[k], j.mats[k] || {}); for (const q of ['L', 'W']) j.mats[k][q] = Number(j.mats[k][q]) || dm[k][q]; j.mats[k].grain = !!j.mats[k].grain; }
+  j.kerf = Math.max(0, Number(j.kerf) || 0); j.trim = Math.max(0, Number(j.trim) || 0);
+  j.cabs = (Array.isArray(j.cabs) ? j.cabs : []).map(normalizeCab);
+  if (!j.cabs.length) j.cabs.push(newCab('base'));
+  if (!j.cabs.some(c => c.id === j.cur)) j.cur = j.cabs[0].id;
+  return j;
+}
+
+/* ---------- kayıt (yalnız bu cihaz) ---------- */
+const Store = {
+  K: 'dolap.v1.',
+  get(k, d) { try { const v = localStorage.getItem(this.K + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(this.K + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+  del(k) { try { localStorage.removeItem(this.K + k); } catch (e) {} },
+  list() { const l = this.get('index', []); return Array.isArray(l) ? l.sort((a, b) => b.updated - a.updated) : []; },
+  load(id) { const j = this.get('job.' + id, null); return j ? normalizeJob(j) : null; },
+  save(j) {
+    j.updated = Date.now();
+    if (!this.set('job.' + j.id, j)) return false;
+    const l = this.list().filter(x => x.id !== j.id);
+    l.push({id: j.id, name: j.name, updated: j.updated, n: j.cabs.reduce((a, c) => a + c.qty, 0), k: j.cabs.length});
+    this.set('index', l); this.set('last', j.id);
+    return true;
+  },
+  remove(id) { this.del('job.' + id); this.set('index', this.list().filter(x => x.id !== id)); },
+};
+const Settings = {
+  v: null,
+  load() { this.v = Object.assign({mode: null, open: {dims: 1, body: 1, secs: 1}, view: '3d', scope: 'job'}, Store.get('settings', {})); if (!this.v.mode) { try { this.v.mode = JSON.parse(localStorage.getItem('eczplan.v2.settings') || '{}').mode || 'auto'; } catch (e) { this.v.mode = 'auto'; } } },
+  set(k, v) { this.v[k] = v; Store.set('settings', this.v); },
+};
+
+/* =====================================================================
+   Hesap motoru: dolap ölçüleri → parçalar (3B konum + kesim ölçüsü)
+   Her parçanın boy/en/kalınlığı 3B kutusundan türetilir; böylece 3B
+   görüntü ile kesim listesi her zaman birebir aynıdır.
+   Boy (L) = desen / su yönü; En (W); Kalınlık (T).
+   ===================================================================== */
+const RAILS = [250, 270, 300, 350, 400, 450, 500, 550, 600, 650, 700];
+const hingeCount = h => h <= 900 ? 2 : h <= 1500 ? 3 : h <= 2000 ? 4 : 5;
+const hingeAt = (h, n) => n < 2 ? [h / 2] : Array.from({length: n}, (_, i) => 100 + (h - 200) * i / (n - 1));
+const HINGE_TYPE = {full: 'Düz menteşe (tam bindirme)', half: 'Yarım bükük menteşe (yarım bindirme)', inset: 'Tam bükük menteşe (gömme kapak)'};
+const RAIL_TYPE = {ball: 'Bilyalı teleskopik ray', roller: 'Makaralı ray', hidden: 'Gizli ray (frenli)'};
+const KIND_ORDER = ['side', 'top', 'bottom', 'rail', 'divider', 'sep', 'shelf', 'back', 'plinth', 'door', 'dfront', 'dside', 'dfb', 'dbottom'];
+const AXI = {x: 0, y: 1, z: 2};
+
+/* Formül: [[değer, 'açıklama', işaret], ...] → {v, s}; değeri sıfır olan ek terimler yazılmaz */
+function fx(terms) {
+  const ts = terms.filter((q, i) => !i || Math.abs(q[0]) > 1e-9);
+  let v = 0, s = '';
+  ts.forEach(([x, tx, sg], i) => { const neg = i && sg < 0; v += neg ? -x : x; s += (i ? (neg ? ' − ' : ' + ') : '') + fmt(x) + (tx ? ' ' + tx : ''); });
+  return {v, s: ts.length > 1 ? `${s} = ${fmt(v)}` : s};
+}
+
+function calcCab(c) {
+  const R = {parts: [], hw: [], warn: [], sum: [], secs: [], extras: [], check: [], ok: false, dims: null};
+  const P = R.parts, warn = (lvl, t) => R.warn.push({lvl, t});
+  const {W, H, D, t} = c, bt = c.backT, tf = c.frontT, dt = c.drawerT, g = c.gap, e = c.edge;
+  const bb = c.bandBody, bf = c.bandFront, bd = c.bandDrawer;
+  if (!(W >= 100 && H >= 100 && D >= 100)) { warn('err', 'Genişlik, yükseklik ve derinlik en az 100 mm olmalı.'); return R; }
+  if (W > 6000 || H > 4000 || D > 1500) { warn('err', 'Ölçüler çok büyük görünüyor (mm girildiğinden emin ol).'); return R; }
+  if (!(t >= 5 && t <= 50 && 3 * t < Math.min(W, H))) { warn('err', 'Gövde kalınlığı geçersiz.'); return R; }
+  const hw = (k, n, q, note = '') => { if (q > 0) R.hw.push({k, n, q, note}); };
+  const add = o => {
+    const b = o.box, ext = [b[3] - b[0], b[4] - b[1], b[5] - b[2]];
+    const p = Object.assign({mat: 'body', bandL: [0, 0], bandW: [0, 0], notes: [], sub: ''}, o);
+    p.L = ext[AXI[o.ax[0]]]; p.Wd = ext[AXI[o.ax[1]]]; p.T = ext[AXI[o.ax[2]]];
+    P.push(p); return p;
+  };
+
+  /* ---- taban / gövde yüksekliği ---- */
+  let base = c.base; const botOver = c.build === 'over';
+  if (base === 'plinth' && botOver) { base = 'frame'; warn('info', 'Alt tabla yanların altında olduğu için yanlar yere inemez; baza, ayrı baza kasası olarak hesaplandı.'); }
+  const raised = base === 'legs' || base === 'frame';
+  const bH = base === 'none' || base === 'wall' ? 0 : c.baseH;
+  if (bH && (bH < 20 || bH > H - 3 * t - 60)) { warn('err', 'Baza / ayak yüksekliği dolap yüksekliğine göre geçersiz.'); return R; }
+  const y0c = raised ? bH : 0, Hc = H - y0c, yTop1 = H;
+  const hasTop = c.top !== 'none', topOver = hasTop && (c.build === 'top' || botOver);
+  const nailed = c.back === 'nailed', zb0 = nailed ? bt : 0, Dc = D - zb0;
+  const go = c.grooveO, gd = c.grooveD, tol = c.backTol;
+  const Di = c.back === 'groove' ? D - go - bt : c.back === 'none' ? D : D - bt, zi0 = D - Di;
+  const botY0 = base === 'plinth' ? bH : y0c, yb = botY0 + t, yt = hasTop ? yTop1 - t : yTop1;
+  const sideH = Hc - (topOver ? t : 0) - (botOver ? t : 0), sideY0 = y0c + (botOver ? t : 0);
+  const Wi = W - 2 * t, Hi = yt - yb;
+  if (Wi < 60 || Hi < 60 || Di < 60) { warn('err', 'İç hacim çok küçük; ölçüleri ve kalınlıkları kontrol et.'); return R; }
+  if (c.back === 'groove' && (gd >= t * .75 || go + bt >= D / 3)) warn('warn', `Arkalık kanalı (${fmt(gd)} mm derin, arkadan ${fmt(go)} mm) gövde kalınlığına / derinliğe göre fazla.`);
+  const inset = c.overlay === 'inset', half = c.overlay === 'half';
+
+  /* ---- yan dikmeler ---- */
+  const baseTx = base === 'legs' ? '(ayak)' : '(baza kasası)';
+  const fSide = fx([[H, '(yükseklik)'], [y0c, baseTx, -1], [topOver ? t : 0, '(üst tabla)', -1], [botOver ? t : 0, '(alt tabla)', -1]]);
+  const fDc = fx([[D, '(derinlik)'], [zb0, '(çakma arkalık)', -1]]);
+  const grooveNote = c.back === 'groove' ? `Arkalık kanalı: arka kenardan ${fmt(go)} mm içeride, ${fmt(bt + .5)} mm genişlik, ${fmt(gd)} mm derinlik.` : null;
+  for (const [sd, nm] of [['L', 'sol'], ['R', 'sağ']]) {
+    const x0 = sd === 'L' ? 0 : W - t;
+    add({id: 'side-' + sd, name: 'Yan dikme', sub: nm, kind: 'side', box: [x0, sideY0, zb0, x0 + t, sideY0 + sideH, D], ax: 'yzx', bandL: [bb, 0], fL: fSide.s, fW: fDc.s, notes: [grooveNote, base === 'plinth' ? `Alt tabla yerden ${fmt(bH)} mm yukarıda (baza boşluğu); ön baza ${fmt(c.plinthSet)} mm içeride.` : null].filter(Boolean)});
+  }
+  /* ---- üst ---- */
+  const fTop = topOver ? fx([[W, '(genişlik)']]) : fx([[W, '(genişlik)'], [2 * t, '(2 yan)', -1]]);
+  const tx0 = topOver ? 0 : t, tx1 = topOver ? W : W - t;
+  if (c.top === 'panel') add({id: 'top', name: 'Üst tabla', kind: 'top', box: [tx0, yTop1 - t, zb0, tx1, yTop1, D], ax: 'xzy', bandL: [bb, 0], fL: fTop.s, fW: fDc.s, notes: [grooveNote].filter(Boolean)});
+  else if (c.top === 'rails') {
+    const rw = Math.min(c.railW, Dc / 2);
+    add({id: 'rail-f', name: 'Ön kuşak', kind: 'rail', box: [tx0, yTop1 - t, D - rw, tx1, yTop1, D], ax: 'xzy', bandL: [bb, 0], fL: fTop.s, fW: `${fmt(rw)} (kuşak eni)`});
+    add({id: 'rail-b', name: 'Arka kuşak', kind: 'rail', box: [tx0, yTop1 - t, zb0, tx1, yTop1, zb0 + rw], ax: 'xzy', fL: fTop.s, fW: `${fmt(rw)} (kuşak eni)`, notes: [c.back === 'groove' ? 'Arkalık kanalı arka kuşakta da açılır.' : null].filter(Boolean)});
+  }
+  /* ---- alt tabla ---- */
+  const fBot = botOver ? fx([[W, '(genişlik)']]) : fx([[W, '(genişlik)'], [2 * t, '(2 yan)', -1]]);
+  add({id: 'bottom', name: 'Alt tabla', kind: 'bottom', box: [botOver ? 0 : t, botY0, zb0, botOver ? W : W - t, botY0 + t, D], ax: 'xzy', bandL: [bb, 0], fL: fBot.s, fW: fDc.s, notes: [grooveNote].filter(Boolean)});
+
+  /* ---- arkalık ---- */
+  if (c.back === 'groove') {
+    const y1 = hasTop ? yt + gd - tol : yt - tol;
+    add({id: 'back', name: 'Arkalık', kind: 'back', mat: 'back', box: [t - gd + tol, yb - gd + tol, go, W - t + gd - tol, y1, go + bt], ax: 'yxz',
+      fL: fx([[Hi, '(iç yükseklik)'], [gd, '(alt kanal)'], [hasTop ? gd : 0, '(üst kanal)'], [hasTop ? 2 * tol : tol, '(boşluk payı)', -1]]).s,
+      fW: fx([[Wi, '(iç genişlik)'], [2 * gd, '(2 yan kanal)'], [2 * tol, '(boşluk payı)', -1]]).s,
+      notes: [`Yanların, alt tablanın${hasTop ? ' ve üstün' : ''} kanalına geçer (kanal ${fmt(gd)} mm, arka kenardan ${fmt(go)} mm).`]});
+  } else if (nailed) {
+    const y0 = (base === 'plinth' ? botY0 : y0c) + tol;
+    add({id: 'back', name: 'Arkalık', kind: 'back', mat: 'back', box: [tol, y0, 0, W - tol, yTop1 - tol, bt], ax: 'yxz',
+      fL: fx([[H, '(yükseklik)'], [base === 'plinth' ? bH : y0c, base === 'plinth' ? '(baza boşluğu)' : baseTx, -1], [2 * tol, '(kenar payı)', -1]]).s,
+      fW: fx([[W, '(genişlik)'], [2 * tol, '(kenar payı)', -1]]).s,
+      notes: ['Gövdenin arkasına çakılır / vidalanır; gövde parçalarının derinliği arkalık kalınlığı kadar azdır.']});
+  } else if (c.back === 'inset') {
+    add({id: 'back', name: 'Arkalık (gömme)', kind: 'back', mat: 'back', box: [t, yb, 0, W - t, yt, bt], ax: 'yxz', fL: fx([[Hi, '(iç yükseklik)']]).s, fW: fx([[Wi, '(iç genişlik)']]).s, notes: ['Yanların ve tablaların arasına, arka kenarla aynı hizada oturur.']});
+  }
+
+  /* ---- bölmeler ---- */
+  const secs = c.sections, n = secs.length, avail = Wi - (n - 1) * t;
+  let fixedSum = 0, autoN = 0;
+  for (const s of secs) { if (s.w > 0) fixedSum += s.w; else autoN++; }
+  const autoW = autoN ? (avail - fixedSum) / autoN : 0;
+  const widths = secs.map(s => s.w > 0 ? s.w : autoW);
+  if (!autoN && Math.abs(fixedSum - avail) > .05) { warn('warn', `Bölme genişlikleri toplamı (${fmt(fixedSum)}) kullanılabilir iç genişliğe (${fmt(avail)}) eşit değil; son bölme ${fmt(widths[n - 1] + avail - fixedSum)} mm yapıldı.`); widths[n - 1] += avail - fixedSum; }
+  if (widths.some(w => w < 60)) { warn('err', `Bölme çok dar (${widths.map(fmt).join(' / ')} mm). Bölme sayısını azalt ya da genişlikleri düzelt.`); return R; }
+
+  const FY0 = inset ? yb : botY0, FY1 = inset ? yt : yTop1;
+  const cnt = {hinge: 0, pin: 0, handle: 0, rails: [], rods: [], hingeType: HINGE_TYPE[c.overlay] || HINGE_TYPE.full};
+  const maxRail = Di - (inset ? tf : 0) - 10, railLen = RAILS.filter(r => r <= maxRail).pop() || 0;
+  let x = t;
+  for (let i = 0; i < n; i++) {
+    const s = secs[i], sw = widths[i], sx = x, first = i === 0, last = i === n - 1, tag = n > 1 ? `B${i + 1}` : '';
+    const SI = {i, sx, sw, shelves: 0, drawers: 0, doors: 0};
+    R.secs.push(SI);
+    x += sw;
+    if (!last) {
+      add({id: `div-${i + 1}`, name: 'Ara dikme', sub: n > 2 ? `${i + 1}. ara` : '', kind: 'divider', box: [x, yb, zi0, x + t, yt, D], ax: 'yzx', bandL: [bb, 0],
+        fL: fx([[Hi, '(iç yükseklik)']]).s, fW: fx([[Di, '(iç derinlik)']]).s, notes: [`Soldan ${fmt(x)} mm (iç yüzden ${fmt(x - t)} mm).`]});
+      x += t;
+    }
+    /* ön (kapak/çekmece) yatay sınırları */
+    let fx0, fx1;
+    if (inset) { fx0 = sx + e; fx1 = sx + sw - e; }
+    else { fx0 = first ? (half ? t / 2 + g / 2 : e) : sx - t / 2 + g / 2; fx1 = last ? (half ? W - t / 2 - g / 2 : W - e) : sx + sw + t / 2 - g / 2; }
+    const frontW = fx1 - fx0;
+    let yLo = yb, yHi = yt, dy0 = FY0 + e, doorsOn = true;
+    /* çekmeceler */
+    const nd = s.drawers;
+    if (nd > 0) {
+      const auto = !(s.drawerH > 0);
+      const fh = auto ? (FY1 - FY0 - 2 * e - (nd - 1) * g) / nd : s.drawerH;
+      const fronts = Array.from({length: nd}, (_, k) => FY0 + e + k * (fh + g));
+      const zoneTop = FY0 + e + nd * fh + (nd - 1) * g;
+      let sepY0 = null;
+      if (auto) doorsOn = false;
+      else if (zoneTop > FY1 - e - 80) { warn('err', `${tag || 'Bölme'}: ${nd} × ${fmt(fh)} mm çekmece bölme yüksekliğine sığmıyor.`); doorsOn = false; }
+      else {
+        sepY0 = inset ? zoneTop + e : zoneTop + g / 2 - t / 2;
+        add({id: `sep-${i}`, name: 'Ara tabla', sub: 'çekmece üstü', kind: 'sep', box: [sx, sepY0, zi0, sx + sw, sepY0 + t, D], ax: 'xzy', bandL: [bb, 0], fL: fx([[sw, '(bölme iç genişliği)']]).s, fW: fx([[Di, '(iç derinlik)']]).s, notes: [`Alt tablanın üst yüzünden ${fmt(sepY0 - yb)} mm yukarıda (sabit, minifix ile).`]});
+        yLo = sepY0 + t; dy0 = inset ? yLo + e : zoneTop + g;
+      }
+      if (fh < 80) warn('warn', `${tag || 'Bölme'}: çekmece önü ${fmt(fh)} mm — çok alçak.`);
+      if (!railLen) warn('err', `İç derinlik (${fmt(Di)} mm) çekmece rayı için yetersiz (en kısa ray 250 mm).`);
+      const boxW = sw - 2 * c.railGap, fbL = boxW - 2 * dt, zf = (inset ? D - tf : D) - 2;
+      const span = k => { const fy = fronts[k]; return [k === 0 ? yb : fy - g / 2, k === nd - 1 ? (auto ? yt : sepY0) : fy + fh + g / 2]; };
+      /* aynı bölmedeki tüm çekmece kutuları eşit yükseklikte (en dar açıklığa göre) */
+      const bhAll = Math.floor(Math.min(fh - 40, ...fronts.map((_, k) => { const [lo, hi] = span(k); return hi - lo - 28 - bt; })) / 10) * 10;
+      for (let k = 0; k < nd; k++) {
+        const fy = fronts[k], [lo] = span(k);
+        const did = `drw-${i}-${k}`, lbl = `${tag ? tag + ' · ' : ''}${k + 1}. çekmece`;
+        add({id: `dfront-${i}-${k}`, name: 'Çekmece önü', sub: lbl, kind: 'dfront', mat: 'front', grp: did, box: [fx0, fy, inset ? D - tf : D, fx1, fy + fh, inset ? D : D + tf], ax: 'xyz', bandL: [bf, bf], bandW: [bf, bf],
+          fL: inset ? fx([[sw, '(bölme iç genişliği)'], [2 * e, '(kenar payı)', -1]]).s : `${fmt(frontW)} (ön genişliği: ${first ? (half ? 'yarım bindirme' : 'dış kenar') : 'dikme ortası'} → ${last ? (half ? 'yarım bindirme' : 'dış kenar') : 'dikme ortası'}, boşluklar düşülmüş)`,
+          fW: auto ? `${fmt(fh)} ((ön yüksekliği ${fmt(FY1 - FY0)} − ${fmt(2 * e)} kenar − ${nd - 1} × ${fmt(g)} ara boşluk) ÷ ${nd})` : `${fmt(fh)} (girilen çekmece önü yüksekliği)`,
+          notes: ['Kulp / kulpsuz profil yerini montajda belirle.']});
+        cnt.handle++;
+        if (!railLen || boxW < 100) continue;
+        const bh = bhAll;
+        if (bh < 50) { warn('warn', `${lbl}: çekmece kutusu için yükseklik yetersiz.`); continue; }
+        const by0 = lo + 12, x0 = sx + c.railGap, x1 = x0 + boxW;
+        const common = {grp: did, mat: 'drawer'};
+        const sNote = `Ray: ${RAIL_TYPE[c.railType] || ''} ${railLen} mm, her yanda ${fmt(c.railGap)} mm ray payı.`;
+        add(Object.assign({id: `dside-${i}-${k}-L`, name: 'Çekmece yanı', sub: lbl, kind: 'dside', box: [x0, by0 + bt, zf - railLen, x0 + dt, by0 + bt + bh, zf], ax: 'zyx', bandL: [bd, 0], fL: `${railLen} (ray boyu)`, fW: `${bh} (kutu yüksekliği: ön yüksekliği − 40, 10'a yuvarlanmış)`, notes: [sNote]}, common));
+        add(Object.assign({id: `dside-${i}-${k}-R`, name: 'Çekmece yanı', sub: lbl, kind: 'dside', box: [x1 - dt, by0 + bt, zf - railLen, x1, by0 + bt + bh, zf], ax: 'zyx', bandL: [bd, 0], fL: `${railLen} (ray boyu)`, fW: `${bh} (kutu yüksekliği)`, notes: [sNote]}, common));
+        const fbF = fx([[sw, '(bölme iç genişliği)'], [2 * c.railGap, '(2 ray payı)', -1], [2 * dt, '(2 çekmece yanı)', -1]]);
+        add(Object.assign({id: `dfb-${i}-${k}-F`, name: 'Çekmece iç ön / arka', sub: lbl, kind: 'dfb', box: [x0 + dt, by0 + bt, zf - dt, x1 - dt, by0 + bt + bh, zf], ax: 'xyz', bandL: [bd, 0], fL: fbF.s, fW: `${bh} (kutu yüksekliği)`}, common));
+        add(Object.assign({id: `dfb-${i}-${k}-B`, name: 'Çekmece iç ön / arka', sub: lbl, kind: 'dfb', box: [x0 + dt, by0 + bt, zf - railLen, x1 - dt, by0 + bt + bh, zf - railLen + dt], ax: 'xyz', bandL: [bd, 0], fL: fbF.s, fW: `${bh} (kutu yüksekliği)`}, common));
+        add({id: `dbot-${i}-${k}`, name: 'Çekmece tabanı', sub: lbl, kind: 'dbottom', mat: 'back', grp: did, box: [x0, by0, zf - railLen, x1, by0 + bt, zf], ax: 'zxy', fL: `${railLen} (ray boyu)`, fW: fx([[sw, '(bölme iç genişliği)'], [2 * c.railGap, '(2 ray payı)', -1]]).s, notes: ['Kutunun altına çakılır / vidalanır.']});
+        cnt.rails.push(railLen);
+        R.extras.push({type: 'drawer', grp: did, slide: railLen * .72});
+      }
+      SI.drawers = nd;
+    }
+    /* raflar / askı */
+    const hasDoor = doorsOn && s.door !== 'none' && (FY1 - e - dy0) > 60;
+    const setIn = inset && hasDoor ? tf : 0;
+    const adj = s.shelfType !== 'fixed';
+    const mkShelf = (id, y0, sub) => {
+      const dep = adj ? Di - c.shelfSet - setIn : Di - setIn;
+      const w0 = adj ? sx + c.shelfGap : sx, w1 = adj ? sx + sw - c.shelfGap : sx + sw;
+      add({id, name: adj ? 'Raf (hareketli)' : 'Raf (sabit)', sub, kind: 'shelf', box: [w0, y0, zi0, w1, y0 + t, zi0 + dep], ax: 'xzy', bandL: [bb, 0],
+        fL: adj ? fx([[sw, '(bölme iç genişliği)'], [2 * c.shelfGap, '(raf boşluğu)', -1]]).s : fx([[sw, '(bölme iç genişliği)']]).s,
+        fW: fx([[Di, '(iç derinlik)'], [adj ? c.shelfSet : 0, '(önden geri çekme)', -1], [setIn, '(gömme kapak)', -1]]).s,
+        notes: [adj ? 'Raf pimi ile taşınır (4 adet).' : 'Sabit raf: yanlara minifix / kavela ile bağlanır.', `Alt yüzü, alt tablanın üst yüzünden ${fmt(y0 - yb)} mm yukarıda.`]});
+      if (adj) cnt.pin += 4;
+    };
+    if (doorsOn || !nd) {
+      if (s.hanger) {
+        let rodY = yHi - 60;
+        if (s.shelves > 0) { const y0 = yHi - 350 - t; if (y0 - yLo > 700) { mkShelf(`shelf-${i}-1`, y0, `${tag ? tag + ' · ' : ''}şapkalık`); rodY = y0 - 60; SI.shelves = 1; } }
+        if (rodY - yLo < 900) warn('warn', `${tag || 'Bölme'}: askı altında ${fmt(rodY - yLo)} mm boşluk var (uzun elbise için ~1500 mm gerekir).`);
+        if (Di < 500) warn('warn', `İç derinlik ${fmt(Di)} mm; askı için en az 520–550 mm önerilir.`);
+        const rl = sw - 2;
+        cnt.rods.push(rl); R.extras.push({type: 'rod', x0: sx + 1, x1: sx + sw - 1, y: rodY, z: zi0 + Di / 2});
+        SI.rodY = rodY;
+      } else if (s.shelves > 0) {
+        const ns = s.shelves, gap = (yHi - yLo - ns * t) / (ns + 1);
+        if (gap < 60) warn('err', `${tag || 'Bölme'}: ${ns} raf için yükseklik yetersiz (raf arası ${fmt(gap)} mm).`);
+        for (let k = 1; k <= ns; k++) mkShelf(`shelf-${i}-${k}`, yLo + k * gap + (k - 1) * t, `${tag ? tag + ' · ' : ''}${k}. raf`);
+        SI.shelves = ns; SI.gap = gap;
+        if (sw > (t >= 25 ? 1000 : 800)) warn('warn', `${tag || 'Bölme'}: ${fmt(sw)} mm raf açıklığı ${fmt(t)} mm malzemede sehim yapabilir; ara dikme ekle ya da daha kalın malzeme kullan.`);
+      }
+    }
+    /* kapaklar */
+    if (hasDoor) {
+      const dy1 = FY1 - e, dh = dy1 - dy0;
+      const nDoor = s.door === 'auto' ? (frontW > 600 ? 2 : 1) : s.door === '2' ? 2 : 1;
+      const dw = nDoor === 2 ? (frontW - g) / 2 : frontW;
+      const hc = hingeCount(dh), hp = hingeAt(dh, hc).map(v => fmt(v)).join(', ');
+      const zz = inset ? [D - tf, D] : [D, D + tf];
+      const edgeTxt = side => inset ? 'iç yüz' : side ? (half ? 'yarım bindirme' : 'dış kenar') : 'dikme ortası';
+      const wText = nDoor === 2
+        ? `${fmt(dw)} ((ön genişliği ${fmt(frontW)} − ${fmt(g)} kapak arası) ÷ 2)`
+        : inset ? `${fmt(frontW)} (bölme iç genişliği ${fmt(sw)} − ${fmt(2 * e)} kenar payı)` : `${fmt(frontW)} (${edgeTxt(first)} → ${edgeTxt(last)}, kenar ${fmt(first ? e : g / 2)} / ${fmt(last ? e : g / 2)} mm boşluk)`;
+      const hText = nd > 0 ? `${fmt(dh)} (çekmeceler üstünden ön üst kenarına, boşluklar düşülmüş)` : inset ? fx([[yt - yb, '(iç yükseklik)'], [2 * e, '(kenar payı)', -1]]).s : fx([[FY1 - FY0, base === 'plinth' ? '(yükseklik − baza)' : raised ? '(gövde yüksekliği)' : '(yükseklik)'], [2 * e, '(üst/alt kenar payı)', -1]]).s;
+      for (let k = 0; k < nDoor; k++) {
+        const hinge = nDoor === 2 ? (k ? 'R' : 'L') : s.hinge === 'R' ? 'R' : 'L';
+        const x0 = fx0 + k * (dw + g);
+        add({id: `door-${i}-${k}`, name: 'Kapak', sub: `${tag ? tag + ' · ' : ''}${nDoor === 2 ? (k ? 'sağ' : 'sol') : (hinge === 'L' ? 'soldan menteşeli' : 'sağdan menteşeli')}`, kind: 'door', mat: 'front', box: [x0, dy0, zz[0], x0 + dw, dy1, zz[1]], ax: 'yxz', bandL: [bf, bf], bandW: [bf, bf],
+          hinge: {side: hinge, x: hinge === 'L' ? x0 : x0 + dw, z: zz[0]}, fL: hText, fW: wText,
+          notes: [`${hc} menteşe: Ø35 kap, ${hinge === 'L' ? 'sol' : 'sağ'} kenardan 22,5 mm (kap merkezi); alttan ${hp} mm.`, cnt.hingeType + '.']});
+        cnt.hinge += hc; cnt.handle++;
+        if (dw > 600) warn('warn', `${tag || 'Bölme'}: kapak genişliği ${fmt(dw)} mm (> 600 mm); çift kapak önerilir.`);
+        if (dw < 150) warn('warn', `${tag || 'Bölme'}: kapak genişliği ${fmt(dw)} mm çok dar.`);
+      }
+      SI.doors = nDoor;
+      if (dh > 2400) warn('warn', `Kapak yüksekliği ${fmt(dh)} mm; levha boyunu ve kapak eğilmesini kontrol et.`);
+    }
+  }
+
+  /* ---- baza ---- */
+  if (base === 'plinth') {
+    add({id: 'plinth', name: 'Baza (ön)', kind: 'plinth', box: [t, 0, D - c.plinthSet - t, W - t, bH, D - c.plinthSet], ax: 'xyz', fL: fx([[W, '(genişlik)'], [2 * t, '(2 yan)', -1]]).s, fW: `${fmt(bH)} (baza yüksekliği)`, notes: [`Yanların arasına, ön kenardan ${fmt(c.plinthSet)} mm içeride.`]});
+  } else if (base === 'legs') {
+    const z0 = D - c.plinthSet - t;
+    add({id: 'plinth', name: 'Baza (klipsli)', kind: 'plinth', box: [0, 3, z0, W, bH, z0 + t], ax: 'xyz', fL: `${fmt(W)} (dolap genişliği; yan yana dolaplarda tek parça kesilebilir)`, fW: fx([[bH, '(ayak yüksekliği)'], [3, '(yer boşluğu)', -1]]).s, notes: ['Ayaklara klipsle takılır.']});
+    const nl = W > 1000 ? 6 : 4;
+    hw('leg', 'Ayarlı plastik ayak', nl, `${fmt(bH)} mm`); hw('clip', 'Baza klipsi', nl / 2);
+    const xs = nl === 6 ? [50, W / 2, W - 50] : [50, W - 50];
+    for (const lx of xs) for (const lz of [zb0 + 50, z0 - 35]) R.extras.push({type: 'leg', x: lx, z: lz, h: bH});
+  } else if (base === 'frame') {
+    const z1 = D - c.plinthSet;
+    add({id: 'frame-f', name: 'Baza kasası', sub: 'ön', kind: 'plinth', box: [0, 0, z1 - t, W, bH, z1], ax: 'xyz', fL: fx([[W, '(genişlik)']]).s, fW: `${fmt(bH)} (baza yüksekliği)`});
+    add({id: 'frame-b', name: 'Baza kasası', sub: 'arka', kind: 'plinth', box: [0, 0, zb0, W, bH, zb0 + t], ax: 'xyz', fL: fx([[W, '(genişlik)']]).s, fW: `${fmt(bH)} (baza yüksekliği)`});
+    const fl = fx([[D, '(derinlik)'], [c.plinthSet, '(geri çekme)', -1], [zb0, '(arkalık)', -1], [2 * t, '(ön+arka baza)', -1]]);
+    for (const [sd, x0] of [['L', 0], ['R', W - t]]) add({id: 'frame-' + sd, name: 'Baza kasası', sub: 'yan', kind: 'plinth', box: [x0, 0, zb0 + t, x0 + t, bH, z1 - t], ax: 'zyx', fL: fl.s, fW: `${fmt(bH)} (baza yüksekliği)`});
+  } else if (base === 'wall') hw('hang', 'Dolap askı aparatı (sağ + sol)', 2, 'askı rayı ile');
+
+  /* ---- hırdavat ---- */
+  if (cnt.hinge) hw('hinge', cnt.hingeType, cnt.hinge, 'Ø35 kap, kapanış frenli önerilir');
+  if (cnt.pin) hw('pin', 'Raf pimi', cnt.pin, 'Ø5');
+  const rl = {}; for (const r of cnt.rails) rl[r] = (rl[r] || 0) + 1;
+  for (const [l, q] of Object.entries(rl)) hw('rail' + l, RAIL_TYPE[c.railType] || 'Çekmece rayı', q, `${l} mm, takım (sağ + sol)`);
+  const rd = {}; for (const r of cnt.rods) rd[r] = (rd[r] || 0) + 1;
+  for (const [l, q] of Object.entries(rd)) { hw('rod' + l, 'Askı borusu (oval)', q, `${fmt(Number(l))} mm`); hw('rodh', 'Askı borusu rozeti', 2 * q); }
+  if (cnt.handle) hw('handle', 'Kulp', cnt.handle);
+  let joints = 0;
+  for (const p of P) {
+    if (['top', 'bottom', 'rail', 'sep'].includes(p.kind) || (p.kind === 'shelf' && p.name.includes('sabit'))) joints += 2 * (p.Wd > 450 ? 3 : 2);
+    if (p.kind === 'divider') joints += 2 * (p.Wd > 450 ? 3 : 2);
+  }
+  hw('minifix', 'Minifix + kavela (tahmini)', joints, 'gövde birleşimleri');
+
+  /* ---- kesim ölçüleri, kenar bandı, elle düzeltmeler ---- */
+  for (const p of P) {
+    p.cL = r1(p.L - (c.deduct ? p.bandW[0] + p.bandW[1] : 0));
+    p.cW = r1(p.Wd - (c.deduct ? p.bandL[0] + p.bandL[1] : 0));
+    p.L = r1(p.L); p.Wd = r1(p.Wd); p.T = r1(p.T);
+    const o = c.over && c.over[p.id];
+    if (o) { if (o.cL > 0) { p.cL0 = p.cL; p.cL = o.cL; p.ovr = true; } if (o.cW > 0) { p.cW0 = p.cW; p.cW = o.cW; p.ovr = true; } if (o.off) p.off = true; }
+  }
+  P.sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind));
+
+  /* ---- montaj ve çakışma kontrolü ---- */
+  const body = P.filter(p => !['door', 'dfront', 'dside', 'dfb', 'dbottom', 'plinth'].includes(p.kind));
+  const bx = [0, 1, 2].map(a => [Math.min(...body.map(p => p.box[a])), Math.max(...body.map(p => p.box[a + 3]))]);
+  const okW = Math.abs(bx[0][0]) < .05 && Math.abs(bx[0][1] - W) < .05, okH = Math.abs(bx[1][1] - H) < .05 && Math.abs(bx[1][0] - (raised ? y0c : 0)) < .05, okD = Math.abs(bx[2][0]) < .05 && Math.abs(bx[2][1] - D) < .05;
+  if (okW && okH && okD) R.check.push({lvl: 'ok', t: `Montaj kontrolü: parçalar birleşince gövde ${fmt(W)} × ${fmt(Hc)} × ${fmt(D)} mm${raised ? ` (+ ${fmt(bH)} ${base === 'legs' ? 'ayak' : 'baza'} = ${fmt(H)})` : ''} çıkıyor.`});
+  else R.check.push({lvl: 'err', t: `Montaj kontrolü tutmadı: parçalardan ${fmt(bx[0][1] - bx[0][0])} × ${fmt(bx[1][1] - bx[1][0])} × ${fmt(bx[2][1] - bx[2][0])} mm çıkıyor.`});
+  const clash = [];
+  for (let a = 0; a < P.length; a++) for (let b2 = a + 1; b2 < P.length; b2++) {
+    const A = P[a].box, B = P[b2].box, ov = [0, 1, 2].map(k => Math.min(A[k + 3], B[k + 3]) - Math.max(A[k], B[k]));
+    if (ov.every(v => v > .05)) {
+      const backPair = (P[a].kind === 'back' || P[b2].kind === 'back') && c.back === 'groove' && Math.min(...ov) <= gd + .05;
+      if (!backPair) clash.push(`${P[a].name}${P[a].sub ? ' (' + P[a].sub + ')' : ''} ↔ ${P[b2].name}${P[b2].sub ? ' (' + P[b2].sub + ')' : ''}`);
+    }
+  }
+  if (clash.length) R.check.push({lvl: 'err', t: `Çakışan parçalar: ${clash.slice(0, 4).join(', ')}${clash.length > 4 ? ` +${clash.length - 4}` : ''}`});
+  else R.check.push({lvl: 'ok', t: 'Çakışma kontrolü: hiçbir parça birbirinin içine girmiyor.'});
+  const fdepth = P.some(p => p.kind === 'door' || p.kind === 'dfront') && !inset ? D + tf : D;
+  R.dims = {W, H, D, fdepth, Wi, Hi, Di, Hc, y0c, yb, yt, bH, base, widths};
+  R.sum = [
+    ['İç genişlik', fmt(Wi)], ['İç yükseklik', fmt(Hi)], ['İç derinlik', fmt(Di)],
+    ...(n > 1 ? [['Bölme genişlikleri', widths.map(v => fmt(v)).join(' / ')]] : []),
+    ...(railLen && secs.some(s => s.drawers) ? [['Çekmece rayı', railLen + ' mm']] : []),
+    ['Kapaklı toplam derinlik', fmt(fdepth)],
+  ];
+  R.ok = !R.warn.some(w => w.lvl === 'err') && !R.check.some(w => w.lvl === 'err');
+  return R;
+}
+
+/* ---------- iş geneli: kesim satırları ---------- */
+const bandSig = p => `${p.bandL[0]}|${p.bandL[1]}|${p.bandW[0]}|${p.bandW[1]}`;
+function cutRows(job, cabs) {
+  const groups = new Map();
+  for (const c of cabs) {
+    const R = calcCab(c);
+    for (const p of R.parts) {
+      /* aynı stok (ad + kalınlık + levha + desen) tek grupta: aynı levhalardan kesilir */
+      const mat = job.mats[p.mat], gk = `${mat.label.trim().toLowerCase()}|${p.T}|${mat.L}|${mat.W}|${mat.grain ? 1 : 0}`;
+      if (!groups.has(gk)) groups.set(gk, {key: gk, mat: p.mat, T: p.T, label: `${mat.label} · ${fmt(p.T)} mm`, m: mat, rows: new Map()});
+      const G = groups.get(gk), rk = `${p.name}|${p.cL}|${p.cW}|${bandSig(p)}|${p.off ? 1 : 0}`;
+      if (!G.rows.has(rk)) G.rows.set(rk, {name: p.name, kind: p.kind, cL: p.cL, cW: p.cW, L: p.L, Wd: p.Wd, T: p.T, bandL: p.bandL, bandW: p.bandW, off: !!p.off, ovr: !!p.ovr, n: 0, cabs: new Map(), refs: []});
+      const row = G.rows.get(rk);
+      row.n += c.qty; row.ovr = row.ovr || !!p.ovr;
+      row.cabs.set(c.name, (row.cabs.get(c.name) || 0) + c.qty);
+      row.refs.push({cab: c.id, id: p.id});
+    }
+  }
+  const out = [...groups.values()].sort((a, b) => MAT_KEYS.indexOf(a.mat) - MAT_KEYS.indexOf(b.mat) || b.T - a.T);
+  let no = 0;
+  for (const G of out) {
+    G.rows = [...G.rows.values()].sort((a, b) => a.off - b.off || KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || b.cL - a.cL || b.cW - a.cW);
+    for (const r of G.rows) r.no = ++no;
+    const act = G.rows.filter(r => !r.off);
+    G.count = act.reduce((a, r) => a + r.n, 0);
+    G.area = act.reduce((a, r) => a + r.n * r.cL * r.cW, 0) / 1e6;
+  }
+  return out;
+}
+/* kenar bandı metrajı (bitmiş ölçü üzerinden) */
+function bandTotals(groups) {
+  const m = new Map();
+  for (const G of groups) for (const r of G.rows) {
+    if (r.off) continue;
+    for (const b of r.bandL) if (b > 0) m.set(b, (m.get(b) || 0) + r.L * r.n);
+    for (const b of r.bandW) if (b > 0) m.set(b, (m.get(b) || 0) + r.Wd * r.n);
+  }
+  return [...m.entries()].sort((a, b) => a[0] - b[0]).map(([t, mm]) => ({t, m: mm / 1000}));
+}
+function hwTotals(cabs) {
+  const m = new Map();
+  for (const c of cabs) for (const x of calcCab(c).hw) {
+    const k = x.k + '|' + x.n + '|' + x.note;
+    if (!m.has(k)) m.set(k, Object.assign({}, x, {q: 0}));
+    m.get(k).q += x.q * c.qty;
+  }
+  return [...m.values()];
+}
+
+/* =====================================================================
+   Levha yerleşimi (giyotin kesim): panel ebatlama makinesinde
+   uçtan uca düz kesimlerle çıkarılabilecek yerleşim üretir.
+   Levha x ekseni = levha boyu (desen yönü). Testere payı (kerf) ve
+   kenar traşlama payı (trim) hesaba katılır.
+   ===================================================================== */
+function nestGroup(G, job) {
+  const m = G.m, kerf = job.kerf, trim = job.trim, grain = !!m.grain;
+  const PL = m.L - 2 * trim, PW = m.W - 2 * trim;
+  const items = [];
+  for (const r of G.rows) if (!r.off) for (let i = 0; i < r.n; i++) items.push({no: r.no, l: r.cL, w: r.cW, row: r});
+  const fits = it => (it.l <= PL + 1e-6 && it.w <= PW + 1e-6) || (!grain && it.w <= PL + 1e-6 && it.l <= PW + 1e-6);
+  const bad = items.filter(i => !fits(i)), ok = items.filter(fits);
+  const orders = [
+    (a, b) => b.l * b.w - a.l * a.w,
+    (a, b) => Math.max(b.l, b.w) - Math.max(a.l, a.w) || b.l * b.w - a.l * a.w,
+    (a, b) => b.l - a.l || b.w - a.w,
+    (a, b) => b.w - a.w || b.l - a.l,
+  ];
+  let best = null;
+  for (const ord of orders) for (const rule of ['short', 'long']) {
+    const r = pack([...ok].sort(ord), rule);
+    if (!best || r.sheets.length < best.sheets.length || (r.sheets.length === best.sheets.length && r.last < best.last)) best = r;
+  }
+  const sheets = best ? best.sheets : [];
+  for (const sh of sheets) { sh.area = sh.parts.reduce((a, p) => a + p.a * p.b, 0); sh.use = sh.area / (PL * PW); }
+  const used = sheets.reduce((a, s) => a + s.area, 0);
+  return {sheets, bad, PL, PW, L: m.L, W: m.W, trim, kerf, grain, use: sheets.length ? used / (sheets.length * m.L * m.W) : 0};
+
+  function pack(list, rule) {
+    const sheets = [];
+    const find = (sh, it) => {
+      let bf = null;
+      for (const f of sh.free) for (const rot of grain ? [0] : [0, 1]) {
+        const a = rot ? it.w : it.l, b = rot ? it.l : it.w;
+        if (a + kerf <= f.w + 1e-6 && b + kerf <= f.h + 1e-6) {
+          const s1 = Math.min(f.w - a, f.h - b), s2 = Math.max(f.w - a, f.h - b);
+          if (!bf || s1 < bf.s1 - 1e-6 || (Math.abs(s1 - bf.s1) < 1e-6 && s2 < bf.s2)) bf = {sh, f, rot, a, b, s1, s2};
+        }
+      }
+      return bf;
+    };
+    for (const it of list) {
+      let bf = null;
+      for (const sh of sheets) { const c = find(sh, it); if (c && (!bf || c.s1 < bf.s1)) bf = c; }
+      if (!bf) { const sh = {free: [{x: 0, y: 0, w: PL + kerf, h: PW + kerf}], parts: []}; sheets.push(sh); bf = find(sh, it); if (!bf) continue; }
+      const {sh, f, a, b, rot} = bf, A = a + kerf, B = b + kerf;
+      sh.parts.push({no: it.no, row: it.row, x: f.x, y: f.y, a, b, rot});
+      sh.free.splice(sh.free.indexOf(f), 1);
+      const wR = f.w - A, hR = f.h - B;
+      const horiz = rule === 'short' ? wR < hR : wR >= hR;
+      const r1 = horiz ? {x: f.x + A, y: f.y, w: wR, h: B} : {x: f.x + A, y: f.y, w: wR, h: f.h};
+      const r2 = horiz ? {x: f.x, y: f.y + B, w: f.w, h: hR} : {x: f.x, y: f.y + B, w: A, h: hR};
+      for (const r of [r1, r2]) if (r.w > kerf + 20 && r.h > kerf + 20) sh.free.push(r);
+    }
+    const lastSh = sheets[sheets.length - 1];
+    return {sheets, last: lastSh ? lastSh.parts.reduce((a, p) => a + p.a * p.b, 0) : 0};
+  }
+}
+
+/* Levha çizimi (SVG, mm ölçekli) */
+function sheetSVG(N, sh, opts = {}) {
+  const {L, W, trim} = N, fs = Math.max(40, Math.min(L, W) / 18);
+  const svg = sv('svg', {viewBox: `0 0 ${L} ${W}`, role: 'img', 'aria-label': `Levha ${L} × ${W}`});
+  svg.append(sv('defs', null, sv('pattern', {id: 'hatch', width: 40, height: 40, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)'}, sv('rect', {width: 40, height: 40, class: 'pl', style: 'fill:transparent'}), sv('line', {x1: 0, y1: 0, x2: 0, y2: 40, class: 'gr'}))));
+  svg.append(sv('rect', {x: 0, y: 0, width: L, height: W, class: 'pl'}));
+  svg.append(sv('rect', {x: trim, y: trim, width: N.PL, height: N.PW, class: 'us'}));
+  if (N.grain) svg.append(sv('path', {d: `M${L - 260} ${W - 30}h200m-40 -18l40 18l-40 18`, fill: 'none', stroke: 'currentColor', 'stroke-width': 6, class: 'gr', style: 'opacity:.7'}));
+  for (const p of sh.parts) {
+    const x = trim + p.x, y = trim + p.y, g = sv('g', {'data-no': p.no});
+    const r = sv('rect', {x, y, width: p.a, height: p.b, class: 'pt' + (opts.sel && opts.sel(p) ? ' on' : '')});
+    if (opts.onPick) r.addEventListener('click', () => opts.onPick(p));
+    r.append(sv('title', null, `${p.no} · ${p.row.name} · ${fmt(p.row.cL)} × ${fmt(p.row.cW)} mm${p.rot ? ' (döndürülmüş)' : ''}`));
+    g.append(r);
+    const mn = Math.min(p.a, p.b);
+    if (mn > fs * 1.3) {
+      const big = Math.min(fs * 1.25, mn * .4);
+      g.append(sv('text', {x: x + p.a / 2, y: y + p.b / 2 + (p.b > big * 3.2 ? -big * .25 : big * .35), 'font-size': big, 'font-weight': 800, 'text-anchor': 'middle'}, String(p.no)));
+      if (p.b > big * 3.2 && p.a > fs * 5) g.append(sv('text', {x: x + p.a / 2, y: y + p.b / 2 + big * .95, 'font-size': fs * .8, 'text-anchor': 'middle'}, `${fmt(p.rot ? p.b : p.a)} × ${fmt(p.rot ? p.a : p.b)}`));
+    } else if (mn > fs * .95) g.append(sv('text', {x: x + p.a / 2, y: y + p.b / 2 + fs * .3, 'font-size': fs * .8, 'font-weight': 800, 'text-anchor': 'middle'}, String(p.no)));
+    if (p.rot && mn > fs * .95) g.append(sv('text', {x: x + 8, y: y + fs * .8, 'font-size': fs * .6, style: 'opacity:.7'}, '↻'));
+    svg.append(g);
+  }
+  return svg;
+}
+
+/* =====================================================================
+   3B görünüm (three.js): parçalar, kapak/çekmece açma, patlatma,
+   seçilen parçanın üstünde boy / en / kalınlık ölçü çizgileri
+   ===================================================================== */
+const THREE_URLS = ['./vendor/three.module.min.js', 'https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.min.js'];
+const MM = .001;
+
+const V = {
+  T: null, ready: false, loading: null,
+  doorMode: 'closed', explode: false, dims: true, focus: true,
+  open: 0, exp: 0, sel: null, hover: null,
+  holders: [], meshes: [], byId: new Map(), extras: [],
+  orb: {th: .6, ph: 1.12, r: 3, tx: 0, ty: 0, tz: 0},
+  cab: null, R: null, onPick: null, lastKey: '',
+
+  async init() {
+    if (this.loading) return this.loading;
+    this.loading = (async () => {
+      let T = null, err;
+      for (const u of THREE_URLS) { try { T = await import(u); break; } catch (e) { err = e; } }
+      if (!T) { $('#load3d').textContent = '3B kütüphanesi yüklenemedi.'; throw err; }
+      this.T = T;
+      const cv = $('#cv');
+      const ren = this.ren = new T.WebGLRenderer({canvas: cv, antialias: true, alpha: true, preserveDrawingBuffer: true});
+      ren.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      const sc = this.scene = new T.Scene();
+      this.cam = new T.PerspectiveCamera(32, 1, .01, 60);
+      sc.add(new T.HemisphereLight(0xffffff, 0x8a8f8c, 1.55));
+      const d1 = new T.DirectionalLight(0xffffff, 1.55); d1.position.set(2.2, 3.4, 4.2); sc.add(d1);
+      const d2 = new T.DirectionalLight(0xffffff, .55); d2.position.set(-3, 1.5, -1.5); sc.add(d2);
+      this.root = new T.Group(); sc.add(this.root);
+      this.dimG = new T.Group(); sc.add(this.dimG);
+      /* zemin gölgesi */
+      const cnv = document.createElement('canvas'); cnv.width = cnv.height = 128;
+      const g2 = cnv.getContext('2d'), grd = g2.createRadialGradient(64, 64, 4, 64, 64, 64);
+      grd.addColorStop(0, 'rgba(0,0,0,.34)'); grd.addColorStop(.55, 'rgba(0,0,0,.12)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+      g2.fillStyle = grd; g2.fillRect(0, 0, 128, 128);
+      this.shadow = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshBasicMaterial({map: new T.CanvasTexture(cnv), transparent: true, depthWrite: false}));
+      this.shadow.rotation.x = -Math.PI / 2; this.shadow.position.y = .0005; sc.add(this.shadow);
+      this.ray = new T.Raycaster();
+      this.bindEvents(cv);
+      new ResizeObserver(() => this.resize()).observe($('#v3d'));
+      this.resize();
+      this.ready = true; $('#load3d').hidden = true;
+    })();
+    return this.loading;
+  },
+
+  /* ---------- sahneyi kur ---------- */
+  build(c, R, mats, fitCam) {
+    const T = this.T; if (!T) return;
+    this.cab = c; this.R = R;
+    this.root.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) [].concat(o.material).forEach(m => { if (m.map) m.map.dispose(); m.dispose(); }); });
+    this.root.clear(); this.holders = []; this.meshes = []; this.byId.clear();
+    const dark = document.documentElement.dataset.mode === 'dark';
+    const edgeCol = dark ? 0x0b0d0c : 0x2c3330;
+    const metal = new T.MeshStandardMaterial({color: 0x7D848B, metalness: .75, roughness: .28});
+    const drawers = new Map();
+    const ctrOf = b => [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2];
+    for (const p of R.parts) {
+      const b = p.box, ext = [b[3] - b[0], b[4] - b[1], b[5] - b[2]], ctr = ctrOf(b);
+      const fin = FINISHES[(mats[p.mat] || {}).color] || FINISHES.beyaz;
+      const col = new T.Color(fin[1]);
+      if (p.kind === 'back' || p.kind === 'dbottom') col.offsetHSL(0, 0, -.04);
+      const geo = new T.BoxGeometry(ext[0] * MM, ext[1] * MM, ext[2] * MM);
+      const mat = new T.MeshStandardMaterial({color: col, roughness: .7, metalness: 0, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1});
+      const mesh = new T.Mesh(geo, mat);
+      const edges = new T.LineSegments(new T.EdgesGeometry(geo), new T.LineBasicMaterial({color: edgeCol, transparent: true, opacity: .55}));
+      mesh.add(edges);
+      mesh.userData = {p, edges, col: col.clone(), ext, ctr};
+      this.meshes.push(mesh); this.byId.set(p.id, mesh);
+      if (p.off) { mat.transparent = true; mat.opacity = .25; }
+      let holder;
+      if (p.hinge) {
+        holder = new T.Group(); holder.position.set(p.hinge.x * MM, ctr[1] * MM, p.hinge.z * MM);
+        mesh.position.set((ctr[0] - p.hinge.x) * MM, 0, (ctr[2] - p.hinge.z) * MM);
+        holder.add(mesh); holder.userData = {kind: 'door', side: p.hinge.side, ctr};
+        this.root.add(holder); this.holders.push(holder);
+        this.addHandle(mesh, p, ext, ctr, metal, 'door');
+      } else if (p.grp) {
+        let G = drawers.get(p.grp);
+        if (!G) { G = new T.Group(); G.userData = {kind: 'drawer', ctrs: [], slide: (R.extras.find(x => x.grp === p.grp) || {}).slide || 300}; drawers.set(p.grp, G); this.root.add(G); this.holders.push(G); }
+        mesh.position.set(ctr[0] * MM, ctr[1] * MM, ctr[2] * MM); G.add(mesh); G.userData.ctrs.push(ctr);
+        if (p.kind === 'dfront') { G.userData.front = ctr; this.addHandle(mesh, p, ext, ctr, metal, 'drawer'); }
+      } else {
+        mesh.position.set(ctr[0] * MM, ctr[1] * MM, ctr[2] * MM);
+        holder = mesh; mesh.userData.kind = 'part'; mesh.userData.hctr = ctr;
+        this.root.add(mesh); this.holders.push(mesh);
+      }
+    }
+    for (const G of drawers.values()) { const cs = G.userData.ctrs; G.userData.ctr = [0, 1, 2].map(a => cs.reduce((s, q) => s + q[a], 0) / cs.length); if (G.userData.front) G.userData.ctr[2] = G.userData.front[2]; }
+    /* ayak, askı borusu */
+    for (const x of R.extras) {
+      if (x.type === 'leg') { const m = new T.Mesh(new T.CylinderGeometry(.017, .02, x.h * MM, 16), new T.MeshStandardMaterial({color: 0x2b2d2f, roughness: .6})); m.position.set(x.x * MM, x.h * MM / 2, x.z * MM); m.userData = {kind: 'hw', hctr: [x.x, x.h / 2, x.z]}; this.root.add(m); this.holders.push(m); }
+      if (x.type === 'rod') { const l = (x.x1 - x.x0) * MM, m = new T.Mesh(new T.CylinderGeometry(.0125, .0125, l, 20), metal); m.rotation.z = Math.PI / 2; m.position.set((x.x0 + x.x1) / 2 * MM, x.y * MM, x.z * MM); m.userData = {kind: 'hw', hctr: [(x.x0 + x.x1) / 2, x.y, x.z]}; this.root.add(m); this.holders.push(m); }
+    }
+    for (const o of this.holders) o.userData.base = o.position.clone();
+    const fd = R.dims ? R.dims.fdepth : c.D;
+    this.center = [c.W / 2, c.H / 2, fd / 2];
+    this.shadow.scale.set(c.W * MM * 1.6, fd * MM * 2.2, 1); this.shadow.position.set(c.W * MM / 2, .0005, fd * MM / 2);
+    this.shadow.visible = c.base !== 'wall';
+    const key = `${c.id}|${Math.round(c.W / 50)}|${Math.round(c.H / 50)}|${Math.round(c.D / 50)}`;
+    if (fitCam || key !== this.lastKey) this.fit();
+    this.lastKey = key;
+    if (this.sel && !this.byId.has(this.sel)) this.sel = null;
+    this.applyState(); this.req();
+  },
+  addHandle(mesh, p, ext, ctr, mat, type) {
+    const T = this.T, c = this.cab, hx = ext[0] / 2, hy = ext[1] / 2, hz = ext[2] / 2;
+    let geo, lx, ly;
+    if (type === 'door') {
+      const len = Math.min(160, ext[1] * .4); geo = new T.BoxGeometry(.011, len * MM, .012);
+      lx = (p.hinge.side === 'L' ? 1 : -1) * (hx - 38);
+      if (c.base === 'wall') ly = -hy + 70 + len / 2;
+      else if (ext[1] > 1100) ly = clamp(1050 - ctr[1], -hy + 120, hy - 120);
+      else ly = hy - 70 - len / 2;
+    } else {
+      const len = Math.min(160, ext[0] * .45); geo = new T.BoxGeometry(len * MM, .011, .012);
+      lx = 0; ly = ext[1] > 260 ? hy - 60 : 0;
+    }
+    const m = new T.Mesh(geo, mat); m.position.set(lx * MM, ly * MM, (hz + 16) * MM);
+    const post = new T.BoxGeometry(.008, .008, .016);
+    for (const s of [-1, 1]) { const q = new T.Mesh(post, mat); if (type === 'door') q.position.set(lx * MM, (ly + s * (geo.parameters.height / MM / 2 - 8)) * MM, (hz + 8) * MM); else q.position.set((s * (geo.parameters.width / MM / 2 - 8)) * MM, ly * MM, (hz + 8) * MM); mesh.add(q); }
+    mesh.add(m);
+  },
+
+  /* ---------- durum: kapak açık / patlatma / seçim ---------- */
+  setDoor(mode) { this.doorMode = mode; this.animate(); },
+  setExplode(on) { this.explode = on; this.animate(); },
+  animate() { if (!this._anim) { this._anim = true; this.req(); } },
+  applyState() {
+    const T = this.T; if (!T) return;
+    const C = this.center, k = this.exp;
+    for (const o of this.holders) {
+      const u = o.userData, base = u.base; if (!base) continue;
+      let ctr = u.ctr || u.hctr || C;
+      let dx = (ctr[0] - C[0]) * .55 * k, dy = (ctr[1] - C[1]) * .42 * k, dz = (ctr[2] - C[2]) * .9 * k;
+      if (u.kind === 'door') dz += 260 * k;
+      if (u.kind === 'drawer') dz += 200 * k + u.slide * this.open;
+      if (u.kind === 'hw') { dx = dy = dz = 0; if (k > .01) dy = (ctr[1] - C[1]) * .42 * k; }
+      o.position.set(base.x + dx * MM, base.y + dy * MM, base.z + dz * MM);
+      if (u.kind === 'door') o.rotation.y = (u.side === 'L' ? -1 : 1) * 1.7 * this.open;
+    }
+    const hideFronts = this.doorMode === 'hidden';
+    const selM = this.sel ? this.byId.get(this.sel) : null;
+    const acc = new T.Color(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#1F7A5A');
+    for (const m of this.meshes) {
+      const p = m.userData.p, mt = m.material, ed = m.userData.edges.material;
+      m.visible = !(hideFronts && (p.kind === 'door' || p.kind === 'dfront')) || m === selM;
+      const isSel = m === selM, isHov = m.userData.p.id === this.hover && !isSel;
+      mt.emissive.set(isSel ? acc : isHov ? acc : 0x000000); mt.emissiveIntensity = isSel ? .55 : isHov ? .22 : 0;
+      const fade = selM && this.focus && !isSel;
+      mt.transparent = fade || !!p.off; mt.opacity = fade ? .14 : p.off ? .25 : 1; mt.depthWrite = !fade;
+      ed.opacity = isSel ? 1 : fade ? .12 : .55; ed.color.set(isSel ? acc : (document.documentElement.dataset.mode === 'dark' ? 0x0b0d0c : 0x2c3330));
+      m.renderOrder = isSel ? 2 : 0;
+      for (const ch of m.children) if (ch !== m.userData.edges && ch.material) ch.visible = !fade;
+    }
+  },
+  select(id) { this.sel = id; this.applyState(); this.req(); },
+
+  /* ---------- kamera ---------- */
+  fit() {
+    const c = this.cab; if (!c) return;
+    const fd = this.R && this.R.dims ? this.R.dims.fdepth : c.D;
+    const o = this.orb; o.tx = c.W / 2 * MM; o.ty = c.H / 2 * MM; o.tz = fd / 2 * MM;
+    const rs = .5 * Math.hypot(c.W, c.H, fd) * MM * (this.explode ? 1.5 : 1);
+    const fovV = this.cam.fov * Math.PI / 180, fovH = 2 * Math.atan(Math.tan(fovV / 2) * this.cam.aspect);
+    o.r = rs / Math.sin(Math.min(fovV, fovH) / 2) * 1.08;
+    this.camUpd();
+  },
+  view(name) {
+    const o = this.orb;
+    if (name === 'iso') { o.th = .6; o.ph = 1.12; } else if (name === 'front') { o.th = 0; o.ph = Math.PI / 2 - .001; } else if (name === 'side') { o.th = Math.PI / 2; o.ph = Math.PI / 2 - .001; } else if (name === 'top') { o.th = 0; o.ph = .02; }
+    this.fit(); this.req();
+  },
+  camUpd() {
+    const o = this.orb, cm = this.cam;
+    cm.position.set(o.tx + o.r * Math.sin(o.ph) * Math.sin(o.th), o.ty + o.r * Math.cos(o.ph), o.tz + o.r * Math.sin(o.ph) * Math.cos(o.th));
+    cm.lookAt(o.tx, o.ty, o.tz);
+    cm.near = Math.max(.005, o.r / 200); cm.far = o.r * 20 + 10; cm.updateProjectionMatrix();
+  },
+  resize() {
+    if (!this.ren) return;
+    const el = $('#v3d'), w = el.clientWidth, hh = el.clientHeight; if (!w || !hh) return;
+    this.ren.setSize(w, hh, false); this.cam.aspect = w / hh; this.cam.updateProjectionMatrix(); this.req();
+  },
+  req() { if (!this._raf && this.ren) this._raf = requestAnimationFrame(() => { this._raf = 0; this.render(); }); },
+  render() {
+    if (!this.ren || !this.cab) return;
+    if (this._anim) {
+      const to = this.doorMode === 'open' ? 1 : 0, te = this.explode ? 1 : 0;
+      this.open += (to - this.open) * .2; this.exp += (te - this.exp) * .18;
+      if (Math.abs(to - this.open) < .002 && Math.abs(te - this.exp) < .002) { this.open = to; this.exp = te; this._anim = false; }
+      this.applyState();
+      if (this._anim) this.req();
+    }
+    this.camUpd();
+    this.root.updateMatrixWorld(true);
+    this.updDims();
+    this.ren.render(this.scene, this.cam);
+    this.placeLabels();
+  },
+
+  /* ---------- ölçü çizgileri ---------- */
+  lineMat(cssVar) { const T = this.T, col = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() || '#c2410c'; return new T.LineBasicMaterial({color: new T.Color(col), depthTest: false, transparent: true}); },
+  updDims() {
+    const T = this.T;
+    for (const ch of this.dimG.children) { ch.geometry.dispose(); ch.material.dispose(); }
+    this.dimG.clear(); this.labels = [];
+    const seg = (pts, cssVar) => { const g = new T.BufferGeometry().setFromPoints(pts); const l = new T.LineSegments(g, this.lineMat(cssVar)); l.renderOrder = 999; this.dimG.add(l); };
+    const selM = this.sel ? this.byId.get(this.sel) : null;
+    if (selM && selM.visible) {
+      const p = selM.userData.p, ext = selM.userData.ext, hh = ext.map(v => v / 2 * MM);
+      const camL = selM.worldToLocal(this.cam.position.clone()), cl = [camL.x, camL.y, camL.z];
+      const off = Math.max(.018, this.orb.r * .012), tick = off * .55;
+      const roles = {}; ['L', 'W', 'T'].forEach((r, i) => roles[AXI[p.ax[i]]] = r);
+      for (let a = 0; a < 3; a++) {
+        const role = roles[a], b = (a + 1) % 3, c2 = (a + 2) % 3;
+        const sb = cl[b] >= 0 ? 1 : -1, sc = cl[c2] >= 0 ? 1 : -1;
+        /* çizgiyi, kameraya bakan kenara, dışarı doğru kaydırarak koy */
+        const ob = off, oc = off * .4;
+        const mk = (ta, db, dc) => { const v = [0, 0, 0]; v[a] = ta; v[b] = sb * (hh[b] + db); v[c2] = sc * (hh[c2] + dc); return selM.localToWorld(new T.Vector3(...v)); };
+        const p0 = mk(-hh[a], ob, oc), p1 = mk(hh[a], ob, oc);
+        const pts = [p0, p1, mk(-hh[a], 0, 0), mk(-hh[a], ob + tick, oc), mk(hh[a], 0, 0), mk(hh[a], ob + tick, oc)];
+        seg(pts, role === 'L' ? '--dimL' : role === 'W' ? '--dimW' : '--dimT');
+        const net = role === 'L' ? p.L : role === 'W' ? p.Wd : p.T, cut = role === 'L' ? p.cL : role === 'W' ? p.cW : p.T;
+        const txt = `<em>${role === 'L' ? 'Boy' : role === 'W' ? 'En' : 'Kal.'}</em>${fmt(net)}${Math.abs(cut - net) > .05 ? ` <em>· kesim ${fmt(cut)}</em>` : ''}`;
+        this.labels.push({pos: p0.clone().add(p1).multiplyScalar(.5), html: txt, cls: role});
+      }
+    } else if (this.dims && this.cab && !this.sel) {
+      const c = this.cab, fd = this.R && this.R.dims ? this.R.dims.fdepth : c.D, o = Math.max(.05, this.orb.r * .02), tk = o * .5;
+      const V3 = (x, y, z) => new T.Vector3(x, y, z), W = c.W * MM, H = c.H * MM, D = fd * MM;
+      const ex = this.exp * .3;
+      seg([V3(0, H + o, D), V3(W, H + o, D), V3(0, H, D), V3(0, H + o + tk, D), V3(W, H, D), V3(W, H + o + tk, D)], '--dimL');
+      seg([V3(-o - ex, 0, D), V3(-o - ex, H, D), V3(0, 0, D), V3(-o - tk - ex, 0, D), V3(0, H, D), V3(-o - tk - ex, H, D)], '--dimW');
+      seg([V3(W + o + ex, H, 0), V3(W + o + ex, H, D), V3(W, H, 0), V3(W + o + tk + ex, H, 0), V3(W, H, D), V3(W + o + tk + ex, H, D)], '--dimT');
+      this.labels.push({pos: V3(W / 2, H + o, D), html: `<em>Genişlik</em>${fmt(c.W)}`, cls: 'L'});
+      this.labels.push({pos: V3(-o - ex, H / 2, D), html: `<em>Yükseklik</em>${fmt(c.H)}`, cls: 'W'});
+      this.labels.push({pos: V3(W + o + ex, H, D / 2), html: `<em>Derinlik</em>${fmt(c.D)}${fd !== c.D ? ` <em>(kapakla ${fmt(fd)})</em>` : ''}`, cls: 'T'});
+    }
+  },
+  placeLabels() {
+    const box = $('#lbls'), L = this.labels || [];
+    while (box.children.length < L.length) box.append(h('div', {class: 'lbl'}));
+    const w = this.ren.domElement.clientWidth, hh = this.ren.domElement.clientHeight;
+    [...box.children].forEach((el, i) => {
+      const q = L[i]; if (!q) { el.hidden = true; return; }
+      const v = q.pos.clone().project(this.cam);
+      if (v.z > 1) { el.hidden = true; return; }
+      el.hidden = false; el.className = 'lbl ' + q.cls; if (el._h !== q.html) { el.innerHTML = q.html; el._h = q.html; }
+      el.style.transform = `translate(${((v.x + 1) / 2 * w).toFixed(1)}px,${((1 - v.y) / 2 * hh).toFixed(1)}px) translate(-50%,-50%)`;
+    });
+  },
+
+  /* ---------- fare / dokunma ---------- */
+  pick(cx, cy) {
+    const r = this.ren.domElement.getBoundingClientRect();
+    const v = new this.T.Vector2((cx - r.left) / r.width * 2 - 1, -(cy - r.top) / r.height * 2 + 1);
+    this.ray.setFromCamera(v, this.cam);
+    const vis = this.meshes.filter(m => m.visible);
+    const hit = this.ray.intersectObjects(vis, false);
+    if (!hit.length) return null;
+    /* odakta solukken öndeki saydam parçalar yerine seçili olmayan ilk opak parçayı tercih et */
+    return hit[0].object.userData.p.id;
+  },
+  bindEvents(cv) {
+    const ptr = new Map(); let moved = 0, last = null, pinch = null;
+    cv.addEventListener('contextmenu', e => e.preventDefault());
+    cv.addEventListener('pointerdown', e => { const hn = $('#hint3d'); if (hn) hn.hidden = true; cv.setPointerCapture(e.pointerId); ptr.set(e.pointerId, {x: e.clientX, y: e.clientY}); moved = 0; last = {x: e.clientX, y: e.clientY, b: e.button, sh: e.shiftKey || e.ctrlKey || e.metaKey}; pinch = null; });
+    cv.addEventListener('pointermove', e => {
+      const o = this.orb;
+      if (!ptr.has(e.pointerId)) {
+        if (e.pointerType === 'mouse' && this.ready && this.cab) { const id = this.pick(e.clientX, e.clientY); if (id !== this.hover) { this.hover = id; cv.style.cursor = id ? 'pointer' : ''; this.applyState(); this.req(); } }
+        return;
+      }
+      const pr = ptr.get(e.pointerId), dx = e.clientX - pr.x, dy = e.clientY - pr.y;
+      pr.x = e.clientX; pr.y = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
+      if (ptr.size === 2) {
+        const [a, b] = [...ptr.values()], d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        if (pinch) { o.r = clamp(o.r * pinch.d / Math.max(d, 1), .2, 30); this.pan(mx - pinch.mx, my - pinch.my); }
+        pinch = {d, mx, my};
+      } else if (last && (last.b === 2 || last.b === 1 || last.sh)) this.pan(dx, dy);
+      else { o.th -= dx * .008; o.ph = clamp(o.ph - dy * .008, .03, Math.PI - .03); }
+      this.req();
+    });
+    const up = e => {
+      if (!ptr.has(e.pointerId)) return;
+      ptr.delete(e.pointerId);
+      if (!ptr.size && moved < 6 && last && last.b === 0 && this.ready) { const id = this.pick(e.clientX, e.clientY); this.onPick && this.onPick(id); }
+      if (ptr.size < 2) pinch = null;
+    };
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    cv.addEventListener('pointerleave', () => { if (this.hover) { this.hover = null; this.applyState(); this.req(); } });
+    cv.addEventListener('wheel', e => { e.preventDefault(); this.orb.r = clamp(this.orb.r * Math.exp(e.deltaY * .0012), .2, 30); this.req(); }, {passive: false});
+    cv.addEventListener('dblclick', e => { const id = this.pick(e.clientX, e.clientY), m = id && this.byId.get(id); if (m) { const v = new this.T.Vector3(); m.getWorldPosition(v); Object.assign(this.orb, {tx: v.x, ty: v.y, tz: v.z}); this.req(); } });
+  },
+  pan(dx, dy) {
+    const T = this.T, o = this.orb, el = this.ren.domElement, k = 2 * o.r * Math.tan(this.cam.fov * Math.PI / 360) / el.clientHeight;
+    const right = new T.Vector3().setFromMatrixColumn(this.cam.matrix, 0), upv = new T.Vector3().setFromMatrixColumn(this.cam.matrix, 1);
+    const mv = right.multiplyScalar(-dx * k).add(upv.multiplyScalar(dy * k));
+    o.tx += mv.x; o.ty += mv.y; o.tz += mv.z;
+  },
+  snapshot() { try { this.render(); return this.ren.domElement.toDataURL('image/png'); } catch (e) { return null; } },
+};
+
+/* ---------- 2B ön görünüş (liste simgeleri ve çıktı için) ---------- */
+function frontSVG(c, R, opt = {}) {
+  const mini = !!opt.mini, pad = mini ? 0 : Math.max(c.W, c.H) * .12;
+  const vw = c.W + 2 * pad, vh = c.H + 2 * pad;
+  const svg = sv('svg', {viewBox: `${-pad} ${-pad} ${vw} ${vh}`, class: opt.cls || '', preserveAspectRatio: 'xMidYMid meet'});
+  const Y = y => c.H - y, sw = Math.max(c.W, c.H) / (mini ? 28 : 260);
+  const rect = (b, st) => svg.append(sv('rect', Object.assign({x: b[0], y: Y(b[4]), width: b[3] - b[0], height: b[4] - b[1]}, st)));
+  const body = R.parts.filter(p => ['side', 'top', 'bottom', 'rail', 'divider', 'sep', 'shelf', 'plinth'].includes(p.kind) && !(p.kind === 'rail' && p.id === 'rail-b'));
+  const fronts = R.parts.filter(p => p.kind === 'door' || p.kind === 'dfront');
+  if (mini) {
+    rect([0, 0, 0, c.W, c.H, 0], {fill: 'none', stroke: 'currentColor', 'stroke-width': sw * 1.4, 'stroke-linejoin': 'round'});
+    for (const p of fronts) { rect(p.box, {fill: 'none', stroke: 'currentColor', 'stroke-width': sw}); }
+    if (!fronts.length) for (const p of body.filter(q => q.kind === 'shelf' || q.kind === 'divider')) rect(p.box, {fill: 'currentColor', stroke: 'none', opacity: .55});
+    return svg;
+  }
+  for (const p of body) rect(p.box, {fill: '#e8e4dc', stroke: '#222', 'stroke-width': sw});
+  for (const p of R.parts.filter(q => q.kind === 'dfb' && q.id.endsWith('-F'))) rect(p.box, {fill: 'none', stroke: '#888', 'stroke-width': sw * .7, 'stroke-dasharray': `${sw * 4} ${sw * 3}`});
+  for (const p of fronts) {
+    rect(p.box, {fill: 'none', stroke: '#1d4ed8', 'stroke-width': sw * 1.1, 'stroke-dasharray': `${sw * 8} ${sw * 4}`});
+    if (p.hinge) { const b = p.box, hx = p.hinge.side === 'L' ? b[0] : b[3], fxx = p.hinge.side === 'L' ? b[3] : b[0]; svg.append(sv('path', {d: `M${fxx} ${Y(b[4])} L${hx} ${Y((b[1] + b[4]) / 2)} L${fxx} ${Y(b[1])}`, fill: 'none', stroke: '#1d4ed8', 'stroke-width': sw * .6, opacity: .6})); }
+  }
+  for (const x of R.extras.filter(q => q.type === 'rod')) svg.append(sv('line', {x1: x.x0, y1: Y(x.y), x2: x.x1, y2: Y(x.y), stroke: '#555', 'stroke-width': sw * 2.4, 'stroke-linecap': 'round'}));
+  /* ölçüler */
+  const fs = Math.max(c.W, c.H) / 26, dl = (x1, y1, x2, y2, txt, vert) => {
+    svg.append(sv('line', {x1, y1, x2, y2, stroke: '#c2410c', 'stroke-width': sw}));
+    for (const [px, py] of [[x1, y1], [x2, y2]]) svg.append(sv('line', Object.assign(vert ? {x1: px - fs * .3, y1: py, x2: px + fs * .3, y2: py} : {x1: px, y1: py - fs * .3, x2: px, y2: py + fs * .3}, {stroke: '#c2410c', 'stroke-width': sw})));
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    svg.append(sv('text', vert ? {x: mx - fs * .35, y: my, 'font-size': fs, 'text-anchor': 'middle', transform: `rotate(-90 ${mx - fs * .35} ${my})`, fill: '#c2410c', 'font-family': 'Arial'} : {x: mx, y: my - fs * .3, 'font-size': fs, 'text-anchor': 'middle', fill: '#c2410c', 'font-family': 'Arial'}, txt));
+  };
+  dl(0, -pad * .45, c.W, -pad * .45, fmt(c.W));
+  dl(-pad * .45, 0, -pad * .45, c.H, fmt(c.H), true);
+  if (R.secs.length > 1) { let y = c.H + pad * .5; for (const s of R.secs) dl(s.sx, y, s.sx + s.sw, y, fmt(s.sw)); }
+  return svg;
+}
+
+/* =====================================================================
+   Arayüz: dolap listesi, ölçü formu, parça kartı, kesim listesi,
+   levha planı, yazdırma, CSV
+   ===================================================================== */
+const getP = (o, path) => path.split('.').reduce((a, k) => a == null ? a : a[k], o);
+const setP = (o, path, v) => { const ks = path.split('.'), last = ks.pop(); const t = ks.reduce((a, k) => a[k], o); t[last] = v; };
+
+/* küçük çizimler: yapı tipi ve baza tipi */
+const BUILD_IC = {
+  sides: '<rect x="4" y="2" width="4" height="30"/><rect x="32" y="2" width="4" height="30"/><rect x="8" y="2" width="24" height="4" class="a"/><rect x="8" y="28" width="24" height="4" class="a"/>',
+  top: '<rect x="4" y="2" width="32" height="4" class="a"/><rect x="4" y="6" width="4" height="26"/><rect x="32" y="6" width="4" height="26"/><rect x="8" y="28" width="24" height="4" class="a"/>',
+  over: '<rect x="4" y="2" width="32" height="4" class="a"/><rect x="4" y="28" width="32" height="4" class="a"/><rect x="4" y="6" width="4" height="22"/><rect x="32" y="6" width="4" height="22"/>',
+};
+const BASE_IC = {
+  none: '<rect x="6" y="4" width="28" height="28" rx="1"/>',
+  legs: '<rect x="6" y="3" width="28" height="22" rx="1"/><path d="M10 25v6M30 25v6" stroke-width="3"/>',
+  plinth: '<path d="M6 3h28v29h-3V24H9v8H6z"/><path d="M9 28h22" class="a" stroke-width="3"/>',
+  frame: '<rect x="6" y="3" width="28" height="22" rx="1"/><rect x="8" y="25" width="24" height="6" class="a"/>',
+  wall: '<path d="M37 2v31" stroke-width="2.4"/><rect x="5" y="7" width="28" height="20" rx="1"/>',
+};
+const pic = inner => { const s = sv('svg', {viewBox: '0 0 40 34', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.6}); s.innerHTML = inner.replace(/class="a"/g, 'fill="currentColor" fill-opacity=".35"'); return s; };
+
+const UI = {
+  /* ---------- ortak alan üreticileri ---------- */
+  num(label, path, o = {}) {
+    const c = A.cab, v = getP(c, path);
+    const inp = h('input', {class: 'inp', inputmode: 'decimal', autocomplete: 'off', value: (o.empty && !v) ? '' : fmt(v, 2), placeholder: o.ph || '', 'data-path': path});
+    if (o.auto != null) inp.dataset.auto = o.auto;
+    const ok = x => isFinite(x) && x >= (o.min ?? 0) && x <= (o.max ?? 1e5);
+    inp.addEventListener('input', () => {
+      const raw = inp.value.trim();
+      if (o.empty && raw === '') { inp.classList.remove('bad'); A.change(() => setP(A.cab, path, 0), {key: path}); return; }
+      const x = evalNum(raw);
+      if (!ok(x)) { inp.classList.add('bad'); return; }
+      inp.classList.remove('bad');
+      A.change(() => setP(A.cab, path, x), {key: path, full: o.full});
+    });
+    inp.addEventListener('change', () => { const x = getP(A.cab, path); if (!inp.classList.contains('bad')) inp.value = (o.empty && !x) ? '' : fmt(x, 2); });
+    inp.addEventListener('focus', () => setTimeout(() => inp.select(), 0));
+    return h('label', {class: 'fld'}, h('span', {title: label}, label), h('div', {class: 'inpw'}, inp, h('i', null, o.unit ?? 'mm')), o.hint ? h('small', null, o.hint) : null);
+  },
+  chips(label, path, opts, o = {}) {
+    const cur = o.get ? o.get() : getP(A.cab, path);
+    const box = h('div', {class: 'chips' + (o.blocks ? ' blocks' : '')}, opts.map(([v, t, ic, title]) => h('button', {type: 'button', class: String(cur) === String(v) ? 'on' : '', title: title || '', onclick: () => { if (o.set) o.set(v); else A.change(() => setP(A.cab, path, v), {full: true}); }}, ic ? pic(ic) : null, t)));
+    return label ? h('div', {class: 'fld'}, h('span', null, label), box, o.hint ? h('small', null, o.hint) : null) : box;
+  },
+  step(label, path, min, max, o = {}) {
+    const v = getP(A.cab, path), set = d => { const x = clamp(getP(A.cab, path) + d, min, max); if (x !== getP(A.cab, path)) A.change(() => setP(A.cab, path, x), {full: true}); };
+    return h('div', {class: 'lblrow'}, h('span', null, label), h('div', {class: 'step'}, h('button', {type: 'button', 'aria-label': 'azalt', onclick: () => set(-1)}, '−'), h('b', null, o.fmt ? o.fmt(v) : v), h('button', {type: 'button', 'aria-label': 'artır', onclick: () => set(1)}, '+')));
+  },
+  check(label, path, o = {}) {
+    return h('label', {class: 'chk'}, h('input', {type: 'checkbox', checked: !!getP(A.cab, path), onchange: e => A.change(() => setP(A.cab, path, e.target.checked), {full: o.full !== false})}), label);
+  },
+  grp(key, title, sub, ...body) {
+    const open = !!Settings.v.open[key];
+    const d = h('details', {class: 'grp', open, 'data-k': key}, h('summary', null, title, sub ? h('small', null, sub) : null), h('div', {class: 'body'}, body));
+    d.addEventListener('toggle', () => { Settings.v.open[key] = d.open ? 1 : 0; Settings.set('open', Settings.v.open); });
+    return d;
+  },
+
+  /* ---------- dolap listesi ---------- */
+  cabs() {
+    const box = $('#cabs'), J = A.job; box.innerHTML = '';
+    box.append(h('div', {class: 'cabs-head'}, h('b', null, `Dolaplar · ${J.cabs.length}`),
+      h('button', {class: 'btn sm', type: 'button', onclick: () => UI.addCab()}, icon(IC.plus), 'Dolap ekle')));
+    for (const c of J.cabs) {
+      const R = c.id === A.cab.id ? A.R : calcCab(c);
+      const bad = R.warn.some(w => w.lvl === 'err') || R.check.some(w => w.lvl === 'err'), wr = R.warn.some(w => w.lvl === 'warn');
+      const ic = R.parts.length ? frontSVG(c, R, {mini: true, cls: 'ic'}) : pic(BASE_IC.none);
+      ic.classList.add('ic');
+      box.append(h('div', {class: 'cab' + (c.id === J.cur ? ' on' : ''), role: 'button', tabindex: 0, onclick: () => A.setCab(c.id), onkeydown: e => { if (e.key === 'Enter') A.setCab(c.id); }},
+        ic, h('div', {class: 'tx'}, h('b', null, c.name), h('small', null, `${fmt(c.W)} × ${fmt(c.H)} × ${fmt(c.D)} mm`)),
+        bad ? h('i', {class: 'warnb', title: 'Hata var'}) : wr ? h('i', {class: 'warnb w', title: 'Uyarı var'}) : null,
+        h('span', {class: 'qty', title: 'Adet'}, `× ${c.qty}`)));
+    }
+  },
+  addCab() {
+    const body = h('div', {class: 'presets'}, PRESETS.map(p => {
+      const c = newCab(p.k), R = calcCab(c), ic = frontSVG(c, R, {mini: true});
+      return h('button', {type: 'button', onclick: () => { Modal.close(p.k); }}, ic, h('div', null, h('b', null, p.n), h('small', null, `${p.d} · ${c.W}×${c.H}×${c.D}`)));
+    }));
+    Modal.open({title: 'Dolap ekle', body: [h('p', null, 'Bir şablonla başla; tüm ölçüler ve iç düzen sonradan değiştirilebilir.'), body], wide: true}).then(k => {
+      if (!k) return;
+      const c = newCab(k, A.job), cur = A.cab;
+      if (cur) for (const key of ['t', 'backT', 'frontT', 'drawerT', 'bandBody', 'bandFront', 'bandDrawer', 'deduct', 'overlay', 'gap', 'edge', 'railGap', 'railType', 'back', 'grooveD', 'grooveO', 'backTol']) c[key] = cur[key];
+      A.change(() => { A.job.cabs.push(c); A.job.cur = c.id; A.sel = null; }, {full: true, fit: true});
+      toast(`${c.name} eklendi`);
+    });
+  },
+
+  /* ---------- form ---------- */
+  form() {
+    const c = A.cab, R = A.R, F = $('#form'), sc = $('#side').scrollTop;
+    F.innerHTML = '';
+    F.append(
+      UI.grp('cab', 'Dolap', c.name,
+        h('label', {class: 'fld'}, h('span', null, 'Dolap adı'), h('input', {class: 'inp txt', value: c.name, maxlength: 60, oninput: e => A.change(() => { A.cab.name = e.target.value || 'Dolap'; }, {key: 'name'})})),
+        UI.step('Adet (aynı dolaptan)', 'qty', 1, 99)),
+      UI.grp('dims', 'Dış ölçüler', `${fmt(c.W)} × ${fmt(c.H)} × ${fmt(c.D)}`,
+        h('div', {class: 'row r3'}, UI.num('Genişlik', 'W', {min: 100, max: 6000}), UI.num('Yükseklik', 'H', {min: 100, max: 4000}), UI.num('Derinlik', 'D', {min: 100, max: 1500})),
+        h('p', {class: 'tip'}, 'Ölçüler mm. Yükseklik ayak / baza dahil toplam yüksekliktir. Kutuya “600-18” gibi hesap da yazabilirsin.')),
+      h('div', {class: 'sum', id: 'sum'}),
+      UI.grp('body', 'Gövde', `${fmt(c.t)} mm · ${({sides: 'yanlar tam boy', top: 'üst tabla üstte', over: 'tablalar tam'})[c.build]}`,
+        h('div', {class: 'row'}, UI.num('Gövde kalınlığı', 't', {min: 5, max: 50, full: true}), h('div', {class: 'fld'}, h('span', null, 'Hızlı seç'), UI.chips(null, 't', [[16, '16'], [18, '18'], [25, '25']]))),
+        UI.chips('Birleşim', 'build', [['sides', 'Yanlar tam boy', BUILD_IC.sides, 'Üst ve alt tabla yanların arasında'], ['top', 'Üst tabla üstte', BUILD_IC.top, 'Üst tabla yanların üstüne oturur, alt tabla arada'], ['over', 'Tablalar tam', BUILD_IC.over, 'Alt ve üst tabla tam genişlik, yanlar arada']], {blocks: true}),
+        UI.chips('Üst', 'top', [['panel', 'Üst tabla'], ['rails', 'Kuşak (ön + arka)'], ['none', 'Açık']], {hint: c.top === 'rails' ? 'Tezgâh altı dolaplarda üst tabla yerine iki kuşak kullanılır.' : null}),
+        c.top === 'rails' ? UI.num('Kuşak eni', 'railW', {min: 40, max: 300}) : null),
+      UI.grp('base', 'Baza / ayak', ({none: 'yok', legs: 'ayak + baza', plinth: 'yanlar yere iner', frame: 'baza kasası', wall: 'duvara asma'})[c.base] + (['legs', 'plinth', 'frame'].includes(c.base) ? ` · ${fmt(c.baseH)} mm` : ''),
+        UI.chips(null, 'base', [['none', 'Yok', BASE_IC.none], ['legs', 'Ayak + baza', BASE_IC.legs], ['plinth', 'Yanlar yere iner', BASE_IC.plinth], ['frame', 'Baza kasası', BASE_IC.frame], ['wall', 'Duvara asma', BASE_IC.wall]], {blocks: true}),
+        ['legs', 'plinth', 'frame'].includes(c.base) ? h('div', {class: 'row'}, UI.num(c.base === 'legs' ? 'Ayak yüksekliği' : 'Baza yüksekliği', 'baseH', {min: 20, max: 400}), UI.num('Bazanın geri çekmesi', 'plinthSet', {min: 0, max: 200})) : null),
+      UI.grp('back', 'Arkalık', ({groove: 'kanallı', nailed: 'çakma', inset: 'gömme', none: 'yok'})[c.back] + (c.back !== 'none' ? ` · ${fmt(c.backT)} mm` : ''),
+        UI.chips(null, 'back', [['groove', 'Kanallı'], ['nailed', 'Arkadan çakma'], ['inset', 'Gömme (tam kalınlık)'], ['none', 'Yok']]),
+        c.back !== 'none' ? h('div', {class: 'row'}, UI.num('Arkalık kalınlığı', 'backT', {min: 2, max: 30, full: true}), c.back !== 'inset' ? UI.num(c.back === 'groove' ? 'Kanal boşluk payı' : 'Kenardan içeri pay', 'backTol', {min: 0, max: 10, hint: 'her kenarda'}) : h('div')) : null,
+        c.back === 'groove' ? h('div', {class: 'row'}, UI.num('Kanal derinliği', 'grooveD', {min: 2, max: 20}), UI.num('Kanalın arkadan mesafesi', 'grooveO', {min: 0, max: 80})) : null,
+        h('p', {class: 'tip'}, 'Çekmece tabanları da arkalık malzemesinden (aynı kalınlıkta) hesaplanır.')),
+      UI.grp('secs', 'Bölmeler ve iç düzen', `${c.sections.length} bölme`, UI.secs()),
+      UI.grp('front', 'Kapak, çekmece, raf ayarları', `${({full: 'tam bindirme', half: 'yarım bindirme', inset: 'gömme'})[c.overlay]} · ${fmt(c.frontT)} mm`,
+        UI.chips('Kapak tipi', 'overlay', [['full', 'Tam bindirme'], ['half', 'Yarım bindirme'], ['inset', 'Gömme kapak']], {hint: c.overlay === 'half' ? 'Yan yana dolaplarda ortak yanı paylaşan kapaklar için: dış kenarda yanın yarısını örter.' : null}),
+        h('div', {class: 'row r3'}, UI.num('Kapak kalınlığı', 'frontT', {min: 3, max: 40, full: true}), UI.num('Kapak arası', 'gap', {min: 0, max: 10}), UI.num('Dış kenar payı', 'edge', {min: 0, max: 10})),
+        h('div', {class: 'row'}, UI.num('Raf yan boşluğu', 'shelfGap', {min: 0, max: 5, hint: 'hareketli raf, her yanda'}), UI.num('Raf geri çekme', 'shelfSet', {min: 0, max: 100, hint: 'hareketli raf, önden'})),
+        c.sections.some(s => s.drawers) ? [
+          UI.chips('Çekmece rayı', 'railType', [['ball', 'Bilyalı'], ['roller', 'Makaralı'], ['hidden', 'Gizli ray']], {set: v => A.change(() => { A.cab.railType = v; A.cab.railGap = v === 'hidden' ? 5 : v === 'roller' ? 12.5 : 13; }, {full: true})}),
+          h('div', {class: 'row'}, UI.num('Ray payı (her yan)', 'railGap', {min: 0, max: 30}), UI.num('Çekmece gövde kal.', 'drawerT', {min: 6, max: 30, full: true}))] : null),
+      UI.grp('band', 'Kenar bandı', `gövde ${fmt(c.bandBody)} · kapak ${fmt(c.bandFront)} mm`,
+        UI.chips('Gövde ön kenarları', 'bandBody', [[0, 'Yok'], [.4, '0,4'], [.8, '0,8'], [1, '1'], [2, '2']]),
+        UI.chips('Kapak / çekmece önü (4 kenar)', 'bandFront', [[0, 'Yok (boyalı)'], [.8, '0,8'], [1, '1'], [2, '2']]),
+        c.sections.some(s => s.drawers) ? UI.chips('Çekmece kutusu üst kenarı', 'bandDrawer', [[0, 'Yok'], [.4, '0,4'], [.8, '0,8'], [1, '1']]) : null,
+        UI.check('Bant kalınlığını kesim ölçüsünden düş', 'deduct'),
+        h('p', {class: 'tip'}, 'Açıkken kesim ölçüsü = bitmiş ölçü − bantlı kenarların bant kalınlığı. Örn. 560 derinlikli yan, 0,8 bantla 559,2 kesilir.')),
+      UI.grp('mats', 'Malzeme ve levha (tüm iş)', `${A.job.mats.body.L}×${A.job.mats.body.W}`, UI.mats()),
+      h('div', {class: 'row', style: 'margin:14px 0 6px'},
+        h('button', {class: 'btn', type: 'button', onclick: () => A.dupCab()}, icon(IC.copy), 'Çoğalt'),
+        h('button', {class: 'btn danger', type: 'button', onclick: () => A.delCab(), disabled: A.job.cabs.length < 2}, icon(IC.trash), 'Sil')),
+      A.job.cabs.length > 1 ? h('button', {class: 'btn full', type: 'button', onclick: () => A.applyAll()}, 'Gövde / bant / kapak ayarlarını tüm dolaplara uygula') : null,
+    );
+    UI.sum();
+    $('#side').scrollTop = sc;
+  },
+  secs() {
+    const c = A.cab, n = c.sections.length, R = A.R, ws = R.dims ? R.dims.widths : [];
+    const wrap = h('div', {class: 'secs'});
+    wrap.append(h('div', {class: 'lblrow'}, h('span', null, 'Bölme sayısı (ara dikme = bölme − 1)'), h('div', {class: 'step'},
+      h('button', {type: 'button', onclick: () => { if (n > 1) A.change(() => { A.cab.sections.pop(); }, {full: true}); }}, '−'), h('b', null, n),
+      h('button', {type: 'button', onclick: () => { if (n < 12) A.change(() => { const l = A.cab.sections[n - 1]; A.cab.sections.push(Object.assign({}, l, {w: 0, hinge: 'R'})); }, {full: true}); }}, '+'))));
+    c.sections.forEach((s, i) => {
+      const p = `sections.${i}`, fill = s.drawers > 0 && !(s.drawerH > 0);
+      const nDoor = R.secs[i] ? R.secs[i].doors : 0;
+      wrap.append(h('div', {class: 'sec'},
+        h('div', {class: 'sec-h'}, h('b', null, n > 1 ? `Bölme ${i + 1}` : 'İç düzen'), h('small', null, ws[i] ? `iç genişlik ${fmt(ws[i])} mm` : ''),
+          n > 1 ? h('button', {class: 'icon-btn sm', type: 'button', title: 'Bölmeyi sil', onclick: () => A.change(() => { A.cab.sections.splice(i, 1); }, {full: true})}, icon(IC.trash)) : null),
+        n > 1 ? UI.num('Genişlik', p + '.w', {empty: true, min: 0, max: 6000, ph: 'otomatik', auto: i, hint: 'Boş = kalan genişliği eşit paylaş'}) : null,
+        fill ? null : [
+          s.hanger ? null : UI.step('Raf sayısı', p + '.shelves', 0, 20),
+          s.hanger ? UI.check('Askı üstünde şapkalık raf', p + '.shelves') : null,
+          (s.shelves > 0) ? UI.chips(null, p + '.shelfType', [['adj', 'Hareketli raf'], ['fixed', 'Sabit raf']]) : null,
+          UI.check('Askı borusu (elbise)', p + '.hanger'),
+        ],
+        UI.step('Çekmece', p + '.drawers', 0, 10),
+        s.drawers > 0 ? UI.num('Çekmece önü yüksekliği', p + '.drawerH', {empty: true, min: 0, max: 1500, ph: 'tüm bölme, eşit', full: true, hint: 'Boş = çekmeceler bölmeyi doldurur; dolu = alta çekmece, üstüne raf/kapak'}) : null,
+        fill ? null : UI.chips('Kapak', p + '.door', [['auto', 'Otomatik'], ['none', 'Yok'], ['1', 'Tek'], ['2', 'Çift']]),
+        !fill && nDoor === 1 ? UI.chips('Menteşe', p + '.hinge', [['L', 'Solda'], ['R', 'Sağda']]) : null,
+      ));
+    });
+    return wrap;
+  },
+  mats() {
+    const J = A.job, box = h('div', {class: 'mats'});
+    const setJ = (fn, key, full) => A.change(fn, {key, full});
+    for (const k of MAT_KEYS) {
+      const m = J.mats[k];
+      const plate = q => { const inp = h('input', {class: 'inp', inputmode: 'decimal', value: m[q]}); inp.addEventListener('input', () => { const x = evalNum(inp.value); if (!(x >= 300 && x <= 6000)) { inp.classList.add('bad'); return; } inp.classList.remove('bad'); setJ(() => { A.job.mats[k][q] = x; }, 'm' + k + q); }); return h('label', {class: 'fld'}, h('span', null, q === 'L' ? 'Levha boyu' : 'Levha eni'), h('div', {class: 'inpw'}, inp, h('i', null, 'mm'))); };
+      box.append(h('div', {class: 'mat'},
+        h('div', {class: 'mat-h'}, MAT_NAMES[k]),
+        h('input', {class: 'inp txt', value: m.label, maxlength: 40, oninput: e => setJ(() => { A.job.mats[k].label = e.target.value || MAT_NAMES[k]; }, 'ml' + k)}),
+        h('div', {class: 'sw'}, Object.entries(FINISHES).map(([fk, [fn, col]]) => h('button', {type: 'button', title: fn, 'aria-label': fn, class: m.color === fk ? 'on' : '', style: `background:${col}`, onclick: () => setJ(() => { A.job.mats[k].color = fk; }, null, true)}))),
+        h('div', {class: 'row'}, plate('L'), plate('W')),
+        h('label', {class: 'chk'}, h('input', {type: 'checkbox', checked: m.grain, onchange: e => setJ(() => { A.job.mats[k].grain = e.target.checked; }, null, true)}), 'Desenli (parçalar döndürülmez, boy = levha boyu)')));
+    }
+    const jn = (label, key) => { const inp = h('input', {class: 'inp', inputmode: 'decimal', value: fmt(J[key])}); inp.addEventListener('input', () => { const x = evalNum(inp.value); if (!(x >= 0 && x <= 50)) { inp.classList.add('bad'); return; } inp.classList.remove('bad'); setJ(() => { A.job[key] = x; }, 'j' + key); }); return h('label', {class: 'fld'}, h('span', null, label), h('div', {class: 'inpw'}, inp, h('i', null, 'mm'))); };
+    box.append(h('div', {class: 'row'}, jn('Testere payı', 'kerf'), jn('Levha kenar traşı', 'trim')));
+    return box;
+  },
+  sum() {
+    const el = $('#sum'); if (!el) return;
+    const R = A.R; el.innerHTML = '';
+    el.append(h('h4', null, 'Hesap özeti'));
+    if (R.sum.length) el.append(h('div', {class: 'kv'}, R.sum.flatMap(([k, v]) => [h('span', null, k), h('b', null, v)])));
+    for (const w of [...R.warn.filter(x => x.lvl === 'err'), ...R.check, ...R.warn.filter(x => x.lvl !== 'err')]) el.append(h('div', {class: 'iss ' + w.lvl}, w.t));
+    const c = A.cab, ds = $('#form details[data-k=dims] summary small'); if (ds) ds.textContent = `${fmt(c.W)} × ${fmt(c.H)} × ${fmt(c.D)}`;
+    const cs = $('#form details[data-k=cab] summary small'); if (cs) cs.textContent = c.name;
+    /* bölme genişliği "otomatik" ipuçları */
+    for (const inp of $$('#form input[data-auto]')) { const i = +inp.dataset.auto, w = R.dims && R.dims.widths[i]; inp.placeholder = w ? `otomatik · ${fmt(w)}` : 'otomatik'; }
+    for (const s of $$('#form .sec')) { const i = $$('#form .sec').indexOf(s), w = R.dims && R.dims.widths[i], sm = s.querySelector('.sec-h small'); if (sm) sm.textContent = w ? `iç genişlik ${fmt(w)} mm` : ''; }
+  },
+
+  /* ---------- 3B araç çubuğu ve parça kartı ---------- */
+  tools() {
+    const t = $('#tools3d'); t.innerHTML = '';
+    const tb = (txt, ic, on, fn, title) => h('button', {class: 'tb' + (on ? ' on' : ''), type: 'button', title: title || txt, onclick: fn}, ic ? icon(ic) : null, txt);
+    const dm = V.doorMode;
+    t.append(
+      tb('Kapalı', IC.door, dm === 'closed', () => { V.setDoor('closed'); UI.tools(); }, 'Kapaklar kapalı'),
+      tb('Açık', null, dm === 'open', () => { V.setDoor('open'); UI.tools(); }, 'Kapakları aç, çekmeceleri çek'),
+      tb('Gizle', null, dm === 'hidden', () => { V.setDoor('hidden'); UI.tools(); }, 'Kapak ve çekmece önlerini gizle'),
+      h('i', {class: 'sep'}),
+      tb('Patlat', IC.explode, V.explode, () => { V.setExplode(!V.explode); if (V.explode) setTimeout(() => { V.fit(); V.req(); }, 0); UI.tools(); }, 'Parçaları ayrık göster'),
+      tb('Ölçüler', IC.ruler, V.dims, () => { V.dims = !V.dims; V.req(); UI.tools(); }, 'Dış ölçüleri göster'),
+      tb('Odak', IC.focus, V.focus, () => { V.focus = !V.focus; V.applyState(); V.req(); UI.tools(); }, 'Seçili parça dışındakileri soluklaştır'),
+      h('i', {class: 'sep'}),
+      tb('', IC.cube, false, () => V.view('iso'), 'Perspektif'), tb('', IC.front, false, () => V.view('front'), 'Önden'), tb('', IC.side, false, () => V.view('side'), 'Yandan'), tb('', IC.top, false, () => V.view('top'), 'Üstten'),
+    );
+  },
+  selectPart(id, o = {}) {
+    A.sel = id || null;
+    if (V.ready) V.select(A.sel);
+    UI.pcard();
+    for (const tr of $$('#vcut tr[data-refs]')) tr.classList.toggle('on', !!A.sel && tr.dataset.refs.split(' ').includes(A.cab.id + ':' + A.sel));
+    if (o.show && A.sel) A.show('3d');
+  },
+  pcard() {
+    const el = $('#pcard'), p = A.sel && A.R.parts.find(q => q.id === A.sel);
+    if (!p) { el.hidden = true; return; }
+    const c = A.cab, m = A.job.mats[p.mat], same = A.R.parts.filter(q => q.name === p.name && q.cL === p.cL && q.cW === p.cW && bandSig(q) === bandSig(p)).length;
+    const bandTxt = UI.bandText(p, true);
+    const ovIn = (q, v) => h('input', {class: 'inp', inputmode: 'decimal', value: fmt(v), 'data-q': q});
+    const iL = ovIn('cL', p.cL), iW = ovIn('cW', p.cW);
+    const applyOv = () => {
+      const L = evalNum(iL.value), Wv = evalNum(iW.value);
+      if (!(L > 0 && Wv > 0)) { toast('Geçerli bir ölçü gir', 'err'); return; }
+      const bL = p.cL0 ?? p.cL, bW = p.cW0 ?? p.cW;
+      A.change(() => {
+        const ov = A.cab.over[p.id] || {};
+        ov.cL = Math.abs(L - bL) > .01 ? L : 0; ov.cW = Math.abs(Wv - bW) > .01 ? Wv : 0;
+        if (!ov.cL && !ov.cW && !ov.off) delete A.cab.over[p.id]; else A.cab.over[p.id] = ov;
+      }, {});
+      toast('Kesim ölçüsü güncellendi');
+    };
+    el.innerHTML = '';
+    el.append(
+      h('div', {class: 'pc-h'}, h('div', null, h('b', null, p.name, p.ovr ? h('span', {class: 'badge', style: 'margin-left:6px'}, 'elle') : null, p.off ? h('span', {class: 'badge off', style: 'margin-left:6px'}, 'listede yok') : null), h('small', null, [p.sub, c.name, `${m.label} · ${fmt(p.T)} mm`].filter(Boolean).join(' · '))),
+        h('button', {class: 'icon-btn sm', type: 'button', 'aria-label': 'Kapat', onclick: () => UI.selectPart(null)}, icon(IC.x))),
+      h('div', null, h('div', {class: 'pc-tag'}, 'Kesim ölçüsü (boy × en × kalınlık)'),
+        h('div', {class: 'pc-cut'}, h('span', {class: 'n L'}, fmt(p.cL)), h('span', {class: 'x'}, '×'), h('span', {class: 'n W'}, fmt(p.cW)), h('span', {class: 'x'}, '×'), h('span', {class: 'n T'}, fmt(p.T)), h('span', {class: 'u'}, 'mm'),
+          h('span', {class: 'u', style: 'margin-left:auto'}, `bu dolapta ${same} adet${c.qty > 1 ? ` · toplam ${same * c.qty}` : ''}`))),
+      h('div', {class: 'pc-f'},
+        h('div', null, h('b', null, 'Boy: '), p.fL || fmt(p.L)),
+        h('div', null, h('b', null, 'En: '), p.fW || fmt(p.Wd)),
+        (Math.abs(p.L - p.cL) > .05 || Math.abs(p.Wd - p.cW) > .05) && !p.ovr ? h('div', null, h('b', null, 'Kesim: '), `${fmt(p.L)} × ${fmt(p.Wd)} bitmiş ölçüden bant düşülür → ${fmt(p.cL)} × ${fmt(p.cW)}`) : null,
+        p.ovr ? h('div', null, h('b', null, 'Elle düzeltildi: '), `hesaplanan ${fmt(p.cL0 ?? p.cL)} × ${fmt(p.cW0 ?? p.cW)}`) : null,
+        h('div', null, h('b', null, 'Kenar bandı: '), bandTxt),
+        h('div', null, h('b', null, 'Desen yönü: '), m.grain ? 'boy boyunca (levha boyuna paralel)' : 'desensiz; levhada döndürülebilir')),
+      p.notes.length ? h('ul', {class: 'pc-n'}, p.notes.map(x => h('li', null, x))) : null,
+      h('details', {open: p.ovr || p.off}, h('summary', {class: 'pc-tag', style: 'cursor:pointer;padding:2px 0'}, 'Elle ayarla'),
+        h('div', {style: 'display:flex;flex-direction:column;gap:8px;margin-top:8px'},
+          h('div', {class: 'ovr'}, h('label', {class: 'fld'}, h('span', null, 'Kesim boyu'), h('div', {class: 'inpw'}, iL, h('i', null, 'mm'))), h('label', {class: 'fld'}, h('span', null, 'Kesim eni'), h('div', {class: 'inpw'}, iW, h('i', null, 'mm'))),
+            h('button', {class: 'btn sm primary', type: 'button', style: 'min-height:40px', onclick: applyOv}, 'Uygula')),
+          h('div', {style: 'display:flex;gap:8px;flex-wrap:wrap'},
+            p.ovr ? h('button', {class: 'btn sm', type: 'button', onclick: () => A.change(() => { const ov = A.cab.over[p.id]; if (ov) { delete ov.cL; delete ov.cW; if (!ov.off) delete A.cab.over[p.id]; } }, {})}, 'Hesaplanana dön') : null,
+            h('button', {class: 'btn sm', type: 'button', onclick: () => A.change(() => { const ov = A.cab.over[p.id] || (A.cab.over[p.id] = {}); ov.off = !ov.off; if (!ov.off && !ov.cL && !ov.cW) delete A.cab.over[p.id]; }, {})}, p.off ? 'Listeye geri al' : 'Kesim listesinden çıkar')),
+          h('p', {class: 'tip'}, 'Elle girilen ölçü yalnız kesim listesine yansır ve “elle” etiketiyle işaretlenir. Dolap ölçüleri değişince bu ölçüyü kontrol et.')))
+    );
+    el.hidden = false;
+  },
+  bandText(p, long) {
+    const parts = [];
+    const nL = p.bandL.filter(b => b > 0), nW = p.bandW.filter(b => b > 0);
+    if (nL.length) parts.push(`${nL.length} boy kenarı (${fmt(nL[0])} mm)`);
+    if (nW.length) parts.push(`${nW.length} en kenarı (${fmt(nW[0])} mm)`);
+    if (!parts.length) return 'yok';
+    if (long && p.kind !== 'door' && p.kind !== 'dfront' && nL.length === 1) parts[0] += ' — ' + (['dside', 'dfb'].includes(p.kind) ? 'üst kenar' : 'ön kenar');
+    return parts.join(' + ');
+  },
+  bandSVG(r) {
+    const s = sv('svg', {class: 'bsvg', viewBox: '0 0 44 26'});
+    s.append(sv('rect', {x: 4, y: 4, width: 36, height: 18, rx: 2}));
+    if (r.bandL[0] > 0) s.append(sv('line', {x1: 5, y1: 4, x2: 39, y2: 4}));
+    if (r.bandL[1] > 0) s.append(sv('line', {x1: 5, y1: 22, x2: 39, y2: 22}));
+    if (r.bandW[0] > 0) s.append(sv('line', {x1: 4, y1: 5, x2: 4, y2: 21}));
+    if (r.bandW[1] > 0) s.append(sv('line', {x1: 40, y1: 5, x2: 40, y2: 21}));
+    return s;
+  },
+  bandShort(r) {
+    const nL = r.bandL.filter(b => b > 0), nW = r.bandW.filter(b => b > 0);
+    if (!nL.length && !nW.length) return '—';
+    return [nL.length ? `${nL.length} boy` : '', nW.length ? `${nW.length} en` : ''].filter(Boolean).join(' + ') + ` · ${fmt((nL[0] || nW[0]))}`;
+  },
+
+  /* ---------- kesim listesi ---------- */
+  scopeCabs() { return Settings.v.scope === 'cab' ? [A.cab] : A.job.cabs; },
+  scopeSeg(rerender) {
+    const J = A.job;
+    return h('div', {class: 'seg sm'}, [['job', `Tüm iş (${J.cabs.reduce((a, c) => a + c.qty, 0)} dolap)`], ['cab', 'Bu dolap']].map(([v, t]) => h('button', {type: 'button', class: Settings.v.scope === v ? 'on' : '', onclick: () => { Settings.set('scope', v); rerender(); }}, t)));
+  },
+  cut() {
+    const el = $('#vcut'), J = A.job, cabs = UI.scopeCabs(), G = cutRows(J, cabs), sc = el.scrollTop;
+    el.innerHTML = '';
+    const tot = G.reduce((a, g) => a + g.count, 0), area = G.reduce((a, g) => a + g.area, 0), bands = bandTotals(G), sheets = G.map(g => nestGroup(g, J));
+    const inner = h('div', {class: 'pane-in'});
+    inner.append(
+      h('div', {class: 'ptool'}, h('h2', null, 'Kesim listesi'), UI.scopeSeg(() => UI.cut()),
+        h('button', {class: 'btn sm', type: 'button', onclick: () => UI.csv()}, icon(IC.table), 'Excel (CSV)'),
+        h('button', {class: 'btn sm primary', type: 'button', onclick: () => UI.print()}, icon(IC.print), 'Yazdır / PDF')),
+      h('p', {class: 'pnote'}, 'Ölçüler mm. Boy = desen (su) yönü. Kalın yazılan kesim ölçüsüdür' + (A.cab.deduct ? ' (bant kalınlığı düşülmüş)' : '') + '; altında bitmiş ölçü görünür. Satıra dokununca parça 3B’de seçilir.'),
+      h('div', {class: 'tot'},
+        h('div', null, h('span', null, 'Toplam parça'), h('b', null, tot)),
+        h('div', null, h('span', null, 'Toplam alan'), h('b', null, fmt2(area) + ' m²')),
+        h('div', null, h('span', null, 'Levha (tahmini)'), h('b', null, sheets.reduce((a, n) => a + n.sheets.length, 0)), sheets.length > 1 ? h('small', {class: 'pnote'}, ' ' + sheets.map(n => n.sheets.length).join(' + ')) : null),
+        ...bands.map(b => h('div', null, h('span', null, `Bant ${fmt(b.t)} mm`), h('b', null, `${fmt(b.m)} m`), h('small', {class: 'pnote'}, ` +%10 fire: ${fmt(b.m * 1.1)} m`)))));
+    G.forEach((g, gi) => {
+      const col = (FINISHES[g.m.color] || FINISHES.beyaz)[1], N = sheets[gi];
+      const tb = h('tbody');
+      for (const r of g.rows) {
+        const refs = r.refs.map(x => x.cab + ':' + x.id).join(' ');
+        const cabTxt = [...r.cabs.entries()].map(([nm, q]) => cabs.length > 1 || J.cabs.length > 1 ? `${nm}${r.cabs.size > 1 ? ' ×' + q : ''}` : '').filter(Boolean).join(', ');
+        const diff = Math.abs(r.cL - r.L) > .05 || Math.abs(r.cW - r.Wd) > .05;
+        tb.append(h('tr', {'data-refs': refs, class: A.sel && r.refs.some(x => x.cab === A.cab.id && x.id === A.sel) ? 'on' : '', onclick: () => A.pickRef(r.refs)},
+          h('td', {class: 'no'}, r.no),
+          h('td', {class: r.off ? 'off' : ''}, r.name, r.ovr ? h('span', {class: 'badge', style: 'margin-left:6px'}, 'elle') : null, cabTxt ? h('span', {class: 'sub'}, cabTxt) : null),
+          h('td', {class: 'num big' + (r.off ? ' off' : '')}, fmt(r.cL), diff && !r.ovr ? h('span', {class: 'sub'}, fmt(r.L)) : null),
+          h('td', {class: 'num big' + (r.off ? ' off' : '')}, fmt(r.cW), diff && !r.ovr ? h('span', {class: 'sub'}, fmt(r.Wd)) : null),
+          h('td', {class: 'num'}, r.n),
+          h('td', null, h('div', {style: 'display:flex;align-items:center;gap:8px'}, UI.bandSVG(r), h('span', {class: 'btxt'}, UI.bandShort(r))))));
+      }
+      inner.append(h('section', {class: 'card mgrp'},
+        h('div', {class: 'mgrp-h'}, h('i', {class: 'chipx', style: `background:${col}`}), h('b', null, g.label), h('small', null, `${g.count} parça · ${fmt2(g.area)} m² · ${N.sheets.length} levha (${g.m.L}×${g.m.W}${g.m.grain ? ', desenli' : ''})`)),
+        N.bad.length ? h('div', {class: 'iss', style: 'margin:10px 16px 0'}, `Levhaya sığmayan parça: ${[...new Set(N.bad.map(b => b.no))].map(x => '#' + x).join(', ')} — levha ölçüsünü kontrol et ya da parçayı ek yerinden böl.`) : null,
+        h('div', {class: 'tbl-w'}, h('table', {class: 'cl'}, h('thead', null, h('tr', null, h('th', null, 'No'), h('th', null, 'Parça'), h('th', {class: 'num'}, 'Boy'), h('th', {class: 'num'}, 'En'), h('th', {class: 'num'}, 'Adet'), h('th', null, 'Bant'))), tb))));
+    });
+    const hwl = hwTotals(cabs);
+    if (hwl.length) inner.append(h('section', {class: 'card mgrp'}, h('div', {class: 'mgrp-h'}, h('b', null, 'Hırdavat listesi'), h('small', null, 'tüm adetler dahil')),
+      h('div', {class: 'tbl-w'}, h('table', {class: 'cl'}, h('thead', null, h('tr', null, h('th', null, 'Malzeme'), h('th', null, 'Açıklama'), h('th', {class: 'num'}, 'Adet'))),
+        h('tbody', null, hwl.map(x => h('tr', {style: 'cursor:default'}, h('td', null, x.n), h('td', {style: 'color:var(--muted)'}, x.note), h('td', {class: 'num big'}, x.q))))))));
+    const chk = h('section', {class: 'card', style: 'padding:12px 16px;display:flex;flex-direction:column;gap:6px'}, h('b', null, 'Kontrol'));
+    for (const c of cabs) { const R = calcCab(c); for (const w of [...R.check, ...R.warn]) chk.append(h('div', {class: 'iss ' + w.lvl}, `${c.name}: ${w.t}`)); }
+    inner.append(chk);
+    el.append(inner);
+    el.scrollTop = sc;
+  },
+
+  /* ---------- levha planı ---------- */
+  nest() {
+    const el = $('#vnest'), J = A.job, cabs = UI.scopeCabs(), G = cutRows(J, cabs), sc = el.scrollTop;
+    el.innerHTML = '';
+    const inner = h('div', {class: 'pane-in'});
+    const jn = (label, key) => { const inp = h('input', {class: 'inp', inputmode: 'decimal', value: fmt(J[key]), style: 'width:90px'}); inp.addEventListener('change', () => { const x = evalNum(inp.value); if (x >= 0 && x <= 50) A.change(() => { A.job[key] = x; }, {full: true}); else inp.value = fmt(J[key]); }); return h('label', {class: 'fld', style: 'flex-direction:row;align-items:center;gap:6px'}, h('span', null, label), h('div', {class: 'inpw'}, inp, h('i', null, 'mm'))); };
+    inner.append(h('div', {class: 'ptool'}, h('h2', null, 'Levha planı'), UI.scopeSeg(() => UI.nest()), jn('Testere', 'kerf'), jn('Traş', 'trim'), h('button', {class: 'btn sm primary', type: 'button', onclick: () => UI.print()}, icon(IC.print), 'Yazdır')),
+      h('p', {class: 'pnote'}, 'Giyotin (uçtan uca düz) kesime uygun yerleşim. Numaralar kesim listesindeki “No” sütunudur. ↻ işaretli parça levhada döndürülmüştür. Levha ölçüsü, desen ve paylar “Malzeme ve levha” bölümünden değişir.'));
+    for (const g of G) {
+      const N = nestGroup(g, J), col = (FINISHES[g.m.color] || FINISHES.beyaz)[1];
+      const box = h('div', {class: 'sheets'});
+      N.sheets.forEach((sh, i) => box.append(h('div', {class: 'sheet'}, h('div', {class: 'sheet-t'}, h('b', null, `Levha ${i + 1}`), h('span', null, `${sh.parts.length} parça · %${Math.round(sh.use * 100)} dolu`)),
+        sheetSVG(N, sh, {onPick: p => A.pickRef(p.row.refs), sel: p => A.sel && p.row.refs.some(x => x.cab === A.cab.id && x.id === A.sel)}))));
+      inner.append(h('section', {class: 'card mgrp'},
+        h('div', {class: 'mgrp-h'}, h('i', {class: 'chipx', style: `background:${col}`}), h('b', null, g.label), h('small', null, `${N.sheets.length} levha ${g.m.L}×${g.m.W} · ortalama doluluk %${Math.round(N.use * 100)}${g.m.grain ? ' · desenli: döndürme yok' : ''}`)),
+        N.bad.length ? h('div', {class: 'iss', style: 'margin:10px 16px 0'}, `Sığmayan parça: ${[...new Set(N.bad.map(b => '#' + b.no))].join(', ')}`) : null,
+        N.sheets.length ? box : h('p', {class: 'pnote', style: 'padding:14px 16px'}, 'Bu malzemede parça yok.')));
+    }
+    el.append(inner); el.scrollTop = sc;
+  },
+
+  /* ---------- yazdırma ---------- */
+  print() {
+    const J = A.job, cabs = UI.scopeCabs(), G = cutRows(J, cabs), P = $('#print');
+    P.innerHTML = '';
+    const d = new Date();
+    P.append(h('h1', null, J.name + ' — Kesim listesi'), h('div', {class: 'meta'}, `${d.toLocaleDateString('tr-TR')} · ${cabs.length} dolap tipi, toplam ${cabs.reduce((a, c) => a + c.qty, 0)} dolap · ölçüler mm · Boy = desen yönü · kesim ölçüsü ${cabs.some(c => c.deduct) ? 'bant düşülmüş' : 'bant düşülmemiş'}`));
+    const grid = h('div', {class: 'psheets'});
+    for (const c of cabs) {
+      const R = calcCab(c);
+      grid.append(h('div', {class: 'psheet'}, h('b', null, `${c.name} × ${c.qty}`), h('div', null, `${fmt(c.W)} × ${fmt(c.H)} × ${fmt(c.D)} · gövde ${fmt(c.t)} · arkalık ${({groove: 'kanallı', nailed: 'çakma', inset: 'gömme', none: 'yok'})[c.back]} ${c.back !== 'none' ? fmt(c.backT) : ''} · ${({full: 'tam bindirme', half: 'yarım bindirme', inset: 'gömme'})[c.overlay]} kapak · bant ${fmt(c.bandBody)}/${fmt(c.bandFront)}`),
+        frontSVG(c, R), R.warn.filter(w => w.lvl !== 'info').length ? h('div', {style: 'color:#b00'}, R.warn.filter(w => w.lvl !== 'info').map(w => '• ' + w.t).join(' ')) : null));
+    }
+    P.append(h('h2', null, 'Dolaplar (ön görünüş)'), grid);
+    for (const g of G) {
+      P.append(h('h2', null, `${g.label} — ${g.count} parça, ${fmt2(g.area)} m²`),
+        h('table', null, h('thead', null, h('tr', null, ['No', 'Parça', 'Dolap', 'Boy (kesim)', 'En (kesim)', 'Adet', 'Bant', 'Bitmiş ölçü'].map((x, i) => h('th', {class: i >= 3 && i <= 5 ? 'num' : ''}, x)))),
+          h('tbody', null, g.rows.filter(r => !r.off).map(r => h('tr', null, h('td', null, r.no), h('td', null, r.name + (r.ovr ? ' (elle)' : '')), h('td', null, [...r.cabs.keys()].join(', ')), h('td', {class: 'num big'}, fmt(r.cL)), h('td', {class: 'num big'}, fmt(r.cW)), h('td', {class: 'num big'}, r.n),
+            h('td', null, h('div', {style: 'display:flex;gap:6px;align-items:center'}, UI.bandSVG(r), UI.bandShort(r))), h('td', null, `${fmt(r.L)} × ${fmt(r.Wd)} × ${fmt(r.T)}`))))));
+    }
+    const bands = bandTotals(G), hwl = hwTotals(cabs);
+    P.append(h('h2', null, 'Kenar bandı ve hırdavat'),
+      h('table', null, h('tbody', null, bands.map(b => h('tr', null, h('td', null, `Kenar bandı ${fmt(b.t)} mm`), h('td', null, 'bitmiş kenar uzunluğu'), h('td', {class: 'num big'}, `${fmt(b.m)} m (+%10: ${fmt(b.m * 1.1)} m)`))),
+        hwl.map(x => h('tr', null, h('td', null, x.n), h('td', null, x.note), h('td', {class: 'num big'}, x.q))))));
+    G.forEach((g, gi) => {
+      const N = nestGroup(g, J); if (!N.sheets.length) return;
+      P.append(h('h2', {class: gi === 0 ? 'pbreak' : ''}, `Levha planı — ${g.label} (${N.sheets.length} × ${g.m.L}×${g.m.W}, testere ${fmt(J.kerf)}, traş ${fmt(J.trim)})`),
+        h('div', {class: 'psheets'}, N.sheets.map((sh, i) => h('div', {class: 'psheet'}, h('div', null, `Levha ${i + 1} · ${sh.parts.length} parça · %${Math.round(sh.use * 100)}`), sheetSVG(N, sh)))));
+    });
+    setTimeout(() => window.print(), 60);
+  },
+  csv() {
+    const J = A.job, cabs = UI.scopeCabs(), G = cutRows(J, cabs);
+    const q = v => { const s = String(v); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const lines = [['No', 'Malzeme', 'Kalınlık', 'Parça', 'Dolap', 'Kesim boy', 'Kesim en', 'Adet', 'Boy kenarı bant', 'En kenarı bant', 'Bant kalınlığı', 'Desenli', 'Bitmiş boy', 'Bitmiş en', 'Not'].join(';')];
+    for (const g of G) for (const r of g.rows) if (!r.off) {
+      const nL = r.bandL.filter(b => b > 0), nW = r.bandW.filter(b => b > 0);
+      lines.push([r.no, g.m.label, fmt(g.T), r.name, [...r.cabs.keys()].join(', '), fmt(r.cL), fmt(r.cW), r.n, nL.length, nW.length, fmt(nL[0] || nW[0] || 0), g.m.grain ? 'evet' : 'hayır', fmt(r.L), fmt(r.Wd), r.ovr ? 'elle düzeltildi' : ''].map(q).join(';'));
+    }
+    download(fileSafe(J.name) + ' - kesim listesi.csv', '﻿' + lines.join('\r\n'), 'text/csv;charset=utf-8');
+    toast('CSV indirildi (Excel ile açılır)');
+  },
+};
+
+/* =====================================================================
+   Uygulama: durum, geri al / yinele, kayıt, görünümler, menüler
+   ===================================================================== */
+const A = {
+  job: null, R: null, sel: null, view: '3d', m: 'form',
+  undo: [], redo: [], _coal: null, dirty: false,
+  get cab() { return this.job.cabs.find(c => c.id === this.job.cur) || this.job.cabs[0]; },
+  mobile() { return matchMedia('(max-width:900px)').matches; },
+  visible() { return this.mobile() ? (this.m === 'form' ? null : this.m) : this.view; },
+
+  load(job) {
+    this.job = normalizeJob(job); this.sel = null; this.undo = []; this.redo = [];
+    this.recalc(); UI.cabs(); UI.form(); UI.pcard(); this.views(true); this.title(); this.saved();
+  },
+  recalc() { this.R = calcCab(this.cab); },
+  change(fn, o = {}) {
+    const now = Date.now();
+    if (!(o.key && this._coal && this._coal.key === o.key && now - this._coal.t < 1000)) { this.undo.push(JSON.stringify(this.job)); if (this.undo.length > 100) this.undo.shift(); this.redo = []; }
+    this._coal = o.key ? {key: o.key, t: now} : null;
+    fn();
+    this.recalc();
+    if (this.sel && !this.R.parts.some(p => p.id === this.sel)) this.sel = null;
+    if (o.full) UI.form(); else UI.sum();
+    UI.cabs(); UI.pcard(); this.views(o.fit); this.title();
+    this.dirty = true; this.saved(); this.saveSoon();
+  },
+  restore(snap) {
+    const cur = this.job.cur;
+    this.job = normalizeJob(JSON.parse(snap));
+    if (this.job.cabs.some(c => c.id === cur)) this.job.cur = cur;
+    this.recalc(); if (this.sel && !this.R.parts.some(p => p.id === this.sel)) this.sel = null;
+    UI.cabs(); UI.form(); UI.pcard(); this.views(); this.title();
+    this.dirty = true; this.saved(); this.saveSoon();
+  },
+  doUndo() { if (!this.undo.length) return; this.redo.push(JSON.stringify(this.job)); this.restore(this.undo.pop()); this._coal = null; },
+  doRedo() { if (!this.redo.length) return; this.undo.push(JSON.stringify(this.job)); this.restore(this.redo.pop()); this._coal = null; },
+  saveSoon: debounce(() => A.saveNow(), 500),
+  saveNow() { if (!this.dirty) return; if (Store.save(this.job)) { this.dirty = false; this.saved(); } else { $('#saveText').textContent = 'Kaydedilemedi!'; toast('Tarayıcı belleği dolu: JSON indirip eski işleri sil', 'err'); } },
+  saved() { $('#saveDot').classList.toggle('dirty', this.dirty); $('#saveText').textContent = this.dirty ? 'Kaydediliyor…' : 'Kaydedildi'; $('#btnUndo').disabled = !this.undo.length; $('#btnRedo').disabled = !this.redo.length; },
+  title() { $('#jobText').textContent = this.job.name; document.title = `${this.job.name} · Dolap Tasarımı`; },
+
+  setCab(id) {
+    if (id === this.job.cur) return;
+    this.job.cur = id; this.sel = null; this.recalc();
+    UI.cabs(); UI.form(); UI.pcard(); this.views(true);
+    this.dirty = true; this.saveSoon(); this.saved();
+  },
+  dupCab() {
+    const c = clone(this.cab); c.id = uid(); c.name = c.name.replace(/( \(kopya\))?$/, ' (kopya)');
+    this.change(() => { const i = this.job.cabs.indexOf(this.cab); this.job.cabs.splice(i + 1, 0, c); this.job.cur = c.id; this.sel = null; }, {full: true});
+    toast('Dolap çoğaltıldı');
+  },
+  async delCab() {
+    if (this.job.cabs.length < 2) return;
+    if (!await Modal.confirm(`“${this.cab.name}” silinsin mi?`, 'Sil', true)) return;
+    this.change(() => { const i = this.job.cabs.indexOf(this.cab); this.job.cabs.splice(i, 1); this.job.cur = this.job.cabs[Math.max(0, i - 1)].id; this.sel = null; }, {full: true, fit: true});
+  },
+  async applyAll() {
+    if (!await Modal.confirm('Gövde kalınlığı, birleşim, arkalık, kapak, çekmece rayı ve kenar bandı ayarları diğer tüm dolaplara kopyalansın mı? (Ölçüler, baza ve iç düzen değişmez.)', 'Uygula')) return;
+    const keys = STRUCT_KEYS.filter(k => !['base', 'baseH', 'plinthSet', 'top', 'railW'].includes(k)), src = this.cab;
+    this.change(() => { for (const c of this.job.cabs) if (c !== src) for (const k of keys) c[k] = src[k]; }, {full: true});
+    toast('Ayarlar tüm dolaplara uygulandı');
+  },
+  pickRef(refs) {
+    const mine = refs.find(r => r.cab === this.cab.id), r = mine || refs[0]; if (!r) return;
+    if (r.cab !== this.cab.id) this.setCab(r.cab);
+    UI.selectPart(r.id, {show: true});
+  },
+
+  /* ---------- görünümler ---------- */
+  show(v) {
+    if (this.mobile()) { this.m = v; $('#app').dataset.m = v; for (const b of $$('#mtabs button')) b.classList.toggle('on', b.dataset.v === v); }
+    if (v !== 'form') { this.view = v; Settings.set('view', v); for (const b of $$('#viewSeg button')) b.classList.toggle('on', b.dataset.v === v); }
+    $('#v3d').hidden = this.view !== '3d'; $('#vcut').hidden = this.view !== 'cut'; $('#vnest').hidden = this.view !== 'nest';
+    this.views();
+  },
+  views(fit) {
+    const v = this.visible();
+    if (fit) this._fit = true;
+    if (v === '3d') {
+      if (!V.ready) { V.init().then(() => { V.onPick = id => UI.selectPart(id); UI.tools(); this.views(true); }).catch(() => {}); return; }
+      V.resize(); V.build(this.cab, this.R, this.job.mats, this._fit); this._fit = false;
+      V.select(this.sel);
+    }
+    if (v === 'cut') UI.cut();
+    if (v === 'nest') UI.nest();
+  },
+
+  /* ---------- işler ---------- */
+  async jobs() {
+    const list = h('div', {class: 'jobs'});
+    const draw = () => {
+      list.innerHTML = '';
+      const L = Store.list();
+      if (!L.length) list.append(h('p', null, 'Kayıtlı iş yok.'));
+      for (const it of L) list.append(h('div', {class: 'job' + (it.id === this.job.id ? ' on' : '')},
+        h('div', {onclick: () => { Modal.close(); this.openJob(it.id); }}, h('b', null, it.name), h('small', null, `${it.k || 1} dolap tipi · ${it.n || 1} dolap · ${new Date(it.updated).toLocaleString('tr-TR', {dateStyle: 'short', timeStyle: 'short'})}`)),
+        h('button', {class: 'icon-btn sm', type: 'button', title: 'Çoğalt', onclick: () => { const j = Store.load(it.id); if (!j) return; j.id = uid(); j.name += ' (kopya)'; Store.save(j); draw(); }}, icon(IC.copy)),
+        h('button', {class: 'icon-btn sm', type: 'button', title: 'Sil', onclick: async () => { if (it.id === this.job.id) { toast('Açık olan iş silinemez; önce başka bir iş aç', 'err'); return; } Store.remove(it.id); draw(); }}, icon(IC.trash))));
+    };
+    this.saveNow(); draw();
+    const imp = h('input', {type: 'file', accept: 'application/json,.json', hidden: true, onchange: e => { Modal.close(); this.importFile(e.target.files[0]); }});
+    await Modal.open({title: 'İşler', wide: false, body: [h('p', null, 'İşler yalnızca bu cihazın tarayıcısında saklanır. Başka cihaza taşımak için JSON indir.'), list, imp],
+      actions: [{t: 'JSON yükle', onClick: () => { imp.click(); return false; }}, {t: 'Yeni iş', primary: true, onClick: () => { this.newJobAsk(); return true; }}]});
+  },
+  openJob(id) { this.saveNow(); const j = Store.load(id); if (!j) { toast('İş açılamadı', 'err'); return; } Store.set('last', id); this.load(j); toast(`“${j.name}” açıldı`); },
+  async newJobAsk() {
+    const name = await Modal.prompt('Yeni iş', 'Yeni iş', 'İş / müşteri adı'); if (!name) return;
+    this.saveNow(); const j = newJob(name); Store.save(j); this.load(j); toast('Yeni iş açıldı');
+  },
+  async rename() { const n = await Modal.prompt('İşi yeniden adlandır', this.job.name, 'İş / müşteri adı'); if (!n) return; this.change(() => { this.job.name = n; }); },
+  exportJson() { this.saveNow(); download(fileSafe(this.job.name) + '.dolap.json', JSON.stringify(Object.assign({app: 'dolap-tasarimi', v: 1}, this.job), null, 1), 'application/json'); toast('JSON indirildi'); },
+  importFile(f) {
+    if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => { try { const j = normalizeJob(JSON.parse(rd.result)); if (Store.load(j.id)) j.id = uid(); Store.save(j); this.load(j); toast(`“${j.name}” yüklendi`); } catch (e) { toast('Dosya okunamadı (dolap JSON değil)', 'err'); } };
+    rd.readAsText(f);
+  },
+  menu(anchor) {
+    const seg = h('div', {class: 'seg sm'});
+    const drawSeg = () => { seg.innerHTML = ''; for (const [k, t] of [['auto', 'Sistem'], ['light', 'Açık'], ['dark', 'Koyu'], ['glass', 'Şeffaf']]) seg.append(h('button', {type: 'button', class: Settings.v.mode === k ? 'on' : '', onclick: () => { Settings.set('mode', k); Theme.apply(); drawSeg(); }}, t)); };
+    drawSeg();
+    Menu.show(anchor, [
+      {t: 'Yeni iş', ic: IC.plus, fn: () => this.newJobAsk()},
+      {t: 'İşler…', ic: IC.folder, fn: () => this.jobs()},
+      {t: 'İşi yeniden adlandır', ic: IC.edit, fn: () => this.rename()},
+      '-',
+      {t: 'Kesim listesi CSV (Excel)', ic: IC.table, fn: () => UI.csv()},
+      {t: 'Yazdır / PDF', ic: IC.print, fn: () => UI.print()},
+      {t: 'JSON indir (yedek)', ic: IC.down, fn: () => this.exportJson()},
+      {t: 'JSON yükle', ic: IC.up, fn: () => { const i = h('input', {type: 'file', accept: 'application/json,.json', onchange: e => this.importFile(e.target.files[0])}); i.click(); }},
+      '-',
+      {el: h('div', {class: 'mseg'}, seg)},
+      {t: 'Nasıl kullanılır?', ic: IC.help, fn: () => this.help()},
+    ]);
+  },
+  help() {
+    Modal.open({title: 'Dolap Tasarımı', wide: true, body: h('div', {class: 'help'},
+      h('h4', null, '1 · Ölçüleri gir'),
+      h('p', null, 'Sol panelde dolabın dış genişlik, yükseklik ve derinliğini (mm) gir. Gövde kalınlığı, birleşim şekli (yanlar tam boy / üst tabla üstte / tablalar tam), üst (tabla ya da kuşak), baza, arkalık ve kapak tipini seç. Her değişiklikte tüm parçalar anında yeniden hesaplanır.'),
+      h('h4', null, '2 · İç düzen'),
+      h('p', null, 'Bölme sayısını artırınca ara dikmeler eklenir. Her bölme için raf sayısı (hareketli / sabit), çekmece, askı borusu ve kapak (otomatik / yok / tek / çift) seçilir. Çekmece önü yüksekliği boş bırakılırsa çekmeceler bölmeyi eşit doldurur; yazılırsa alta çekmece, üstüne ara tabla + raf/kapak gelir.'),
+      h('h4', null, '3 · Kontrol et'),
+      h('p', null, '“Hesap özeti” iç ölçüleri, montaj kontrolünü (parçalar birleşince dış ölçünün tuttuğunu) ve çakışma kontrolünü gösterir. 3B görünümde parçaya dokun: üstünde boy / en / kalınlık çizgileri ve kartta formülüyle kesim ölçüsü görünür. Gerekirse kesim ölçüsünü elle düzelt.'),
+      h('h4', null, '4 · Kesime gönder'),
+      h('ul', null,
+        h('li', null, h('b', null, 'Kesim listesi: '), 'malzeme ve kalınlığa göre gruplu; aynı ölçülü parçalar tek satırda adetlenir. Boy = desen (su) yönü.'),
+        h('li', null, h('b', null, 'Kesim ölçüsü: '), '“Bant kalınlığını düş” açıkken bitmiş ölçüden bantlı kenarların bant kalınlığı çıkarılmış ölçüdür.'),
+        h('li', null, h('b', null, 'Levha planı: '), 'testere payı ve kenar traşı ile giyotin kesime uygun yerleşim; levha sayısı ve doluluk oranı.'),
+        h('li', null, h('b', null, 'Çıktı: '), 'Yazdır / PDF ile kesim listesi, ön görünüş çizimleri, hırdavat ve levha planı; CSV ile Excel’e aktar.')),
+      h('h4', null, 'Kayıt'),
+      h('p', null, 'İşler bu cihazda otomatik kaydedilir. Bir işte birden çok dolap olabilir; kesim listesi “Tüm iş” seçiliyken tüm dolapları adetleriyle birlikte toplar.')),
+    actions: [{t: 'Tamam', primary: true}]});
+  },
+};
+
+const Theme = {
+  apply() {
+    const r = document.documentElement, m0 = Settings.v.mode || 'auto', glass = m0 === 'glass';
+    const mode = glass ? 'dark' : m0 === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : m0;
+    r.dataset.mode = mode; if (glass) r.dataset.glass = '1'; else delete r.dataset.glass;
+    const meta = $('meta[name=theme-color]'); if (meta) meta.content = glass ? '#0A1020' : mode === 'dark' ? '#1B201E' : '#FFFFFF';
+    if (V.ready && A.job) { V.build(A.cab, A.R, A.job.mats); }
+  },
+};
+
+/* ---------- başlat ---------- */
+(function boot() {
+  Settings.load(); Theme.apply();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (Settings.v.mode === 'auto') Theme.apply(); });
+  let job = Store.load(Store.get('last', '')) || (Store.list()[0] && Store.load(Store.list()[0].id));
+  if (!job) { job = newJob('İlk iş'); Store.save(job); }
+  A.view = ['3d', 'cut', 'nest'].includes(Settings.v.view) ? Settings.v.view : '3d';
+  A.load(job);
+  A.show(A.mobile() ? 'form' : A.view);
+  for (const b of $$('#viewSeg button')) b.onclick = () => A.show(b.dataset.v);
+  for (const b of $$('#mtabs button')) b.onclick = () => A.show(b.dataset.v);
+  $('#btnUndo').onclick = () => A.doUndo(); $('#btnRedo').onclick = () => A.doRedo();
+  $('#btnPrint').onclick = () => UI.print();
+  $('#btnJobs').onclick = () => A.jobs();
+  $('#btnMenu').onclick = e => A.menu(e.currentTarget);
+  $('#jobName').onclick = () => A.rename();
+  addEventListener('keydown', e => {
+    const tag = (e.target.tagName || '').toLowerCase(), typing = tag === 'input' || tag === 'textarea' || tag === 'select';
+    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+      const k = e.key.toLowerCase();
+      if (k === 'z' && !typing) { e.preventDefault(); e.shiftKey ? A.doRedo() : A.doUndo(); }
+      else if (k === 'y' && !typing) { e.preventDefault(); A.doRedo(); }
+      else if (k === 's') { e.preventDefault(); A.dirty = true; A.saveNow(); toast('Kaydedildi'); }
+      else if (k === 'p') { e.preventDefault(); UI.print(); }
+    } else if (e.key === 'Escape' && A.sel && !$('#modal').open) UI.selectPart(null);
+  });
+  let wasMobile = A.mobile();
+  addEventListener('resize', () => { const m = A.mobile(); if (m !== wasMobile) { wasMobile = m; A.show(m ? A.m : A.view); } });
+  addEventListener('beforeunload', () => A.saveNow());
+  document.addEventListener('visibilitychange', () => { if (document.hidden) A.saveNow(); });
+})();
+
+</script>
+</body>
+</html>

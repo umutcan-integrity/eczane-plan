@@ -53,6 +53,25 @@ bilgisayarda çalışır, kurulum gerektirmez; projeler cihazın tarayıcısınd
 - **Dışa aktarma:** Plan PNG, 3B görüntü PNG, JSON yedek, paylaş (telefonda).
 - Çevrimdışı çalışır ve ana ekrana “uygulama” olarak eklenebilir (PWA).
 
+## Dolap Tasarımı (ayrı uygulama: `dolap/`)
+
+Üst sekmeden açılan, eczane planından bağımsız bir uygulama. Usta dolabın ölçülerini girer;
+yan dikme, üst/alt tabla, kuşak, ara dikme, raf, arkalık, kapak, çekmece (ön, yan, iç ön/arka, taban)
+ve baza parçalarının **kesim ölçüleri milimetre hassasiyetinde** hesaplanır.
+
+- Gövde kalınlığı, birleşim şekli (yanlar tam boy / üst tabla üstte / tablalar tam), üst tabla veya kuşak,
+  baza (ayak + klipsli baza, yanlar yere iner, baza kasası, duvara asma), arkalık (kanallı, çakma, gömme)
+- Bölmeler: raf (hareketli/sabit), çekmece (eşit ya da sabit ön yüksekliği), askı borusu, kapak (tek/çift),
+  kapak tipi (tam/yarım bindirme, gömme), kapak arası ve kenar payları, ray payı
+- Kenar bandı ve bant kalınlığının kesimden düşülmesi; montaj ve çakışma kontrolü
+- 3B görünüm: kapak aç/gizle, patlat, tıklanan parçanın üstünde boy/en/kalınlık ölçüleri ve formülü,
+  gerekirse kesim ölçüsünü elle düzeltme
+- Kesim listesi (malzeme/kalınlığa göre, aynı parçalar adetli), hırdavat listesi, bant metrajı,
+  giyotin levha yerleşimi (testere payı, kenar traşı, desen yönü), yazdır/PDF, CSV (Excel)
+
+`dolap/` klasörü kendi kaynağı (`dolap/src`), derleyicisi (`python3 dolap/build.py`) ve three.js kopyasıyla
+bağımsızdır; ayrı bir depoya olduğu gibi taşınabilir. Kayıtlar `dolap.v1.*` anahtarlarıyla bu cihazda tutulur.
+
 ## Geliştirme
 
 `index.html` üretilmiş dosyadır; kaynaklar `src/` altında:
@@ -68,7 +87,7 @@ vendor/            three.js (3B motoru, MIT)
 Düzenledikten sonra:
 
 ```bash
-python3 build.py      # index.html ve sw.js üretilir, JS sözdizimi kontrol edilir
+python3 build.py      # index.html, sw.js ve dolap/index.html üretilir, JS sözdizimi kontrol edilir
 ```
 
 ## Sorumluluk reddi
