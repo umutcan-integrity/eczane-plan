@@ -1,6 +1,7 @@
 /* Eczane Plan — çevrimdışı çalışma için önbellek */
 const CACHE = 'eczplan-@VERSION@';
-const CORE = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './vendor/three.module.min.js'];
+const CORE = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './vendor/three.module.min.js',
+  './dolap/', './dolap/icon.svg', './dolap/vendor/three.module.min.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(CORE.map(u => c.add(u).catch(() => {})))).then(() => self.skipWaiting()));
@@ -15,9 +16,11 @@ self.addEventListener('fetch', e => {
   if (url.origin !== location.origin) return;
   const isPage = req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html');
   if (isPage) {
-    // Sayfa: önce ağ (yeni sürüm hemen gelsin), yoksa önbellek
-    e.respondWith(fetch(req).then(r => { const cp = r.clone(); caches.open(CACHE).then(c => c.put('./index.html', cp)); return r; })
-      .catch(() => caches.match('./index.html').then(r => r || caches.match('./'))));
+    // Sayfa: önce ağ (yeni sürüm hemen gelsin), yoksa önbellek. Her sayfa (ana uygulama, dolap) kendi adresiyle saklanır.
+    const dolap = url.pathname.includes('/dolap/');
+    const key = new URL(url.pathname.endsWith('/') ? url.pathname : url.pathname.replace(/index\.html$/, ''), url.origin).href;
+    e.respondWith(fetch(req).then(r => { if (r.ok) { const cp = r.clone(); caches.open(CACHE).then(c => c.put(key, cp)); } return r; })
+      .catch(() => caches.match(key).then(r => r || caches.match(dolap ? './dolap/' : './'))));
     return;
   }
   // Diğer dosyalar: önce önbellek
