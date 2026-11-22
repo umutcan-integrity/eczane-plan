@@ -3,11 +3,11 @@
    ===================================================================== */
 
 const LIGHT_PLAN = {bg: '#FFFFFF', floor: '#FFFFFF', grid: '#EEF0EC', grid2: '#DADFD7', wall: '#2C3330', ink: '#1B211F', muted: '#6F7974',
-  accent: '#1F7A5A', danger: '#C23A2B', warn: '#B26B12', ok: '#2E8555', dark: false};
+  accent: '#A36F00', selInk: '#FFFFFF', danger: '#C0352A', warn: '#B26400', ok: '#2C7A4B', dark: false};
 function planColors() {
   const cs = getComputedStyle(document.documentElement), g = n => cs.getPropertyValue(n).trim();
   return {bg: g('--plan-bg'), floor: g('--plan-floor'), grid: g('--plan-grid'), grid2: g('--plan-grid2'), wall: g('--plan-wall'), ink: g('--plan-ink'),
-    muted: g('--plan-muted'), accent: g('--accent'), danger: g('--danger'), warn: g('--warn'), ok: g('--ok'), dark: document.documentElement.dataset.mode === 'dark', glass: !!document.documentElement.dataset.glass};
+    muted: g('--plan-muted'), accent: g('--plan-sel'), selInk: g('--plan-sel-ink'), danger: g('--danger'), warn: g('--warn'), ok: g('--ok'), dark: document.documentElement.dataset.mode === 'dark', glass: !!document.documentElement.dataset.glass};
 }
 
 /* ---------- Çizim (ekrana, küçük resme ve PNG'ye ortak) ---------- */
@@ -713,7 +713,7 @@ const Plan = {
     ctx.beginPath(); ctx.roundRect(-tw / 2, -10, tw, 20, 10);
     ctx.fillStyle = soft ? this.C.floor : col; ctx.fill();
     if (soft) { ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.stroke(); }
-    ctx.fillStyle = soft ? col : '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, 0, 0.5);
+    ctx.fillStyle = soft ? col : (col === this.C.accent && this.C.selInk) || '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, 0, 0.5);
     ctx.restore();
   },
   outline(ctx, sel, o) {

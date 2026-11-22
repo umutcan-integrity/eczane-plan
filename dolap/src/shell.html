@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-<meta name="theme-color" content="#FFFFFF">
+<meta name="theme-color" content="#262C32">
 <meta name="description" content="Dolap ölçülerini gir: yan, raf, tabla, arkalık, kapak ve çekmece kesim ölçüleri milimetrik hesaplansın; 3B gör, levha planı çıkar.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -11,7 +11,7 @@
 <title>Dolap Tasarımı</title>
 <script>
 /* Tema, ilk boyamadan önce (yoksa ana uygulamanın teması) */
-(function(){try{var s=JSON.parse(localStorage.getItem('dolap.v1.settings')||'null')||JSON.parse(localStorage.getItem('eczplan.v2.settings')||'{}');var m=s.mode||'auto';var r=document.documentElement;if(m==='glass'){r.dataset.glass='1';m='dark';}if(m==='auto')m=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';r.dataset.mode=m;}catch(e){}})();
+(function(){try{var s=JSON.parse(localStorage.getItem('dolap.v1.settings')||'null')||JSON.parse(localStorage.getItem('eczplan.v2.settings')||'{}');var m=s.mode||'auto';var r=document.documentElement;if(m==='glass')m='dark';if(m==='auto')m=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';r.dataset.mode=m;}catch(e){}})();
 </script>
 <style>
 /*@CSS@*/

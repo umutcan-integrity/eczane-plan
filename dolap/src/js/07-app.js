@@ -120,7 +120,7 @@ const A = {
   },
   menu(anchor) {
     const seg = h('div', {class: 'seg sm'});
-    const drawSeg = () => { seg.innerHTML = ''; for (const [k, t] of [['auto', 'Sistem'], ['light', 'Açık'], ['dark', 'Koyu'], ['glass', 'Şeffaf']]) seg.append(h('button', {type: 'button', class: Settings.v.mode === k ? 'on' : '', onclick: () => { Settings.set('mode', k); Theme.apply(); drawSeg(); }}, t)); };
+    const drawSeg = () => { seg.innerHTML = ''; for (const [k, t] of [['auto', 'Sistem'], ['light', 'Açık'], ['dark', 'Koyu']]) seg.append(h('button', {type: 'button', class: Settings.v.mode === k ? 'on' : '', onclick: () => { Settings.set('mode', k); Theme.apply(); drawSeg(); }}, t)); };
     drawSeg();
     Menu.show(anchor, [
       {t: 'Yeni iş', ic: IC.plus, fn: () => this.newJobAsk()},
@@ -158,10 +158,11 @@ const A = {
 
 const Theme = {
   apply() {
-    const r = document.documentElement, m0 = Settings.v.mode || 'auto', glass = m0 === 'glass';
-    const mode = glass ? 'dark' : m0 === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : m0;
-    r.dataset.mode = mode; if (glass) r.dataset.glass = '1'; else delete r.dataset.glass;
-    const meta = $('meta[name=theme-color]'); if (meta) meta.content = glass ? '#0A1020' : mode === 'dark' ? '#1B201E' : '#FFFFFF';
+    if (Settings.v.mode === 'glass') Settings.set('mode', 'dark');
+    const r = document.documentElement, m0 = Settings.v.mode || 'auto';
+    const mode = m0 === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : m0;
+    r.dataset.mode = mode; delete r.dataset.glass;
+    const meta = $('meta[name=theme-color]'); if (meta) meta.content = mode === 'dark' ? '#0C0F12' : '#262C32';
     if (V.ready && A.job && A.cab) { V.build(A.cab, A.R, A.job.mats); }
   },
 };

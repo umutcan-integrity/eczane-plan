@@ -49,7 +49,7 @@ bilgisayarda çalışır, kurulum gerektirmez; projeler cihazın tarayıcısınd
   bak, **W A S D** / oklar yürü, Shift koş, Q/E dön, Esc bırak. Telefonda sol alttaki joystick ile
   yürü, ekranı sürükleyerek dön. Duvar ve eşyalardan geçilmez, kapılardan geçilir. Mini haritaya
   dokununca oraya yürür.
-- **Tema:** Sistem / açık / koyu / şeffaf (glassmorphism: renkli arka plan üzerinde buzlu cam paneller) ve 8 vurgu rengi.
+- **Görünüm:** “Galvaniz atölye” tasarım dili (çelik üst bant, sac paneller, seçili olan iş güvenliği sarısı); sistem / açık / koyu tema. Yazı tipi Saira uygulamanın içinde gelir (`vendor/fonts`, OFL), çevrimdışı da çalışır. Tasarım kuralları `DESIGN.md`, ürün bilgisi `PRODUCT.md` içinde.
 - **Dışa aktarma:** Plan PNG, 3B görüntü PNG, JSON yedek, paylaş (telefonda).
 - Çevrimdışı çalışır ve ana ekrana “uygulama” olarak eklenebilir (PWA).
 

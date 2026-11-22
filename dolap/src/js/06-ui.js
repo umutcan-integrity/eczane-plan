@@ -62,7 +62,7 @@ const UI = {
   cabs() {
     const box = $('#cabs'), J = A.job; box.innerHTML = '';
     box.append(h('div', {class: 'cabs-head'}, h('b', null, `Dolaplar · ${J.cabs.length}`),
-      h('button', {class: 'btn sm primary', type: 'button', onclick: () => Wiz.open('new')}, icon(IC.plus), 'Dolap oluştur')));
+      h('button', {class: 'btn sm', type: 'button', onclick: () => Wiz.open('new')}, icon(IC.plus), 'Dolap oluştur')));
     for (const c of J.cabs) {
       const R = A.cab && c.id === A.cab.id ? A.R : calcCab(c);
       const bad = R.warn.some(w => w.lvl === 'err') || R.check.some(w => w.lvl === 'err'), wr = R.warn.some(w => w.lvl === 'warn');
@@ -89,7 +89,7 @@ const UI = {
       h('div', {class: 'cabhead'},
         h('input', {class: 'inp txt nm', value: c.name, maxlength: 60, 'aria-label': 'Dolap adı', oninput: e => A.change(() => { A.cab.name = e.target.value || 'Dolap'; }, {key: 'name'})}),
         UI.step('Adet', 'qty', 1, 99),
-        h('button', {class: 'btn primary big full', type: 'button', onclick: () => Wiz.open('edit', A.cab)}, icon(IC.edit), 'Soru soru düzenle')),
+        h('button', {class: 'btn steel big full', type: 'button', onclick: () => Wiz.open('edit', A.cab)}, icon(IC.edit), 'Soru soru düzenle')),
       UI.grp('dims', 'Ölçüler', `${fmt(c.W)} × ${fmt(c.H)} × ${fmt(c.D)}`,
         h('div', {class: 'row r3'}, UI.num('Genişlik', 'W', {min: 100, max: 6000}), UI.num('Yükseklik', 'H', {min: 100, max: 4000}), UI.num('Derinlik', 'D', {min: 100, max: 1500})),
         h('p', {class: 'tip'}, 'mm olarak. Yükseklik ayak / baza dahil.')),
