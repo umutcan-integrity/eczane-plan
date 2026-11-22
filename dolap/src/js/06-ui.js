@@ -204,9 +204,43 @@ const UI = {
   },
   pcard() {
     const el = $('#pcard'), p = A.sel && A.R && A.R.parts.find(q => q.id === A.sel);
-    if (!p) { el.hidden = true; return; }
+    if (!p) { el.hidden = true; V.setInset(0, 0); return; }
     const c = A.cab, m = A.job.mats[p.mat], same = A.R.parts.filter(q => q.name === p.name && q.cL === p.cL && q.cW === p.cW && bandSig(q) === bandSig(p)).length;
-    const bandTxt = UI.bandText(p, true);
+    const drv = partDrivers(c, A.R, p);
+    /* ---- ölçüyü değiştir: ilgili dolap ayarı değişir, tüm parçalar birlikte güncellenir ---- */
+    const axes = [['L', 'Boy', p.cL], ['W', 'En', p.cW], ['T', 'Kalınlık', p.T]];
+    const rows = axes.map(([k, lbl, cur]) => {
+      const d = drv[k], note = h('small', {class: 'drv'}, d ? `${d.lbl} değişir` : 'dolap ayarına bağlı değil');
+      const inp = h('input', {class: 'inp', inputmode: 'decimal', value: fmt(cur), disabled: !d, 'data-ax': k});
+      inp.addEventListener('focus', () => setTimeout(() => inp.select(), 0));
+      inp.addEventListener('input', () => {
+        const x = evalNum(inp.value);
+        if (!isFinite(x) || x <= 0) { inp.classList.add('bad'); note.textContent = 'geçerli bir ölçü gir'; return; }
+        inp.classList.remove('bad');
+        const dl = x - cur;
+        if (Math.abs(dl) < .01) { note.textContent = `${d.lbl} değişir`; note.classList.remove('on'); return; }
+        const nv = d.get(c) + dl * d.mult;
+        note.textContent = `${d.lbl}: ${fmt(d.get(c))} → ${fmt(nv)}`; note.classList.add('on');
+      });
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); apply(); } });
+      return {k, lbl, cur, d, inp, el: h('label', {class: 'drow' + (d ? '' : ' off')}, h('span', {class: 'n ' + k}, lbl), h('div', {class: 'inpw'}, inp, h('i', null, 'mm')), note)};
+    });
+    const apply = () => {
+      const ch = [];
+      for (const r of rows) {
+        if (!r.d) continue;
+        const x = evalNum(r.inp.value); if (!isFinite(x) || x <= 0) { toast(`${r.lbl} için geçerli bir ölçü gir`, 'err'); return; }
+        const dl = x - r.cur; if (Math.abs(dl) < .01) continue;
+        const nv = r.d.get(c) + dl * r.d.mult;
+        if (!(nv > 0)) { toast(`${r.d.lbl} sıfırın altına düşer`, 'err'); return; }
+        ch.push({r, nv, ov: r.d.get(c)});
+      }
+      if (!ch.length) { toast('Ölçü değişmedi'); return; }
+      A.change(() => { for (const q of ch) q.r.d.set(A.cab, Math.round(q.nv * 10) / 10); }, {full: true});
+      const bad = A.R && A.R.warn.some(w => w.lvl === 'err');
+      toast(ch.map(q => `${q.r.d.lbl} ${fmt(q.ov)} → ${fmt(q.nv)}`).join(' · ') + (bad ? ' — hesapta hata var, özeti kontrol et' : ''), bad ? 'err' : undefined);
+    };
+    /* ---- sadece kesim listesinde (elle) ---- */
     const ovIn = (q, v) => h('input', {class: 'inp', inputmode: 'decimal', value: fmt(v), 'data-q': q});
     const iL = ovIn('cL', p.cL), iW = ovIn('cW', p.cW);
     const applyOv = () => {
@@ -218,33 +252,47 @@ const UI = {
         ov.cL = Math.abs(L - bL) > .01 ? L : 0; ov.cW = Math.abs(Wv - bW) > .01 ? Wv : 0;
         if (!ov.cL && !ov.cW && !ov.off) delete A.cab.over[p.id]; else A.cab.over[p.id] = ov;
       }, {});
-      toast('Kesim ölçüsü güncellendi');
+      toast('Kesim ölçüsü listede güncellendi');
     };
+    const tb = (txt, title, k) => h('button', {class: 'btn sm', type: 'button', title, onclick: () => V.turn(k)}, txt);
     el.innerHTML = '';
     el.append(
       h('div', {class: 'pc-h'}, h('div', null, h('b', null, p.name, p.ovr ? h('span', {class: 'badge', style: 'margin-left:6px'}, 'elle') : null, p.off ? h('span', {class: 'badge off', style: 'margin-left:6px'}, 'listede yok') : null), h('small', null, [p.sub, c.name, `${m.label} · ${fmt(p.T)} mm`].filter(Boolean).join(' · '))),
         h('button', {class: 'icon-btn sm', type: 'button', 'aria-label': 'Kapat', onclick: () => UI.selectPart(null)}, icon(IC.x))),
       h('div', null, h('div', {class: 'pc-tag'}, 'Kesim ölçüsü (boy × en × kalınlık)'),
         h('div', {class: 'pc-cut'}, h('span', {class: 'n L'}, fmt(p.cL)), h('span', {class: 'x'}, '×'), h('span', {class: 'n W'}, fmt(p.cW)), h('span', {class: 'x'}, '×'), h('span', {class: 'n T'}, fmt(p.T)), h('span', {class: 'u'}, 'mm'),
-          h('span', {class: 'u', style: 'margin-left:auto'}, `bu dolapta ${same} adet${c.qty > 1 ? ` · toplam ${same * c.qty}` : ''}`))),
-      h('div', {class: 'pc-f'},
-        h('div', null, h('b', null, 'Boy: '), p.fL || fmt(p.L)),
-        h('div', null, h('b', null, 'En: '), p.fW || fmt(p.Wd)),
-        (Math.abs(p.L - p.cL) > .05 || Math.abs(p.Wd - p.cW) > .05) && !p.ovr ? h('div', null, h('b', null, 'Kesim: '), `${fmt(p.L)} × ${fmt(p.Wd)} bitmiş ölçüden bant düşülür → ${fmt(p.cL)} × ${fmt(p.cW)}`) : null,
-        p.ovr ? h('div', null, h('b', null, 'Elle düzeltildi: '), `hesaplanan ${fmt(p.cL0 ?? p.cL)} × ${fmt(p.cW0 ?? p.cW)}`) : null,
-        h('div', null, h('b', null, 'Kenar bandı: '), bandTxt),
-        h('div', null, h('b', null, 'Desen yönü: '), m.grain ? 'boy boyunca (levha boyuna paralel)' : 'desensiz; levhada döndürülebilir')),
-      p.notes.length ? h('ul', {class: 'pc-n'}, p.notes.map(x => h('li', null, x))) : null,
-      h('details', {open: p.ovr || p.off}, h('summary', {class: 'pc-tag', style: 'cursor:pointer;padding:2px 0'}, 'Elle ayarla'),
-        h('div', {style: 'display:flex;flex-direction:column;gap:8px;margin-top:8px'},
-          h('div', {class: 'ovr'}, h('label', {class: 'fld'}, h('span', null, 'Kesim boyu'), h('div', {class: 'inpw'}, iL, h('i', null, 'mm'))), h('label', {class: 'fld'}, h('span', null, 'Kesim eni'), h('div', {class: 'inpw'}, iW, h('i', null, 'mm'))),
-            h('button', {class: 'btn sm primary', type: 'button', style: 'min-height:40px', onclick: applyOv}, 'Uygula')),
-          h('div', {style: 'display:flex;gap:8px;flex-wrap:wrap'},
-            p.ovr ? h('button', {class: 'btn sm', type: 'button', onclick: () => A.change(() => { const ov = A.cab.over[p.id]; if (ov) { delete ov.cL; delete ov.cW; if (!ov.off) delete A.cab.over[p.id]; } }, {})}, 'Hesaplanana dön') : null,
-            h('button', {class: 'btn sm', type: 'button', onclick: () => A.change(() => { const ov = A.cab.over[p.id] || (A.cab.over[p.id] = {}); ov.off = !ov.off; if (!ov.off && !ov.cL && !ov.cW) delete A.cab.over[p.id]; }, {})}, p.off ? 'Listeye geri al' : 'Kesim listesinden çıkar')),
-          h('p', {class: 'tip'}, 'Elle girilen ölçü yalnız kesim listesine yansır ve “elle” etiketiyle işaretlenir. Dolap ölçüleri değişince bu ölçüyü kontrol et.')))
+          h('span', {class: 'u', style: 'margin-left:auto'}, `${same} adet${c.qty > 1 ? ` · toplam ${same * c.qty}` : ''}`))),
+      h('div', {class: 'turnbar'}, h('span', null, 'Parçayı çevir'), tb('↺', 'Sola çevir', 'l'), tb('↻', 'Sağa çevir', 'r'), tb('Kenarı', 'Kalınlık kenarından gör', 'edge'), tb('Düz', 'Önden düz göster', 'reset')),
+      h('details', {class: 'pc-sec', open: !A.mobile()}, h('summary', null, 'Ölçüyü değiştir'),
+        h('div', {class: 'drows'}, rows.map(r => r.el)),
+        h('button', {class: 'btn primary full', type: 'button', onclick: apply, disabled: !rows.some(r => r.d)}, 'Uygula'),
+        h('p', {class: 'tip'}, 'Parçanın ölçüsü, onu belirleyen dolap ayarı değiştirilerek uygulanır; diğer parçalar da birlikte güncellenir. Geri al ile dönebilirsin.')),
+      h('details', {class: 'pc-sec'}, h('summary', null, 'Nasıl hesaplandı?'),
+        h('div', {class: 'pc-f'},
+          h('div', null, h('b', null, 'Boy: '), p.fL || fmt(p.L)),
+          h('div', null, h('b', null, 'En: '), p.fW || fmt(p.Wd)),
+          (Math.abs(p.L - p.cL) > .05 || Math.abs(p.Wd - p.cW) > .05) && !p.ovr ? h('div', null, h('b', null, 'Kesim: '), `${fmt(p.L)} × ${fmt(p.Wd)} bitmiş ölçüden bant düşülür → ${fmt(p.cL)} × ${fmt(p.cW)}`) : null,
+          p.ovr ? h('div', null, h('b', null, 'Elle düzeltildi: '), `hesaplanan ${fmt(p.cL0 ?? p.cL)} × ${fmt(p.cW0 ?? p.cW)}`) : null,
+          h('div', null, h('b', null, 'Kenar bandı: '), UI.bandText(p, true)),
+          h('div', null, h('b', null, 'Desen yönü: '), m.grain ? 'boy boyunca (levha boyuna paralel)' : 'desensiz; levhada döndürülebilir')),
+        p.notes.length ? h('ul', {class: 'pc-n'}, p.notes.map(x => h('li', null, x))) : null),
+      h('details', {class: 'pc-sec', open: p.ovr || p.off}, h('summary', null, 'Sadece kesim listesinde değiştir'),
+        h('div', {class: 'ovr'}, h('label', {class: 'fld'}, h('span', null, 'Kesim boyu'), h('div', {class: 'inpw'}, iL, h('i', null, 'mm'))), h('label', {class: 'fld'}, h('span', null, 'Kesim eni'), h('div', {class: 'inpw'}, iW, h('i', null, 'mm'))),
+          h('button', {class: 'btn sm primary', type: 'button', style: 'min-height:44px', onclick: applyOv}, 'Uygula')),
+        h('div', {style: 'display:flex;gap:8px;flex-wrap:wrap'},
+          p.ovr ? h('button', {class: 'btn sm', type: 'button', onclick: () => A.change(() => { const ov = A.cab.over[p.id]; if (ov) { delete ov.cL; delete ov.cW; if (!ov.off) delete A.cab.over[p.id]; } }, {})}, 'Hesaplanana dön') : null,
+          h('button', {class: 'btn sm', type: 'button', onclick: () => A.change(() => { const ov = A.cab.over[p.id] || (A.cab.over[p.id] = {}); ov.off = !ov.off; if (!ov.off && !ov.cL && !ov.cW) delete A.cab.over[p.id]; }, {})}, p.off ? 'Listeye geri al' : 'Kesim listesinden çıkar')),
+        h('p', {class: 'tip'}, 'Dolabı değiştirmeden yalnız kesim listesindeki ölçüyü değiştirir; “elle” etiketiyle işaretlenir.')),
     );
     el.hidden = false;
+    for (const d of el.querySelectorAll('details')) d.addEventListener('toggle', () => UI.cardInset());
+    UI.cardInset();
+  },
+  /* parça kartı görünümün ne kadarını kaplıyor → 3B kamera boş alanda ortalasın */
+  cardInset() {
+    const el = $('#pcard'); if (el.hidden || !V.ren) { V.setInset(0, 0); return; }
+    const st = $('#v3d').getBoundingClientRect(), r = el.getBoundingClientRect();
+    if (A.mobile()) V.setInset(0, Math.max(0, st.bottom - r.top + 8)); else V.setInset(Math.max(0, st.right - r.left + 8), 0);
   },
   bandText(p, long) {
     const parts = [];
@@ -385,3 +433,38 @@ const UI = {
     toast('CSV indirildi (Excel ile açılır)');
   },
 };
+
+/* Parça ölçüsü → onu belirleyen dolap ayarı. Yeni ayar = eski + fark × mult.
+   (Kesim ve bitmiş ölçü aynı farkla değişir; bant payı sabittir.) */
+function partDrivers(c, R, p) {
+  const n = c.sections.length, out = {};
+  const m = p.id.match(/^(?:shelf|sep|door|dfront)-(\d+)/), si = m ? +m[1] : 0, SI = R.secs[si] || {};
+  const H = {lbl: 'Dolap yüksekliği', get: q => q.H, set: (q, v) => { q.H = v; }, mult: 1};
+  const Wc = {lbl: 'Dolap genişliği', get: q => q.W, set: (q, v) => { q.W = v; }, mult: 1};
+  const Dp = {lbl: 'Dolap derinliği', get: q => q.D, set: (q, v) => { q.D = v; }, mult: 1};
+  const SW = (mult = 1) => n === 1 ? Object.assign({}, Wc, {mult}) : {lbl: `${si + 1}. bölme genişliği`, get: () => R.dims.widths[si], set: (q, v) => { q.sections[si].w = v; }, mult};
+  const TH = key => ({t: 'Gövde kalınlığı', backT: 'Arkalık kalınlığı', frontT: 'Kapak kalınlığı', drawerT: 'Çekmece gövde kalınlığı'}[key]);
+  const T = key => ({lbl: TH(key), get: q => q[key], set: (q, v) => { q[key] = v; }, mult: 1});
+  switch (p.kind) {
+    case 'side': case 'divider': out.L = H; out.W = Dp; break;
+    case 'top': case 'bottom': out.L = Wc; out.W = Dp; break;
+    case 'rail': out.L = Wc; out.W = {lbl: 'Kuşak eni', get: q => q.railW, set: (q, v) => { q.railW = v; }, mult: 1}; break;
+    case 'shelf': case 'sep': out.L = SW(1); out.W = Dp; break;
+    case 'back': out.L = H; out.W = Wc; break;
+    case 'plinth': if (p.id === 'plinth' || p.id === 'frame-f' || p.id === 'frame-b') out.L = Wc; out.W = {lbl: c.base === 'legs' ? 'Ayak yüksekliği' : 'Baza yüksekliği', get: q => q.baseH, set: (q, v) => { q.baseH = v; }, mult: 1}; break;
+    case 'door': {
+      /* kapaktan ölçü değişince "otomatik" kapak sayısı sabitlenir (tek kapak çifte dönmesin) */
+      const pin = d => Object.assign({}, d, {set: (q, v) => { d.set(q, v); if (q.sections[si] && q.sections[si].door === 'auto') q.sections[si].door = String(SI.doors || 1); }});
+      out.L = pin(H); out.W = pin(SW(SI.doors || 1)); break;
+    }
+    case 'dfront': {
+      const s = c.sections[si];
+      out.L = SW(1);
+      out.W = s && s.drawerH > 0 ? {lbl: 'Çekmece önü yüksekliği', get: q => q.sections[si].drawerH, set: (q, v) => { q.sections[si].drawerH = v; }, mult: 1} : Object.assign({}, H, {mult: s ? s.drawers : 1});
+      break;
+    }
+  }
+  const tk = ['door', 'dfront'].includes(p.kind) ? 'frontT' : ['back', 'dbottom'].includes(p.kind) ? 'backT' : ['dside', 'dfb'].includes(p.kind) ? 'drawerT' : 't';
+  out.T = T(tk);
+  return out;
+}
