@@ -296,57 +296,90 @@ const V = {
   },
 
   /* ---------- ölçü çizgileri ---------- */
-  lineMat(cssVar) { const T = this.T, col = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() || '#c2410c'; return new T.LineBasicMaterial({color: new T.Color(col), depthTest: false, transparent: true}); },
   updDims() {
     const T = this.T;
-    for (const ch of this.dimG.children) { ch.geometry.dispose(); ch.material.dispose(); }
-    this.dimG.clear(); this.labels = [];
-    const seg = (pts, cssVar) => { const g = new T.BufferGeometry().setFromPoints(pts); const l = new T.LineSegments(g, this.lineMat(cssVar)); l.renderOrder = 999; this.dimG.add(l); };
+    this.labels = []; this.dimRecs = [];
+    /* ölçü kaydı: e0-e1 parçanın/dolabın gerçek kenarı, d0-d1 dışarı kaydırılmış ölçü çizgisi; çizim ekranda (SVG) kalın yapılır */
+    const dim = (e0, e1, d0, d1, role, html) => this.dimRecs.push({e0, e1, d0, d1, role, html});
     const dt = this.det;
     if (dt && dt.dir > 0 && dt.t > .9) {
       const selM = dt.g, p = dt.p, hh = [p.Wd, p.L, p.T].map(v => v / 2 * MM);
       selM.updateMatrixWorld(true);
       const camL = selM.worldToLocal(this.cam.position.clone()), cl = [camL.x, camL.y, camL.z];
-      const off = Math.max(.022, this.orb.r * .014), tick = off * .55;
-      const roles = {0: 'W', 1: 'L', 2: 'T'};
+      const off = Math.max(.05, this.orb.r * .032);
+      const roles = {0: 'W', 1: 'L', 2: 'T'}, pref = {L: [-1, 0], W: [0, -1], T: [-.8, .6]};
+      const scr = v => { const q = v.clone().project(this.cam); return [q.x, -q.y]; };
       for (let a = 0; a < 3; a++) {
-        const role = roles[a], b = (a + 1) % 3, c2 = (a + 2) % 3;
-        let sb = cl[b] >= 0 ? 1 : -1, sc = cl[c2] >= 0 ? 1 : -1;
-        /* ayrık parçada ölçüler dolaba uzak tarafta: boy solda, en ve kalınlık üstte */
-        if (a === 1) sc = -1; else if (a === 0) sb = 1; else { sb = -1; sc = -1; }
-        /* çizgiyi, kameraya bakan kenara, dışarı doğru kaydırarak koy */
-        const ob = off, oc = off * .4;
-        const mk = (ta, db, dc) => { const v = [0, 0, 0]; v[a] = ta; v[b] = sb * (hh[b] + db); v[c2] = sc * (hh[c2] + dc); return selM.localToWorld(new T.Vector3(...v)); };
-        const p0 = mk(-hh[a], ob, oc), p1 = mk(hh[a], ob, oc);
-        const pts = [p0, p1, mk(-hh[a], 0, 0), mk(-hh[a], ob + tick, oc), mk(hh[a], 0, 0), mk(hh[a], ob + tick, oc)];
-        seg(pts, role === 'L' ? '--dimL' : role === 'W' ? '--dimW' : '--dimT');
+        const role = roles[a], perp = [(a + 1) % 3, (a + 2) % 3];
+        /* ölçü çizgisini ekranda en iyi görünen dik yöne kaydır: boy sola, en yukarı, kalınlık sol alta (dolaptan uzağa) */
+        let best = null;
+        for (const k of perp) for (const sg of [1, -1]) {
+          const o2 = perp[0] === k ? perp[1] : perp[0], so = cl[o2] >= 0 ? 1 : -1;
+          const at = (ta, dk) => { const v = [0, 0, 0]; v[a] = ta; v[k] = sg * (hh[k] + dk); v[o2] = so * hh[o2]; return selM.localToWorld(new T.Vector3(...v)); };
+          const m0 = scr(at(0, 0)), m1 = scr(at(0, off)), dx = m1[0] - m0[0], dy = m1[1] - m0[1], ln = Math.hypot(dx, dy);
+          if (ln < 1e-6) continue;
+          const pr = pref[role], score = ln * (1 + .9 * (dx * pr[0] + dy * pr[1]) / ln);
+          if (!best || score > best.score) best = {score, at};
+        }
+        if (!best) continue;
         const net = role === 'L' ? p.L : role === 'W' ? p.Wd : p.T, cut = role === 'L' ? p.cL : role === 'W' ? p.cW : p.T;
-        const txt = `<em>${role === 'L' ? 'Boy' : role === 'W' ? 'En' : 'Kal.'}</em>${fmt(cut)}${Math.abs(cut - net) > .05 ? ` <em>(bitmiş ${fmt(net)})</em>` : ''}`;
-        this.labels.push({pos: p0.clone().add(p1).multiplyScalar(.5), html: txt, cls: role + ' big'});
+        const html = `<em>${role === 'L' ? 'Boy' : role === 'W' ? 'En' : 'Kal.'}</em>${fmt(cut)}${Math.abs(cut - net) > .05 ? `<small>bantlanınca ${fmt(net)}</small>` : ''}`;
+        dim(best.at(-hh[a], 0), best.at(hh[a], 0), best.at(-hh[a], off), best.at(hh[a], off), role, html);
       }
-      this.labels.push({pos: selM.localToWorld(new T.Vector3(hh[0] * .35, -hh[1] - off * 2.6, 0)), html: `${p.name}${p.sub ? ' · ' + p.sub : ''}`, cls: 'pn'});
+      this.labels.push({pos: selM.localToWorld(new T.Vector3(hh[0] * .45, -hh[1] - off * 1.4, 0)), html: `${p.name}${p.sub ? ' · ' + p.sub : ''}`, cls: 'pn'});
     } else if (this.dims && this.cab && !this.sel && !dt) {
-      const c = this.cab, fd = this.R && this.R.dims ? this.R.dims.fdepth : c.D, o = Math.max(.05, this.orb.r * .02), tk = o * .5;
+      const c = this.cab, fd = this.R && this.R.dims ? this.R.dims.fdepth : c.D, o = Math.max(.06, this.orb.r * .03);
       const V3 = (x, y, z) => new T.Vector3(x, y, z), W = c.W * MM, H = c.H * MM, D = fd * MM;
       const ex = this.exp * .3;
-      seg([V3(0, H + o, D), V3(W, H + o, D), V3(0, H, D), V3(0, H + o + tk, D), V3(W, H, D), V3(W, H + o + tk, D)], '--dimL');
-      seg([V3(-o - ex, 0, D), V3(-o - ex, H, D), V3(0, 0, D), V3(-o - tk - ex, 0, D), V3(0, H, D), V3(-o - tk - ex, H, D)], '--dimW');
-      seg([V3(W + o + ex, H, 0), V3(W + o + ex, H, D), V3(W, H, 0), V3(W + o + tk + ex, H, 0), V3(W, H, D), V3(W + o + tk + ex, H, D)], '--dimT');
-      this.labels.push({pos: V3(W / 2, H + o, D), html: `<em>Genişlik</em>${fmt(c.W)}`, cls: 'L'});
-      this.labels.push({pos: V3(-o - ex, H / 2, D), html: `<em>Yükseklik</em>${fmt(c.H)}`, cls: 'W'});
-      this.labels.push({pos: V3(W + o + ex, H, D / 2), html: `<em>Derinlik</em>${fmt(c.D)}${fd !== c.D ? ` <em>(kapakla ${fmt(fd)})</em>` : ''}`, cls: 'T'});
+      dim(V3(0, H, D), V3(W, H, D), V3(0, H + o, D), V3(W, H + o, D), 'L', `<em>Genişlik</em>${fmt(c.W)}`);
+      dim(V3(0, 0, D), V3(0, H, D), V3(-o - ex, 0, D), V3(-o - ex, H, D), 'W', `<em>Yükseklik</em>${fmt(c.H)}`);
+      dim(V3(W, H, 0), V3(W, H, D), V3(W + o + ex, H, 0), V3(W + o + ex, H, D), 'T', `<em>Derinlik</em>${fmt(c.D)}${fd !== c.D ? `<small>kapakla ${fmt(fd)}</small>` : ''}`);
     }
   },
   placeLabels() {
-    const box = $('#lbls'), L = this.labels || [];
-    while (box.children.length < L.length) box.append(h('div', {class: 'lbl'}));
-    const w = this.ren.domElement.clientWidth, hh = this.ren.domElement.clientHeight;
-    [...box.children].forEach((el, i) => {
-      const q = L[i]; if (!q) { el.hidden = true; return; }
-      const v = q.pos.clone().project(this.cam);
-      if (v.z > 1) { el.hidden = true; return; }
+    const box = $('#lbls'), w = this.ren.domElement.clientWidth, hh = this.ren.domElement.clientHeight;
+    const P = v => { const q = v.clone().project(this.cam); return q.z > 1 ? null : [(q.x + 1) / 2 * w, (1 - q.y) / 2 * hh]; };
+    /* kalın ölçü çizgileri: kenar vurgusu + uzatma çizgileri + oklu ölçü çizgisi */
+    let svg = box.querySelector('svg.dimsvg');
+    if (!svg) { svg = sv('svg', {class: 'dimsvg'}); box.prepend(svg); }
+    svg.setAttribute('viewBox', `0 0 ${w} ${hh}`); svg.setAttribute('width', w); svg.setAttribute('height', hh);
+    const R = this.dimRecs || [], L = (this.labels || []).slice(), out = [];
+    const f = n => n.toFixed(1);
+    const place = [];
+    for (const r of R) {
+      const e0 = P(r.e0), e1 = P(r.e1), d0 = P(r.d0), d1 = P(r.d1);
+      if (!e0 || !e1 || !d0 || !d1) continue;
+      const col = `var(--dim${r.role})`, len = Math.hypot(d1[0] - d0[0], d1[1] - d0[1]);
+      /* dışa doğru birim vektör (kenardan ölçü çizgisine) */
+      let nx = (d0[0] + d1[0] - e0[0] - e1[0]) / 2, ny = (d0[1] + d1[1] - e0[1] - e1[1]) / 2; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
+      if (nl < 2) { nx = 0; ny = -1; }
+      const ext = 7, X = (a, b) => [b[0] + nx * ext, b[1] + ny * ext];
+      const x0 = X(e0, d0), x1 = X(e1, d1);
+      out.push(`<g style="color:${col}">`,
+        `<line class="de" x1="${f(e0[0])}" y1="${f(e0[1])}" x2="${f(e1[0])}" y2="${f(e1[1])}"/>`,
+        `<line class="dx" x1="${f(e0[0] + nx * 3)}" y1="${f(e0[1] + ny * 3)}" x2="${f(x0[0])}" y2="${f(x0[1])}"/>`,
+        `<line class="dx" x1="${f(e1[0] + nx * 3)}" y1="${f(e1[1] + ny * 3)}" x2="${f(x1[0])}" y2="${f(x1[1])}"/>`,
+        `<line class="dl" x1="${f(d0[0])}" y1="${f(d0[1])}" x2="${f(d1[0])}" y2="${f(d1[1])}"/>`);
+      if (len > 26) {
+        const ux = (d1[0] - d0[0]) / len, uy = (d1[1] - d0[1]) / len, a = 10, s = 4.5;
+        const tri = (px, py, dx, dy) => `<path class="da" d="M${f(px)} ${f(py)}L${f(px + dx * a - dy * s)} ${f(py + dy * a + dx * s)}L${f(px + dx * a + dy * s)} ${f(py + dy * a - dx * s)}Z"/>`;
+        out.push(tri(d0[0], d0[1], ux, uy), tri(d1[0], d1[1], -ux, -uy));
+      }
+      out.push('</g>');
+      place.push({x: (d0[0] + d1[0]) / 2, y: (d0[1] + d1[1]) / 2, nx, ny, html: r.html, cls: r.role + (this.det ? ' big' : '') + ' dim'});
+    }
+    svg.innerHTML = out.join('');
+    /* etiketler: ölçü çizgisinin dışında, çizgiye değmeden */
+    const labs = [...place, ...L.map(q => { const p = P(q.pos); return p ? {x: p[0], y: p[1], nx: 0, ny: 0, html: q.html, cls: q.cls} : null; })];
+    const els = [...box.querySelectorAll('.lbl')];
+    while (els.length < labs.length) { const el = h('div', {class: 'lbl'}); box.append(el); els.push(el); }
+    els.forEach((el, i) => {
+      const q = labs[i]; if (!q) { el.hidden = true; return; }
       el.hidden = false; el.className = 'lbl ' + q.cls; if (el._h !== q.html) { el.innerHTML = q.html; el._h = q.html; }
-      el.style.transform = `translate(${((v.x + 1) / 2 * w).toFixed(1)}px,${((1 - v.y) / 2 * hh).toFixed(1)}px) translate(-50%,-50%)`;
+      const bw = el.offsetWidth, bh = el.offsetHeight, gap = 8;
+      const d = (q.nx || q.ny) ? Math.abs(q.nx) * bw / 2 + Math.abs(q.ny) * bh / 2 + gap : 0;
+      const x = clamp(q.x + q.nx * d, bw / 2 + 4, w - bw / 2 - 4), y = clamp(q.y + q.ny * d, bh / 2 + 4, hh - bh / 2 - 4);
+      el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-50%)`;
     });
   },
 

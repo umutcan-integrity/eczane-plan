@@ -68,7 +68,7 @@ ve baza parçalarının **kesim ölçüleri milimetre hassasiyetinde** hesaplan�
   kapak tipi (tam/yarım bindirme, gömme), kapak arası ve kenar payları, ray payı
 - Kenar bandı ve bant kalınlığının kesimden düşülmesi; montaj ve çakışma kontrolü
 - 3B görünüm: kapak aç/gizle, patlat; tıklanan parça dolabın soluna animasyonla ayrılır, tek başına
-  boy/en/kalınlık ölçüleriyle görünür, sürükleyerek ya da düğmelerle çevrilir (asıl yeri hayalet olarak kalır)
+  boy/en/kalınlık ölçüleriyle (kalın kenar vurgusu, oklu ölçü çizgisi, yazı çizginin dışında; bantlıysa “bantlanınca …” ölçüsü) görünür, sürükleyerek ya da düğmelerle çevrilir (asıl yeri hayalet olarak kalır)
 - Parçadan ölçü değiştirme: o ölçüyü belirleyen dolap ayarı (yükseklik, genişlik, bölme genişliği, kalınlık…)
   değişir, tüm parçalar birlikte güncellenir; istenirse yalnız kesim listesinde elle düzeltme
 - Kesim listesi (malzeme/kalınlığa göre, aynı parçalar adetli), hırdavat listesi, bant metrajı,
