@@ -131,7 +131,7 @@ a{color:inherit}
 .fld>small{font-size:11.5px;color:var(--faint);line-height:1.3}
 .inpw{position:relative;display:flex;align-items:center}
 .inpw i{position:absolute;right:10px;font-style:normal;font-size:12px;color:var(--faint);pointer-events:none}
-.inp{width:100%;min-height:40px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);padding:0 34px 0 11px;font-size:15px;font-variant-numeric:tabular-nums}
+.inp{width:100%;min-height:44px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);padding:0 34px 0 12px;font-size:16px;font-variant-numeric:tabular-nums}
 .inp.txt{padding-right:11px}
 .inp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .inp.bad{border-color:var(--danger);box-shadow:0 0 0 3px var(--danger-soft)}
@@ -411,6 +411,131 @@ dialog.modal::backdrop{background:rgba(10,15,13,.42);backdrop-filter:blur(2px)}
 
 @media (max-width:1100px){.hint3d{display:none}}
 
+/* ---------- kolay kullanım: kartlar, büyük düğmeler ---------- */
+.btn.big{min-height:50px;font-size:16px;padding:0 20px;border-radius:var(--r)}
+.btn:disabled{opacity:.45;cursor:default}
+.inp.big{min-height:56px;font-size:22px;font-weight:700;padding-left:16px;padding-right:44px}
+.inp.big+i{font-size:14px;right:14px}
+.inp.txt.big{font-size:18px;font-weight:600;padding-right:16px}
+.step.big{height:50px}
+.step.big button{width:50px;font-size:24px}
+.step.big b{min-width:44px;font-size:20px}
+.step button:disabled{opacity:.3;cursor:default}
+.chk.big{font-size:15px;min-height:44px}
+.chk.big input{width:22px;height:22px}
+.chips button{min-height:38px;padding:5px 14px;font-size:14px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.tiles button{position:relative;border:1.5px solid var(--line-2);background:var(--surface);border-radius:var(--r);padding:12px 8px 10px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;transition:border-color .12s,background .12s,transform .12s;color:var(--ink)}
+.tiles button:hover{border-color:var(--accent)}
+.tiles button:active{transform:scale(.98)}
+.tiles button.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1.5px var(--accent) inset}
+.tiles button svg{width:52px;height:46px;color:var(--accent)}
+.tiles button b{font-size:14.5px;line-height:1.2}
+.tiles button small{font-size:12px;color:var(--muted);line-height:1.3}
+.tiles button em{position:absolute;top:6px;right:6px;font-style:normal;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:2px 7px}
+.tiles.sm{grid-template-columns:repeat(5,1fr);gap:6px}
+.tiles.sm button{padding:8px 2px 7px;gap:3px;border-radius:var(--r-sm)}
+.tiles.sm button svg{width:34px;height:30px}
+.tiles.sm button b{font-size:12px}
+.tiles.mini4{grid-template-columns:repeat(4,1fr);gap:6px}
+.tiles.mini4 button{padding:7px 2px;border-radius:var(--r-sm);gap:2px}
+.tiles.mini4 button svg{width:34px;height:28px}
+.tiles.mini4 button b{font-size:12.5px}
+.tiles.mini{grid-template-columns:repeat(3,1fr)}
+.tiles.mini button{padding:12px 4px}
+.tiles.mini button b{font-size:17px}
+.tiles.big{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tiles.big button{padding:14px 10px 12px;gap:6px}
+.tiles.big button svg{width:64px;height:76px;color:var(--accent)}
+.tiles.big2{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.tiles.big2 button svg{width:64px;height:54px}
+.tiles.big4{grid-template-columns:repeat(4,1fr);gap:10px}
+.tiles.big4 button svg{width:64px;height:56px}
+.tiles.big4 button b{font-size:16px}
+.tiles.big svg[viewBox]{color:var(--ink)}
+.sec .tiles.sm button.on svg{color:var(--accent)}
+.cabhead{display:flex;flex-direction:column;gap:10px;padding:6px 0 12px}
+.cabhead .inp.nm{font-size:17px;font-weight:700;padding-right:12px}
+.subh{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:8px 0 -4px;padding-top:10px;border-top:1px dashed var(--line)}
+.subh:first-child{border-top:0;padding-top:0;margin-top:0}
+.empty-side{border:1.5px dashed var(--line-2);border-radius:var(--r);padding:22px 16px;text-align:center;display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.empty-side b{font-size:16px}
+.empty-side p{margin:0 0 6px;color:var(--muted);font-size:13.5px}
+.empty-st{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:30px 20px;text-align:center}
+.empty-st svg{width:120px;height:120px;color:var(--accent);opacity:.85}
+.empty-st h2{margin:4px 0 0;font-size:24px}
+.empty-st p{margin:0 0 10px;color:var(--muted);max-width:420px}
+.cab .ic{color:var(--ink)}
+
+/* ---------- sihirbaz ---------- */
+.wiz{position:fixed;inset:0;z-index:100;background:rgba(10,15,13,.45);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px}
+body.wiz-on{overflow:hidden}
+.wiz-card{background:var(--surface);color:var(--ink);border-radius:22px;box-shadow:var(--shadow-lg);width:min(980px,100%);height:min(720px,100%);display:flex;flex-direction:column;overflow:hidden}
+.wiz-head{display:flex;align-items:center;gap:10px;padding:14px 16px 6px 22px}
+.wiz-head div{flex:1;display:flex;flex-direction:column}
+.wiz-head b{font-size:17px}
+.wiz-head small{color:var(--muted);font-size:12.5px}
+.wiz-steps{display:flex;gap:4px;padding:6px 18px 10px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line)}
+.wiz-steps::-webkit-scrollbar{display:none}
+.wiz-steps button{flex:1;min-width:66px;display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:transparent;padding:4px 2px;color:var(--muted);font-size:12px;font-weight:650;border-radius:10px}
+.wiz-steps button i{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:13px;background:var(--surface-3);color:var(--muted);border:2px solid transparent}
+.wiz-steps button.done i{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.wiz-steps button.on{color:var(--ink)}
+.wiz-steps button.on i{background:var(--accent);color:var(--accent-ink)}
+.wiz-steps button:disabled{opacity:.45;cursor:default}
+.wiz-body{flex:1;overflow:auto;padding:18px 22px 24px;overscroll-behavior:contain}
+.wiz-q h2{margin:0;font-size:24px;letter-spacing:-.01em}
+.wiz-q p{margin:4px 0 16px;color:var(--muted)}
+.wiz-cols{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:22px;align-items:start}
+.wiz-cols:has(> :only-child){grid-template-columns:1fr}
+.wiz-main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.wiz-pv{position:sticky;top:0;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:8px}
+.wiz-pv svg{width:100%;height:auto;max-height:340px}
+.pv-info{text-align:center;font-weight:650;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.wiz-foot{display:flex;align-items:center;gap:10px;padding:12px 18px;padding-bottom:max(12px,env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--surface)}
+.wiz-foot .btn.big{min-width:120px}
+.dimf{display:flex;flex-direction:column;gap:8px}
+.chips.sugg button{min-height:34px;font-size:13px;padding:4px 12px;font-variant-numeric:tabular-nums}
+.sw.big button{width:36px;height:36px}
+.tip.big{font-size:15px;color:var(--ink)}
+/* temalı ön görünüş */
+.pvw .pv-b{fill:var(--surface);stroke:var(--ink)}
+.pvw .pv-f{fill:var(--accent);fill-opacity:.1;stroke:var(--accent)}
+.pvw .pv-h{stroke:var(--accent);opacity:.35}
+.pvw .pv-k{stroke:var(--ink)}
+.pvw .pv-r{stroke:var(--muted)}
+.pvw .pv-l{fill:var(--ink)}
+.pvw .pv-x{stroke:var(--faint)}
+.pvw .pv-d{stroke:var(--dimL)}
+.pvw .pv-t{fill:var(--dimL);font-weight:700}
+@media (max-width:760px){
+  .wiz{padding:0;background:var(--surface)}
+  .wiz-card{border-radius:0;height:100%;width:100%;box-shadow:none}
+  .wiz-head{padding:10px 10px 4px 16px;padding-top:max(10px,env(safe-area-inset-top))}
+  .wiz-steps{padding:4px 10px 8px}
+  .wiz-steps button{min-width:44px;font-size:10.5px}
+  .wiz-steps button i{width:26px;height:26px}
+  .wiz-body{padding:14px 14px 20px}
+  .wiz-q h2{font-size:21px}
+  .wiz-q p{margin-bottom:12px;font-size:13.5px}
+  .wiz-cols{grid-template-columns:1fr;gap:14px}
+  .wiz-pv{order:-1;position:static;flex-direction:row;align-items:center;padding:8px 10px}
+  .wiz-pv svg{width:96px;max-height:110px;flex:none}
+  .wiz-pv .pv-info{text-align:left;flex:1}
+  .wiz-pv .iss{display:none}
+  .tiles.big,.tiles.big2{grid-template-columns:1fr 1fr}
+  .tiles.big4{grid-template-columns:1fr 1fr}
+  .tiles.big button svg{width:56px;height:64px}
+  .wiz-foot .btn.big{min-width:0;flex:1}
+  .wiz-foot .grow{display:none}
+  .wiz-foot .btn.ghost{display:none}
+}
+:root[data-glass] .wiz-card{background:var(--glass),rgba(16,24,44,.78);border:1px solid var(--line);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)}
+:root[data-glass] .wiz-foot{background:transparent}
+:root[data-glass] :is(.tiles button,.wiz-pv){background:rgba(255,255,255,.06)}
+:root[data-glass] .tiles button.on{background:color-mix(in srgb,var(--accent) 22%,transparent)}
+@media (max-width:760px){:root[data-glass] .wiz{background:var(--bg)}}
+
 </style>
 </head>
 <body>
@@ -455,9 +580,16 @@ dialog.modal::backdrop{background:rgba(10,15,13,.42);backdrop-filter:blur(2px)}
     </section>
     <section class="pane" id="vcut" hidden></section>
     <section class="pane" id="vnest" hidden></section>
+    <section class="empty-st" id="empty" hidden>
+      <svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><rect x="26" y="14" width="68" height="88" rx="4"/><path d="M60 14v88M26 58h34"/><path d="M52 66v12M68 66v12" stroke-linecap="round" stroke-width="4"/><path d="M34 102v8M86 102v8" stroke-linecap="round"/></svg>
+      <h2>İlk dolabını oluştur</h2>
+      <p>Dolap tipini, ölçülerini, bölmelerini ve içini adım adım soracağız. Kesim ölçüleri kendiliğinden hesaplanır.</p>
+      <button class="btn primary big" id="emptyNew" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Dolap oluştur</button>
+    </section>
   </main>
 </div>
 
+<div id="wiz" class="wiz" hidden></div>
 <div id="print" class="print"></div>
 <dialog id="modal" class="modal"></dialog>
 <div id="menu" class="menu" hidden></div>
@@ -666,9 +798,7 @@ function normalizeCab(c) {
   return c;
 }
 function newJob(name = 'Yeni iş') {
-  const j = {id: uid(), name, created: Date.now(), updated: Date.now(), mats: DEF_MATS(), kerf: 4, trim: 10, cabs: [], cur: null};
-  const c = newCab('base', j); j.cabs.push(c); j.cur = c.id;
-  return j;
+  return {id: uid(), name, created: Date.now(), updated: Date.now(), mats: DEF_MATS(), kerf: 4, trim: 10, cabs: [], cur: null};
 }
 function normalizeJob(j) {
   j = Object.assign({id: uid(), name: 'İş', created: Date.now(), updated: Date.now(), kerf: 4, trim: 10}, j || {});
@@ -676,8 +806,7 @@ function normalizeJob(j) {
   for (const k of MAT_KEYS) { j.mats[k] = Object.assign({}, dm[k], j.mats[k] || {}); for (const q of ['L', 'W']) j.mats[k][q] = Number(j.mats[k][q]) || dm[k][q]; j.mats[k].grain = !!j.mats[k].grain; }
   j.kerf = Math.max(0, Number(j.kerf) || 0); j.trim = Math.max(0, Number(j.trim) || 0);
   j.cabs = (Array.isArray(j.cabs) ? j.cabs : []).map(normalizeCab);
-  if (!j.cabs.length) j.cabs.push(newCab('base'));
-  if (!j.cabs.some(c => c.id === j.cur)) j.cur = j.cabs[0].id;
+  if (!j.cabs.some(c => c.id === j.cur)) j.cur = j.cabs.length ? j.cabs[0].id : null;
   return j;
 }
 
@@ -701,7 +830,7 @@ const Store = {
 };
 const Settings = {
   v: null,
-  load() { this.v = Object.assign({mode: null, open: {dims: 1, body: 1, secs: 1}, view: '3d', scope: 'job'}, Store.get('settings', {})); if (!this.v.mode) { try { this.v.mode = JSON.parse(localStorage.getItem('eczplan.v2.settings') || '{}').mode || 'auto'; } catch (e) { this.v.mode = 'auto'; } } },
+  load() { this.v = Object.assign({mode: null, open: {dims: 1, secs: 1, base: 1}, view: '3d', scope: 'job'}, Store.get('settings', {})); if (!this.v.mode) { try { this.v.mode = JSON.parse(localStorage.getItem('eczplan.v2.settings') || '{}').mode || 'auto'; } catch (e) { this.v.mode = 'auto'; } } },
   set(k, v) { this.v[k] = v; Store.set('settings', this.v); },
 };
 
@@ -1458,25 +1587,294 @@ function frontSVG(c, R, opt = {}) {
     if (!fronts.length) for (const p of body.filter(q => q.kind === 'shelf' || q.kind === 'divider')) rect(p.box, {fill: 'currentColor', stroke: 'none', opacity: .55});
     return svg;
   }
-  for (const p of body) rect(p.box, {fill: '#e8e4dc', stroke: '#222', 'stroke-width': sw});
-  for (const p of R.parts.filter(q => q.kind === 'dfb' && q.id.endsWith('-F'))) rect(p.box, {fill: 'none', stroke: '#888', 'stroke-width': sw * .7, 'stroke-dasharray': `${sw * 4} ${sw * 3}`});
+  if (opt.theme) svg.classList.add('pvw');
+  for (const x of R.extras.filter(q => q.type === 'leg' && q.z > c.D / 2)) svg.append(sv('rect', {x: x.x - 16, y: Y(x.h), width: 32, height: x.h, class: 'pv-l', fill: '#333'}));
+  for (const p of body) rect(p.box, {fill: '#e8e4dc', stroke: '#222', 'stroke-width': sw, class: 'pv-b'});
+  for (const p of R.parts.filter(q => q.kind === 'dfb' && q.id.endsWith('-F'))) rect(p.box, {fill: 'none', stroke: '#888', 'stroke-width': sw * .7, 'stroke-dasharray': `${sw * 4} ${sw * 3}`, class: 'pv-x'});
+  for (const x of R.extras.filter(q => q.type === 'rod')) svg.append(sv('line', {x1: x.x0, y1: Y(x.y), x2: x.x1, y2: Y(x.y), stroke: '#555', 'stroke-width': sw * 2.4, 'stroke-linecap': 'round', class: 'pv-r'}));
   for (const p of fronts) {
-    rect(p.box, {fill: 'none', stroke: '#1d4ed8', 'stroke-width': sw * 1.1, 'stroke-dasharray': `${sw * 8} ${sw * 4}`});
-    if (p.hinge) { const b = p.box, hx = p.hinge.side === 'L' ? b[0] : b[3], fxx = p.hinge.side === 'L' ? b[3] : b[0]; svg.append(sv('path', {d: `M${fxx} ${Y(b[4])} L${hx} ${Y((b[1] + b[4]) / 2)} L${fxx} ${Y(b[1])}`, fill: 'none', stroke: '#1d4ed8', 'stroke-width': sw * .6, opacity: .6})); }
+    const b = p.box;
+    rect(b, {fill: 'none', stroke: '#1d4ed8', 'stroke-width': sw * 1.1, 'stroke-dasharray': opt.theme ? null : `${sw * 8} ${sw * 4}`, class: 'pv-f'});
+    if (p.hinge) { const hx = p.hinge.side === 'L' ? b[0] : b[3], fxx = p.hinge.side === 'L' ? b[3] : b[0]; svg.append(sv('path', {d: `M${fxx} ${Y(b[4])} L${hx} ${Y((b[1] + b[4]) / 2)} L${fxx} ${Y(b[1])}`, fill: 'none', stroke: '#1d4ed8', 'stroke-width': sw * .6, opacity: .6, class: 'pv-h'})); }
+    if (opt.theme) {
+      const hl = p.hinge ? Math.min(160, (b[4] - b[1]) * .3) : Math.min(160, (b[3] - b[0]) * .4);
+      if (p.hinge) { const xh = p.hinge.side === 'L' ? b[3] - 40 : b[0] + 40, ym = c.base === 'wall' ? b[1] + 70 + hl / 2 : (b[4] - b[1]) > 1100 ? clamp(1050, b[1] + 120, b[4] - 120) : b[4] - 70 - hl / 2; svg.append(sv('line', {x1: xh, y1: Y(ym - hl / 2), x2: xh, y2: Y(ym + hl / 2), class: 'pv-k', 'stroke-width': sw * 2.2, 'stroke-linecap': 'round'})); }
+      else { const xm = (b[0] + b[3]) / 2, ym = (b[4] - b[1]) > 260 ? b[4] - 60 : (b[1] + b[4]) / 2; svg.append(sv('line', {x1: xm - hl / 2, y1: Y(ym), x2: xm + hl / 2, y2: Y(ym), class: 'pv-k', 'stroke-width': sw * 2.2, 'stroke-linecap': 'round'})); }
+    }
   }
-  for (const x of R.extras.filter(q => q.type === 'rod')) svg.append(sv('line', {x1: x.x0, y1: Y(x.y), x2: x.x1, y2: Y(x.y), stroke: '#555', 'stroke-width': sw * 2.4, 'stroke-linecap': 'round'}));
   /* ölçüler */
   const fs = Math.max(c.W, c.H) / 26, dl = (x1, y1, x2, y2, txt, vert) => {
-    svg.append(sv('line', {x1, y1, x2, y2, stroke: '#c2410c', 'stroke-width': sw}));
-    for (const [px, py] of [[x1, y1], [x2, y2]]) svg.append(sv('line', Object.assign(vert ? {x1: px - fs * .3, y1: py, x2: px + fs * .3, y2: py} : {x1: px, y1: py - fs * .3, x2: px, y2: py + fs * .3}, {stroke: '#c2410c', 'stroke-width': sw})));
+    svg.append(sv('line', {x1, y1, x2, y2, stroke: '#c2410c', 'stroke-width': sw, class: 'pv-d'}));
+    for (const [px, py] of [[x1, y1], [x2, y2]]) svg.append(sv('line', Object.assign(vert ? {x1: px - fs * .3, y1: py, x2: px + fs * .3, y2: py} : {x1: px, y1: py - fs * .3, x2: px, y2: py + fs * .3}, {stroke: '#c2410c', 'stroke-width': sw, class: 'pv-d'})));
     const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-    svg.append(sv('text', vert ? {x: mx - fs * .35, y: my, 'font-size': fs, 'text-anchor': 'middle', transform: `rotate(-90 ${mx - fs * .35} ${my})`, fill: '#c2410c', 'font-family': 'Arial'} : {x: mx, y: my - fs * .3, 'font-size': fs, 'text-anchor': 'middle', fill: '#c2410c', 'font-family': 'Arial'}, txt));
+    svg.append(sv('text', vert ? {x: mx - fs * .35, y: my, 'font-size': fs, 'text-anchor': 'middle', transform: `rotate(-90 ${mx - fs * .35} ${my})`, fill: '#c2410c', 'font-family': 'Arial', class: 'pv-t'} : {x: mx, y: my - fs * .3, 'font-size': fs, 'text-anchor': 'middle', fill: '#c2410c', 'font-family': 'Arial', class: 'pv-t'}, txt));
   };
   dl(0, -pad * .45, c.W, -pad * .45, fmt(c.W));
   dl(-pad * .45, 0, -pad * .45, c.H, fmt(c.H), true);
   if (R.secs.length > 1) { let y = c.H + pad * .5; for (const s of R.secs) dl(s.sx, y, s.sx + s.sw, y, fmt(s.sw)); }
   return svg;
 }
+
+/* =====================================================================
+   Kolay kullanım: genel bileşenler, bölme kartı, adım adım sihirbaz
+   ===================================================================== */
+const Wg = {
+  step(label, val, onSet, min, max, o = {}) {
+    const mk = d => h('button', {type: 'button', 'aria-label': d < 0 ? 'azalt' : 'artır', disabled: d < 0 ? val <= min : val >= max, onclick: () => { const x = clamp(val + d, min, max); if (x !== val) onSet(x); }}, d < 0 ? '−' : '+');
+    return h('div', {class: 'lblrow'}, h('span', null, label), h('div', {class: 'step' + (o.big ? ' big' : '')}, mk(-1), h('b', null, o.fmt ? o.fmt(val) : val), mk(1)));
+  },
+  tiles(opts, cur, onPick, o = {}) {
+    return h('div', {class: 'tiles' + (o.cls ? ' ' + o.cls : '')}, opts.map(([v, t, ic, desc, badge]) => h('button', {type: 'button', class: String(cur) === String(v) ? 'on' : '', onclick: () => onPick(v)},
+      ic ? (typeof ic === 'string' ? pic(ic) : ic) : null, h('b', null, t), desc ? h('small', null, desc) : null, badge ? h('em', null, badge) : null)));
+  },
+  chips(opts, cur, onPick) {
+    return h('div', {class: 'chips'}, opts.map(([v, t]) => h('button', {type: 'button', class: String(cur) === String(v) ? 'on' : '', onclick: () => onPick(v)}, t)));
+  },
+  num(label, val, onVal, o = {}) {
+    const inp = h('input', {class: 'inp' + (o.big ? ' big' : ''), inputmode: 'decimal', autocomplete: 'off', enterkeyhint: 'next', value: (o.empty && !val) ? '' : fmt(val, 2), placeholder: o.ph || ''});
+    const ok = x => isFinite(x) && x >= (o.min ?? 0) && x <= (o.max ?? 1e5);
+    inp.addEventListener('input', () => {
+      const raw = inp.value.trim();
+      if (o.empty && raw === '') { inp.classList.remove('bad'); onVal(0, true); return; }
+      const x = evalNum(raw);
+      if (!ok(x)) { inp.classList.add('bad'); onVal(null, false); return; }
+      inp.classList.remove('bad'); onVal(x, true);
+    });
+    inp.addEventListener('focus', () => setTimeout(() => inp.select(), 0));
+    inp.addEventListener('change', () => { if (!inp.classList.contains('bad')) { const x = evalNum(inp.value); if (isFinite(x)) inp.value = fmt(x, 2); } });
+    const lab = h('label', {class: 'fld'}, label ? h('span', null, label) : null, h('div', {class: 'inpw'}, inp, h('i', null, o.unit ?? 'mm')), o.hint ? h('small', null, o.hint) : null);
+    lab.inp = inp;
+    return lab;
+  },
+};
+
+/* ---------- bölme içeriği ---------- */
+const CONTENT_IC = {
+  shelf: '<rect x="5" y="2" width="30" height="30" rx="1"/><path d="M5 11h30M5 18h30M5 25h30" stroke-width="2.2"/>',
+  drw: '<rect x="5" y="2" width="30" height="30" rx="1"/><path d="M5 12h30M5 22h30"/><path d="M17 7h6M17 17h6M17 27h6" stroke-width="2.4"/>',
+  mix: '<rect x="5" y="2" width="30" height="30" rx="1"/><path d="M5 9h30M5 16h30" stroke-width="2.2"/><path d="M5 23h30"/><path d="M17 20h6M17 28h6" stroke-width="2.4"/>',
+  hang: '<rect x="5" y="2" width="30" height="30" rx="1"/><path d="M5 8h30" stroke-width="2.2"/><path d="M8 12h24" stroke-width="2.4"/><path d="M20 12v3l-7 6h14l-7-6"/>',
+  empty: '<rect x="5" y="2" width="30" height="30" rx="1"/>',
+};
+const CONTENT = [['shelf', 'Raf', CONTENT_IC.shelf], ['drw', 'Çekmece', CONTENT_IC.drw], ['mix', 'Çekmece + raf', CONTENT_IC.mix], ['hang', 'Askı', CONTENT_IC.hang], ['empty', 'Boş', CONTENT_IC.empty]];
+const contentOf = s => s.hanger ? 'hang' : s.drawers > 0 ? (s.drawerH > 0 ? 'mix' : 'drw') : s.shelves > 0 ? 'shelf' : 'empty';
+function setContent(s, k) {
+  const sh = !s.hanger && s.shelves > 0 ? s.shelves : 0;
+  if (k === 'shelf') Object.assign(s, {hanger: false, drawers: 0, drawerH: 0, shelves: sh || 2});
+  if (k === 'drw') Object.assign(s, {hanger: false, drawers: s.drawers > 0 ? s.drawers : 3, drawerH: 0});
+  if (k === 'mix') Object.assign(s, {hanger: false, drawers: s.drawers > 0 ? Math.min(s.drawers, 3) : 2, drawerH: s.drawerH > 0 ? s.drawerH : 180, shelves: sh || 2});
+  if (k === 'hang') Object.assign(s, {hanger: true, drawers: 0, drawerH: 0, shelves: 1});
+  if (k === 'empty') Object.assign(s, {hanger: false, drawers: 0, drawerH: 0, shelves: 0});
+}
+/* act: {set(fn) → değiştir + yeniden çiz, soft(fn, key) → değiştir, sadece önizleme/özet} */
+function secCard(s, i, n, R, act) {
+  const k = contentOf(s), SI = R && R.secs[i], w = R && R.dims ? R.dims.widths[i] : 0;
+  const body = [];
+  body.push(Wg.tiles(CONTENT, k, v => act.set(q => setContent(q, v)), {cls: 'sm'}));
+  if (k === 'shelf') body.push(Wg.step('Raf sayısı', s.shelves, x => act.set(q => { q.shelves = x; }), 1, 20, {big: true}));
+  if (k === 'drw') body.push(Wg.step('Çekmece sayısı', s.drawers, x => act.set(q => { q.drawers = x; }), 1, 8, {big: true}));
+  if (k === 'mix') {
+    body.push(Wg.step('Çekmece sayısı (altta)', s.drawers, x => act.set(q => { q.drawers = x; }), 1, 6, {big: true}));
+    body.push(Wg.num('Her çekmecenin ön yüksekliği', s.drawerH, (x, ok) => { if (ok && x >= 60) act.soft(q => { q.drawerH = x; }, 'dh' + i); }, {min: 60, max: 800, hint: 'Genelde 150–250 mm'}));
+    body.push(Wg.step('Raf sayısı (üstte)', s.shelves, x => act.set(q => { q.shelves = x; }), 0, 15, {big: true}));
+  }
+  if (k === 'hang') body.push(h('label', {class: 'chk big'}, h('input', {type: 'checkbox', checked: s.shelves > 0, onchange: e => act.set(q => { q.shelves = e.target.checked ? 1 : 0; })}), 'Askının üstünde şapkalık raf olsun'));
+  if (k !== 'drw') {
+    body.push(h('div', {class: 'fld'}, h('span', null, 'Kapak'), Wg.chips([['auto', 'Otomatik'], ['1', 'Tek kapak'], ['2', 'Çift kapak'], ['none', 'Kapaksız']], s.door, v => act.set(q => { q.door = v; }))));
+    if (SI && SI.doors === 1) body.push(h('div', {class: 'fld'}, h('span', null, 'Kapak hangi taraftan açılsın? (menteşe)'), Wg.chips([['L', 'Soldan'], ['R', 'Sağdan']], s.hinge, v => act.set(q => { q.hinge = v; }))));
+  }
+  if (s.shelves > 0 && k !== 'hang') body.push(h('div', {class: 'fld'}, h('span', null, 'Raflar'), Wg.chips([['adj', 'Hareketli (pimli)'], ['fixed', 'Sabit']], s.shelfType, v => act.set(q => { q.shelfType = v; }))));
+  if (n > 1) body.push(Wg.num('Bölme genişliği (boş bırak = otomatik)', s.w, (x, ok) => { if (ok) act.soft(q => { q.w = x; }, 'w' + i); }, {empty: true, min: 0, max: 6000, ph: w ? `otomatik · ${fmt(w)}` : 'otomatik'}));
+  return h('div', {class: 'sec'},
+    h('div', {class: 'sec-h'}, h('b', null, n > 1 ? `${i + 1}. bölme` : 'Dolabın içi'), h('small', null, w ? `iç genişlik ${fmt(w)} mm` : ''), act.del && n > 1 ? h('button', {class: 'icon-btn sm', type: 'button', title: 'Bölmeyi sil', onclick: act.del}, icon(IC.trash)) : null),
+    body);
+}
+/* bölme sayısı resimleri */
+function secsPic(n) {
+  let d = '<rect x="4" y="2" width="32" height="30" rx="1"/>';
+  for (let i = 1; i < n; i++) { const x = 4 + 32 * i / n; d += `<path d="M${x} 2v30" stroke-width="2.2"/>`; }
+  return d;
+}
+const suggestSecs = W => W <= 650 ? 1 : W <= 1100 ? 2 : W <= 1600 ? 3 : 4;
+
+/* ---------- sihirbaz ---------- */
+const Wiz = {
+  d: null, mats: null, mode: 'new', i: 0, seen: 0, bad: new Set(), id: null,
+  STEPS: [
+    {k: 'type', t: 'Tip', q: 'Ne tür bir dolap yapıyorsun?', p: 'Birini seç; hepsi sonradan değiştirilebilir.'},
+    {k: 'dims', t: 'Ölçü', q: 'Dolabın dış ölçüleri', p: 'Milimetre (mm) olarak gir. Yükseklik ayak / baza dahil toplam yüksekliktir.'},
+    {k: 'secs', t: 'Bölme', q: 'Kaç bölme olsun?', p: 'Bölmeler arasına ara dikme konur.'},
+    {k: 'inside', t: 'İç', q: 'Bölmelerin içinde ne olsun?', p: 'Raf, çekmece, askı… Sayısını + / − ile ayarla.'},
+    {k: 'door', t: 'Kapak', q: 'Kapak olsun mu?', p: 'Otomatik: bölme 600 mm’den genişse çift, değilse tek kapak.'},
+    {k: 'base', t: 'Alt', q: 'Dolabın altı nasıl olsun?', p: 'Ayak, baza ya da duvara asma.'},
+    {k: 'mat', t: 'Malzeme', q: 'Malzeme ve renk', p: 'Gövde kalınlığı, arkalık ve renkler.'},
+    {k: 'end', t: 'Bitir', q: 'Son kontrol', p: 'Adını ve adedini yaz, özeti kontrol et.'},
+  ],
+  open(mode = 'new', cab) {
+    this.mode = mode; this.bad = new Set(); this.mats = clone(A.job.mats);
+    if (mode === 'edit' && cab) { this.d = clone(cab); this.id = cab.id; this.i = 1; this.seen = this.STEPS.length - 1; }
+    else { this.d = this.fromPreset('base'); this.id = null; this.i = 0; this.seen = 0; }
+    $('#wiz').hidden = false; document.body.classList.add('wiz-on');
+    this.render();
+  },
+  fromPreset(k) {
+    const c = newCab(k, A.job), cur = A.cab;
+    if (cur) for (const key of ['t', 'backT', 'frontT', 'drawerT', 'bandBody', 'bandFront', 'bandDrawer', 'deduct', 'overlay', 'gap', 'edge', 'railGap', 'railType', 'back', 'grooveD', 'grooveO', 'backTol']) c[key] = cur[key];
+    return c;
+  },
+  async close(ask = true) {
+    if (ask && (this.mode === 'edit' || this.seen > 0) && !await Modal.confirm(this.mode === 'edit' ? 'Değişiklikler kaydedilmeden çıkılsın mı?' : 'Dolap oluşturmaktan vazgeçilsin mi?', 'Çık', true)) return;
+    $('#wiz').hidden = true; document.body.classList.remove('wiz-on');
+  },
+  go(i) { if (i < 0 || i >= this.STEPS.length || i > this.seen + (this.canNext() ? 1 : 0)) return; this.i = i; this.seen = Math.max(this.seen, i); this.render(); $('#wiz .wiz-body').scrollTop = 0; },
+  canNext() { return !(this.STEPS[this.i].k === 'dims' && this.bad.size); },
+  next() { if (!this.canNext()) { toast('Ölçüleri kontrol et', 'err'); return; } if (this.i === this.STEPS.length - 1) this.finish(); else this.go(this.i + 1); },
+  finish() {
+    const d = normalizeCab(this.d), mats = this.mats;
+    if (this.mode === 'edit') {
+      A.change(() => { const k = A.job.cabs.findIndex(c => c.id === this.id); if (k >= 0) A.job.cabs[k] = d; else A.job.cabs.push(d); A.job.cur = d.id; A.job.mats = mats; A.sel = null; }, {full: true, fit: true});
+      toast('Dolap güncellendi');
+    } else {
+      A.change(() => { A.job.cabs.push(d); A.job.cur = d.id; A.job.mats = mats; A.sel = null; }, {full: true, fit: true});
+      toast(`${d.name} oluşturuldu`);
+    }
+    this.close(false);
+    A.show(A.mobile() ? '3d' : '3d');
+  },
+  calc() { return calcCab(normalizeCab(this.d)); },
+  preview() {
+    const box = $('#wiz .wiz-pv'); if (!box) return;
+    const c = normalizeCab(this.d), R = calcCab(c);
+    box.innerHTML = '';
+    if (R.parts.length) box.append(frontSVG(c, R, {theme: true}));
+    const info = [`${fmt(c.W)} × ${fmt(c.H)} × ${fmt(c.D)} mm`];
+    const sh = R.parts.filter(p => p.kind === 'shelf').length, dr = R.parts.filter(p => p.kind === 'dfront').length, dd = R.parts.filter(p => p.kind === 'door').length;
+    if (sh) info.push(`${sh} raf`); if (dr) info.push(`${dr} çekmece`); if (dd) info.push(`${dd} kapak`);
+    box.append(h('div', {class: 'pv-info'}, info.join(' · ')));
+    const errs = R.warn.filter(w => w.lvl === 'err');
+    if (errs.length) box.append(h('div', {class: 'iss'}, errs[0].t));
+    /* bölme kartlarındaki genişlik ipuçları */
+    $$('#wiz .sec').forEach((el, i) => { const w = R.dims && R.dims.widths[i], sm = el.querySelector('.sec-h small'); if (sm) sm.textContent = w ? `iç genişlik ${fmt(w)} mm` : ''; });
+  },
+  render() {
+    const root = $('#wiz'), st = this.STEPS[this.i], d = this.d, last = this.i === this.STEPS.length - 1;
+    root.innerHTML = '';
+    const steps = h('div', {class: 'wiz-steps'}, this.STEPS.map((s, i) => h('button', {type: 'button', class: (i === this.i ? 'on' : '') + (i < this.i || (i <= this.seen && i !== this.i) ? ' done' : ''), disabled: i > this.seen + (this.canNext() && i === this.i + 1 ? 1 : 0), onclick: () => this.go(i)}, h('i', null, i + 1), h('span', null, s.t))));
+    const main = h('div', {class: 'wiz-main'}, this['s_' + st.k]());
+    root.append(h('div', {class: 'wiz-card', role: 'dialog', 'aria-modal': 'true', 'aria-label': this.mode === 'edit' ? 'Dolabı düzenle' : 'Yeni dolap'},
+      h('div', {class: 'wiz-head'}, h('div', null, h('b', null, this.mode === 'edit' ? 'Dolabı düzenle' : 'Yeni dolap'), h('small', null, `Adım ${this.i + 1} / ${this.STEPS.length}`)),
+        h('button', {class: 'icon-btn', type: 'button', 'aria-label': 'Kapat', onclick: () => this.close()}, icon(IC.x))),
+      steps,
+      h('div', {class: 'wiz-body'},
+        h('div', {class: 'wiz-q'}, h('h2', null, st.q), h('p', null, st.p)),
+        h('div', {class: 'wiz-cols'}, main, st.k === 'type' ? null : h('div', {class: 'wiz-pv'}))),
+      h('div', {class: 'wiz-foot'},
+        h('button', {class: 'btn big', type: 'button', disabled: this.i === 0, onclick: () => this.go(this.i - 1)}, '‹ Geri'),
+        h('div', {class: 'grow'}),
+        this.mode === 'edit' && !last ? h('button', {class: 'btn big ghost', type: 'button', onclick: () => this.finish()}, 'Kaydet ve çık') : null,
+        h('button', {class: 'btn big primary', type: 'button', onclick: () => this.next()}, last ? (this.mode === 'edit' ? 'Kaydet' : 'Dolabı oluştur ✓') : 'İleri ›'))));
+    this.preview();
+    const f = root.querySelector('.wiz-main input.inp'); if (f && !A.mobile()) setTimeout(() => f.focus(), 30);
+  },
+
+  /* ---------- adımlar ---------- */
+  s_type() {
+    const cur = this.d._preset || (this.mode === 'edit' ? null : 'base');
+    return h('div', {class: 'tiles big'}, PRESETS.map(p => {
+      const c = newCab(p.k), R = calcCab(c);
+      return h('button', {type: 'button', class: cur === p.k ? 'on' : '', onclick: () => {
+        const keep = this.mode === 'edit' ? {id: this.d.id, qty: this.d.qty} : {};
+        this.d = Object.assign(this.fromPreset(p.k), keep, {_preset: p.k}); this.bad.clear();
+        this.seen = Math.max(this.seen, 1); this.go(1);
+      }}, frontSVG(c, R, {mini: true}), h('b', null, p.n), h('small', null, p.d));
+    }));
+  },
+  s_dims() {
+    const d = this.d;
+    const field = (key, label, min, max, sugg) => {
+      const f = Wg.num(label, d[key], (x, ok) => { if (ok) { d[key] = x; this.bad.delete(key); } else this.bad.add(key); this.preview(); this.footState(); }, {min, max, big: true});
+      const chips = h('div', {class: 'chips sugg'}, sugg.map(v => h('button', {type: 'button', onclick: () => { d[key] = v; f.inp.value = v; f.inp.classList.remove('bad'); this.bad.delete(key); this.preview(); this.footState(); }}, v)));
+      return h('div', {class: 'dimf'}, f, chips);
+    };
+    const wall = d.base === 'wall', tall = d.H > 1200;
+    return [
+      field('W', 'Genişlik', 100, 6000, [400, 450, 500, 600, 800, 900, 1000, 1200]),
+      field('H', 'Yükseklik', 100, 4000, wall ? [360, 600, 720, 900] : tall ? [1800, 2000, 2100, 2200, 2400] : [720, 820, 870, 900, 2100]),
+      field('D', 'Derinlik', 100, 1500, wall ? [300, 320, 350] : [300, 400, 450, 560, 580, 600]),
+    ];
+  },
+  footState() { const b = $('#wiz .wiz-foot .btn.primary'); if (b) b.disabled = !this.canNext(); },
+  s_secs() {
+    const d = this.d, n = d.sections.length, sug = suggestSecs(d.W);
+    const setN = k => {
+      const cur = d.sections;
+      if (k > cur.length) for (let i = cur.length; i < k; i++) cur.push(Object.assign({}, cur[cur.length - 1], {w: 0, hinge: i === k - 1 ? 'R' : 'L'}));
+      else cur.length = k;
+      cur.forEach(s => { s.w = 0; });
+      this.render();
+    };
+    return [
+      Wg.tiles([1, 2, 3, 4].map(k => [k, k === 1 ? 'Tek bölme' : `${k} bölme`, secsPic(k), k === 1 ? 'Ara dikme yok' : `${k - 1} ara dikme`, k === sug ? 'önerilen' : null]), n, setN, {cls: 'big4'}),
+      n > 4 ? h('p', {class: 'tip'}, `Şu an ${n} bölme var.`) : null,
+      h('p', {class: 'tip'}, 'Bölme genişlikleri otomatik eşit bölünür; istersen bir sonraki adımda elle girebilirsin.'),
+    ];
+  },
+  s_inside() {
+    const d = this.d, R = this.calc();
+    return h('div', {class: 'secs'}, d.sections.map((s, i) => secCard(s, i, d.sections.length, R, {
+      set: fn => { fn(d.sections[i]); this.render(); },
+      soft: fn => { fn(d.sections[i]); this.preview(); },
+    })));
+  },
+  s_door() {
+    const d = this.d, R = this.calc();
+    const any = d.sections.some(s => contentOf(s) !== 'drw' && s.door !== 'none');
+    const allDrw = d.sections.every(s => contentOf(s) === 'drw');
+    if (allDrw) return h('p', {class: 'tip big'}, 'Tüm bölmeler çekmeceli; kapak gerekmez. Çekmece önleri kapak malzemesinden kesilir.');
+    const out = [Wg.tiles([['yes', 'Kapaklı', '<rect x="5" y="2" width="30" height="30" rx="1"/><path d="M20 2v30"/><path d="M16 14v6M24 14v6" stroke-width="2.4"/>', 'Otomatik tek / çift'], ['no', 'Kapaksız', CONTENT_IC.shelf, 'Açık raf']], any ? 'yes' : 'no', v => { for (const s of d.sections) if (contentOf(s) !== 'drw') s.door = v === 'yes' ? 'auto' : 'none'; this.render(); }, {cls: 'big2'})];
+    if (any) {
+      if (d.sections.length > 1) d.sections.forEach((s, i) => { if (contentOf(s) === 'drw') return; out.push(h('div', {class: 'fld'}, h('span', null, `${i + 1}. bölme kapağı`), Wg.chips([['auto', 'Otomatik'], ['1', 'Tek'], ['2', 'Çift'], ['none', 'Yok']], s.door, v => { s.door = v; this.render(); }))); });
+      d.sections.forEach((s, i) => { const SI = R.secs[i]; if (SI && SI.doors === 1) out.push(h('div', {class: 'fld'}, h('span', null, d.sections.length > 1 ? `${i + 1}. bölme kapağı hangi taraftan açılsın?` : 'Kapak hangi taraftan açılsın?'), Wg.chips([['L', 'Soldan'], ['R', 'Sağdan']], s.hinge, v => { s.hinge = v; this.render(); }))); });
+      out.push(h('div', {class: 'fld'}, h('span', null, 'Kapak gövdeye nasıl oturacak?'), Wg.chips([['full', 'Gövdeyi örter (bindirme)'], ['inset', 'Gövdenin içinde (gömme)']], d.overlay === 'inset' ? 'inset' : 'full', v => { d.overlay = v; this.render(); })));
+    }
+    return out;
+  },
+  s_base() {
+    const d = this.d;
+    const out = [Wg.tiles([['legs', 'Ayaklı', BASE_IC.legs, 'Ayar ayağı + önde baza (mutfak)'], ['plinth', 'Bazalı', BASE_IC.plinth, 'Yanlar yere iner, önde baza'], ['none', 'Düz', BASE_IC.none, 'Yere direkt oturur'], ['wall', 'Duvara asılı', BASE_IC.wall, 'Üst dolap']], d.base === 'frame' ? 'plinth' : d.base, v => { d.base = v; if (v === 'wall' && d.top === 'rails') d.top = 'panel'; this.render(); }, {cls: 'big2'})];
+    if (['legs', 'plinth', 'frame'].includes(d.base)) {
+      const f = Wg.num(d.base === 'legs' ? 'Ayak yüksekliği' : 'Baza yüksekliği', d.baseH, (x, ok) => { if (ok) { d.baseH = x; this.preview(); } }, {min: 20, max: 400, big: true});
+      out.push(h('div', {class: 'dimf'}, f, h('div', {class: 'chips sugg'}, [60, 80, 100, 120, 150].map(v => h('button', {type: 'button', onclick: () => { d.baseH = v; f.inp.value = v; this.preview(); }}, v)))));
+    }
+    if (d.base !== 'wall') out.push(h('div', {class: 'fld'}, h('span', null, 'Üstü'), Wg.chips([['panel', 'Üst tabla'], ['rails', 'Kuşak (üstüne tezgâh gelecek)']], d.top === 'rails' ? 'rails' : 'panel', v => { d.top = v; this.render(); })));
+    return out;
+  },
+  s_mat() {
+    const d = this.d, m = this.mats;
+    const sw = key => h('div', {class: 'sw big'}, Object.entries(FINISHES).filter(([k]) => k !== 'arka').map(([fk, [fn, col]]) => h('button', {type: 'button', title: fn, 'aria-label': fn, class: m[key].color === fk ? 'on' : '', style: `background:${col}`, onclick: () => { m[key].color = fk; if (key === 'body' && m.drawer.color === m.body.color) m.drawer.color = fk; this.render(); }})));
+    const backV = d.back === 'none' ? 'none' : d.back === 'nailed' ? 'nailed' : 'groove';
+    return [
+      h('div', {class: 'fld'}, h('span', null, 'Gövde kalınlığı'), Wg.tiles([[16, '16 mm'], [18, '18 mm'], [25, '25 mm']], d.t, v => { d.t = v; d.drawerT = Math.min(d.drawerT, v); this.render(); }, {cls: 'mini'})),
+      h('div', {class: 'fld'}, h('span', null, 'Arkalık'), Wg.chips([['groove', 'Kanallı (8 mm)'], ['nailed', 'Arkadan çakma (4 mm)'], ['none', 'Arkalıksız']], backV, v => { d.back = v; d.backT = v === 'nailed' ? 4 : 8; this.render(); })),
+      h('div', {class: 'fld'}, h('span', null, `Gövde rengi · ${FINISHES[m.body.color] ? FINISHES[m.body.color][0] : ''}`), sw('body')),
+      d.sections.some(s => s.door !== 'none' || s.drawers) ? h('div', {class: 'fld'}, h('span', null, `Kapak / çekmece önü rengi · ${FINISHES[m.front.color] ? FINISHES[m.front.color][0] : ''}`), sw('front')) : null,
+      h('p', {class: 'tip'}, 'Renkler bu işteki tüm dolaplar için geçerlidir. Bant kalınlığı, paylar ve levha ölçüsü sonradan “Usta ayarları”ndan değişir.'),
+    ];
+  },
+  s_end() {
+    const d = this.d, R = this.calc();
+    const nameIn = h('input', {class: 'inp txt big', value: d.name, maxlength: 60, oninput: e => { d.name = e.target.value || 'Dolap'; }});
+    const errs = [...R.warn, ...R.check].filter(w => w.lvl === 'err'), warns = R.warn.filter(w => w.lvl === 'warn');
+    return [
+      h('label', {class: 'fld'}, h('span', null, 'Dolabın adı'), nameIn),
+      Wg.step('Kaç adet yapılacak?', d.qty, x => { d.qty = x; this.render(); }, 1, 99, {big: true}),
+      h('div', {class: 'sum'}, h('h4', null, 'Özet'),
+        h('div', {class: 'kv'}, [['Dış ölçü', `${fmt(d.W)} × ${fmt(d.H)} × ${fmt(d.D)}`], ...R.sum.slice(0, 3), ['Parça sayısı', `${R.parts.length}${d.qty > 1 ? ` × ${d.qty} = ${R.parts.length * d.qty}` : ''}`]].flatMap(([k, v]) => [h('span', null, k), h('b', null, v)])),
+        errs.length ? errs.map(w => h('div', {class: 'iss'}, w.t)) : R.check.map(w => h('div', {class: 'iss ok'}, w.t)),
+        warns.map(w => h('div', {class: 'iss warn'}, w.t))),
+    ];
+  },
+};
 
 /* =====================================================================
    Arayüz: dolap listesi, ölçü formu, parça kartı, kesim listesi,
@@ -1542,9 +1940,9 @@ const UI = {
   cabs() {
     const box = $('#cabs'), J = A.job; box.innerHTML = '';
     box.append(h('div', {class: 'cabs-head'}, h('b', null, `Dolaplar · ${J.cabs.length}`),
-      h('button', {class: 'btn sm', type: 'button', onclick: () => UI.addCab()}, icon(IC.plus), 'Dolap ekle')));
+      h('button', {class: 'btn sm primary', type: 'button', onclick: () => Wiz.open('new')}, icon(IC.plus), 'Dolap oluştur')));
     for (const c of J.cabs) {
-      const R = c.id === A.cab.id ? A.R : calcCab(c);
+      const R = A.cab && c.id === A.cab.id ? A.R : calcCab(c);
       const bad = R.warn.some(w => w.lvl === 'err') || R.check.some(w => w.lvl === 'err'), wr = R.warn.some(w => w.lvl === 'warn');
       const ic = R.parts.length ? frontSVG(c, R, {mini: true, cls: 'ic'}) : pic(BASE_IC.none);
       ic.classList.add('ic');
@@ -1554,93 +1952,78 @@ const UI = {
         h('span', {class: 'qty', title: 'Adet'}, `× ${c.qty}`)));
     }
   },
-  addCab() {
-    const body = h('div', {class: 'presets'}, PRESETS.map(p => {
-      const c = newCab(p.k), R = calcCab(c), ic = frontSVG(c, R, {mini: true});
-      return h('button', {type: 'button', onclick: () => { Modal.close(p.k); }}, ic, h('div', null, h('b', null, p.n), h('small', null, `${p.d} · ${c.W}×${c.H}×${c.D}`)));
-    }));
-    Modal.open({title: 'Dolap ekle', body: [h('p', null, 'Bir şablonla başla; tüm ölçüler ve iç düzen sonradan değiştirilebilir.'), body], wide: true}).then(k => {
-      if (!k) return;
-      const c = newCab(k, A.job), cur = A.cab;
-      if (cur) for (const key of ['t', 'backT', 'frontT', 'drawerT', 'bandBody', 'bandFront', 'bandDrawer', 'deduct', 'overlay', 'gap', 'edge', 'railGap', 'railType', 'back', 'grooveD', 'grooveO', 'backTol']) c[key] = cur[key];
-      A.change(() => { A.job.cabs.push(c); A.job.cur = c.id; A.sel = null; }, {full: true, fit: true});
-      toast(`${c.name} eklendi`);
-    });
-  },
-
-  /* ---------- form ---------- */
+  /* ---------- form (düzenleme) ---------- */
   form() {
     const c = A.cab, R = A.R, F = $('#form'), sc = $('#side').scrollTop;
     F.innerHTML = '';
+    if (!c) {
+      F.append(h('div', {class: 'empty-side'}, h('b', null, 'Bu işte henüz dolap yok'), h('p', null, 'Dolap oluştur’a bas; tipini, ölçüsünü ve içini adım adım soracağız.'),
+        h('button', {class: 'btn primary big full', type: 'button', onclick: () => Wiz.open('new')}, icon(IC.plus), 'Dolap oluştur')));
+      return;
+    }
+    const hasDrw = c.sections.some(s => s.drawers), hasDoor = R.parts.some(p => p.kind === 'door' || p.kind === 'dfront');
+    const sub = (t, ...kids) => [h('div', {class: 'subh'}, t), ...kids];
     F.append(
-      UI.grp('cab', 'Dolap', c.name,
-        h('label', {class: 'fld'}, h('span', null, 'Dolap adı'), h('input', {class: 'inp txt', value: c.name, maxlength: 60, oninput: e => A.change(() => { A.cab.name = e.target.value || 'Dolap'; }, {key: 'name'})})),
-        UI.step('Adet (aynı dolaptan)', 'qty', 1, 99)),
-      UI.grp('dims', 'Dış ölçüler', `${fmt(c.W)} × ${fmt(c.H)} × ${fmt(c.D)}`,
+      h('div', {class: 'cabhead'},
+        h('input', {class: 'inp txt nm', value: c.name, maxlength: 60, 'aria-label': 'Dolap adı', oninput: e => A.change(() => { A.cab.name = e.target.value || 'Dolap'; }, {key: 'name'})}),
+        UI.step('Adet', 'qty', 1, 99),
+        h('button', {class: 'btn primary big full', type: 'button', onclick: () => Wiz.open('edit', A.cab)}, icon(IC.edit), 'Soru soru düzenle')),
+      UI.grp('dims', 'Ölçüler', `${fmt(c.W)} × ${fmt(c.H)} × ${fmt(c.D)}`,
         h('div', {class: 'row r3'}, UI.num('Genişlik', 'W', {min: 100, max: 6000}), UI.num('Yükseklik', 'H', {min: 100, max: 4000}), UI.num('Derinlik', 'D', {min: 100, max: 1500})),
-        h('p', {class: 'tip'}, 'Ölçüler mm. Yükseklik ayak / baza dahil toplam yüksekliktir. Kutuya “600-18” gibi hesap da yazabilirsin.')),
+        h('p', {class: 'tip'}, 'mm olarak. Yükseklik ayak / baza dahil.')),
       h('div', {class: 'sum', id: 'sum'}),
-      UI.grp('body', 'Gövde', `${fmt(c.t)} mm · ${({sides: 'yanlar tam boy', top: 'üst tabla üstte', over: 'tablalar tam'})[c.build]}`,
-        h('div', {class: 'row'}, UI.num('Gövde kalınlığı', 't', {min: 5, max: 50, full: true}), h('div', {class: 'fld'}, h('span', null, 'Hızlı seç'), UI.chips(null, 't', [[16, '16'], [18, '18'], [25, '25']]))),
-        UI.chips('Birleşim', 'build', [['sides', 'Yanlar tam boy', BUILD_IC.sides, 'Üst ve alt tabla yanların arasında'], ['top', 'Üst tabla üstte', BUILD_IC.top, 'Üst tabla yanların üstüne oturur, alt tabla arada'], ['over', 'Tablalar tam', BUILD_IC.over, 'Alt ve üst tabla tam genişlik, yanlar arada']], {blocks: true}),
-        UI.chips('Üst', 'top', [['panel', 'Üst tabla'], ['rails', 'Kuşak (ön + arka)'], ['none', 'Açık']], {hint: c.top === 'rails' ? 'Tezgâh altı dolaplarda üst tabla yerine iki kuşak kullanılır.' : null}),
-        c.top === 'rails' ? UI.num('Kuşak eni', 'railW', {min: 40, max: 300}) : null),
-      UI.grp('base', 'Baza / ayak', ({none: 'yok', legs: 'ayak + baza', plinth: 'yanlar yere iner', frame: 'baza kasası', wall: 'duvara asma'})[c.base] + (['legs', 'plinth', 'frame'].includes(c.base) ? ` · ${fmt(c.baseH)} mm` : ''),
-        UI.chips(null, 'base', [['none', 'Yok', BASE_IC.none], ['legs', 'Ayak + baza', BASE_IC.legs], ['plinth', 'Yanlar yere iner', BASE_IC.plinth], ['frame', 'Baza kasası', BASE_IC.frame], ['wall', 'Duvara asma', BASE_IC.wall]], {blocks: true}),
-        ['legs', 'plinth', 'frame'].includes(c.base) ? h('div', {class: 'row'}, UI.num(c.base === 'legs' ? 'Ayak yüksekliği' : 'Baza yüksekliği', 'baseH', {min: 20, max: 400}), UI.num('Bazanın geri çekmesi', 'plinthSet', {min: 0, max: 200})) : null),
-      UI.grp('back', 'Arkalık', ({groove: 'kanallı', nailed: 'çakma', inset: 'gömme', none: 'yok'})[c.back] + (c.back !== 'none' ? ` · ${fmt(c.backT)} mm` : ''),
-        UI.chips(null, 'back', [['groove', 'Kanallı'], ['nailed', 'Arkadan çakma'], ['inset', 'Gömme (tam kalınlık)'], ['none', 'Yok']]),
-        c.back !== 'none' ? h('div', {class: 'row'}, UI.num('Arkalık kalınlığı', 'backT', {min: 2, max: 30, full: true}), c.back !== 'inset' ? UI.num(c.back === 'groove' ? 'Kanal boşluk payı' : 'Kenardan içeri pay', 'backTol', {min: 0, max: 10, hint: 'her kenarda'}) : h('div')) : null,
-        c.back === 'groove' ? h('div', {class: 'row'}, UI.num('Kanal derinliği', 'grooveD', {min: 2, max: 20}), UI.num('Kanalın arkadan mesafesi', 'grooveO', {min: 0, max: 80})) : null,
-        h('p', {class: 'tip'}, 'Çekmece tabanları da arkalık malzemesinden (aynı kalınlıkta) hesaplanır.')),
-      UI.grp('secs', 'Bölmeler ve iç düzen', `${c.sections.length} bölme`, UI.secs()),
-      UI.grp('front', 'Kapak, çekmece, raf ayarları', `${({full: 'tam bindirme', half: 'yarım bindirme', inset: 'gömme'})[c.overlay]} · ${fmt(c.frontT)} mm`,
-        UI.chips('Kapak tipi', 'overlay', [['full', 'Tam bindirme'], ['half', 'Yarım bindirme'], ['inset', 'Gömme kapak']], {hint: c.overlay === 'half' ? 'Yan yana dolaplarda ortak yanı paylaşan kapaklar için: dış kenarda yanın yarısını örter.' : null}),
-        h('div', {class: 'row r3'}, UI.num('Kapak kalınlığı', 'frontT', {min: 3, max: 40, full: true}), UI.num('Kapak arası', 'gap', {min: 0, max: 10}), UI.num('Dış kenar payı', 'edge', {min: 0, max: 10})),
-        h('div', {class: 'row'}, UI.num('Raf yan boşluğu', 'shelfGap', {min: 0, max: 5, hint: 'hareketli raf, her yanda'}), UI.num('Raf geri çekme', 'shelfSet', {min: 0, max: 100, hint: 'hareketli raf, önden'})),
-        c.sections.some(s => s.drawers) ? [
-          UI.chips('Çekmece rayı', 'railType', [['ball', 'Bilyalı'], ['roller', 'Makaralı'], ['hidden', 'Gizli ray']], {set: v => A.change(() => { A.cab.railType = v; A.cab.railGap = v === 'hidden' ? 5 : v === 'roller' ? 12.5 : 13; }, {full: true})}),
-          h('div', {class: 'row'}, UI.num('Ray payı (her yan)', 'railGap', {min: 0, max: 30}), UI.num('Çekmece gövde kal.', 'drawerT', {min: 6, max: 30, full: true}))] : null),
-      UI.grp('band', 'Kenar bandı', `gövde ${fmt(c.bandBody)} · kapak ${fmt(c.bandFront)} mm`,
-        UI.chips('Gövde ön kenarları', 'bandBody', [[0, 'Yok'], [.4, '0,4'], [.8, '0,8'], [1, '1'], [2, '2']]),
-        UI.chips('Kapak / çekmece önü (4 kenar)', 'bandFront', [[0, 'Yok (boyalı)'], [.8, '0,8'], [1, '1'], [2, '2']]),
-        c.sections.some(s => s.drawers) ? UI.chips('Çekmece kutusu üst kenarı', 'bandDrawer', [[0, 'Yok'], [.4, '0,4'], [.8, '0,8'], [1, '1']]) : null,
-        UI.check('Bant kalınlığını kesim ölçüsünden düş', 'deduct'),
-        h('p', {class: 'tip'}, 'Açıkken kesim ölçüsü = bitmiş ölçü − bantlı kenarların bant kalınlığı. Örn. 560 derinlikli yan, 0,8 bantla 559,2 kesilir.')),
-      UI.grp('mats', 'Malzeme ve levha (tüm iş)', `${A.job.mats.body.L}×${A.job.mats.body.W}`, UI.mats()),
+      UI.grp('secs', 'İç düzen', `${c.sections.length} bölme`, UI.secs()),
+      UI.grp('base', 'Alt ve üst', ({none: 'düz', legs: 'ayaklı', plinth: 'bazalı', frame: 'baza kasası', wall: 'duvara asılı'})[c.base] + (['legs', 'plinth', 'frame'].includes(c.base) ? ` · ${fmt(c.baseH)} mm` : ''),
+        Wg.tiles([['legs', 'Ayaklı', BASE_IC.legs], ['plinth', 'Bazalı', BASE_IC.plinth], ['none', 'Düz', BASE_IC.none], ['wall', 'Duvara asılı', BASE_IC.wall]], c.base === 'frame' ? 'plinth' : c.base, v => A.change(() => { A.cab.base = v; }, {full: true}), {cls: 'sm'}),
+        ['legs', 'plinth', 'frame'].includes(c.base) ? UI.num(c.base === 'legs' ? 'Ayak yüksekliği' : 'Baza yüksekliği', 'baseH', {min: 20, max: 400}) : null,
+        UI.chips('Üstü', 'top', [['panel', 'Üst tabla'], ['rails', 'Kuşak (tezgâh altı)'], ['none', 'Açık']])),
+      UI.grp('adv', 'Usta ayarları', 'kalınlık, arkalık, paylar, bant',
+        ...sub('Gövde',
+          h('div', {class: 'row'}, UI.num('Gövde kalınlığı', 't', {min: 5, max: 50, full: true}), h('div', {class: 'fld'}, h('span', null, 'Hızlı seç'), UI.chips(null, 't', [[16, '16'], [18, '18'], [25, '25']]))),
+          UI.chips('Birleşim', 'build', [['sides', 'Yanlar tam boy', BUILD_IC.sides, 'Üst ve alt tabla yanların arasında'], ['top', 'Üst tabla üstte', BUILD_IC.top, 'Üst tabla yanların üstüne oturur, alt tabla arada'], ['over', 'Tablalar tam', BUILD_IC.over, 'Alt ve üst tabla tam genişlik, yanlar arada']], {blocks: true}),
+          c.top === 'rails' ? UI.num('Kuşak eni', 'railW', {min: 40, max: 300}) : null,
+          ['legs', 'plinth', 'frame'].includes(c.base) ? UI.chips('Baza tipi', 'base', [['legs', 'Ayak + klipsli baza'], ['plinth', 'Yanlar yere iner'], ['frame', 'Baza kasası']]) : null,
+          ['legs', 'plinth', 'frame'].includes(c.base) ? UI.num('Bazanın önden geri çekmesi', 'plinthSet', {min: 0, max: 200}) : null),
+        ...sub('Arkalık',
+          UI.chips(null, 'back', [['groove', 'Kanallı'], ['nailed', 'Arkadan çakma'], ['inset', 'Gömme (tam kalınlık)'], ['none', 'Yok']]),
+          c.back !== 'none' ? h('div', {class: 'row'}, UI.num('Arkalık kalınlığı', 'backT', {min: 2, max: 30, full: true}), c.back !== 'inset' ? UI.num(c.back === 'groove' ? 'Kanal boşluk payı' : 'Kenardan içeri pay', 'backTol', {min: 0, max: 10, hint: 'her kenarda'}) : h('div')) : null,
+          c.back === 'groove' ? h('div', {class: 'row'}, UI.num('Kanal derinliği', 'grooveD', {min: 2, max: 20}), UI.num('Kanalın arkadan mesafesi', 'grooveO', {min: 0, max: 80})) : null),
+        ...(hasDoor ? sub('Kapak',
+          UI.chips('Kapak tipi', 'overlay', [['full', 'Tam bindirme'], ['half', 'Yarım bindirme'], ['inset', 'Gömme']], {hint: c.overlay === 'half' ? 'Yan yana dolaplarda: dış kenarda yanın yarısını örter.' : null}),
+          h('div', {class: 'row r3'}, UI.num('Kapak kalınlığı', 'frontT', {min: 3, max: 40, full: true}), UI.num('Kapak arası', 'gap', {min: 0, max: 10}), UI.num('Dış kenar payı', 'edge', {min: 0, max: 10}))) : []),
+        ...sub('Raf',
+          h('div', {class: 'row'}, UI.num('Raf yan boşluğu', 'shelfGap', {min: 0, max: 5, hint: 'hareketli raf, her yanda'}), UI.num('Raf geri çekme', 'shelfSet', {min: 0, max: 100, hint: 'hareketli raf, önden'}))),
+        ...(hasDrw ? sub('Çekmece',
+          UI.chips('Ray', 'railType', [['ball', 'Bilyalı'], ['roller', 'Makaralı'], ['hidden', 'Gizli ray']], {set: v => A.change(() => { A.cab.railType = v; A.cab.railGap = v === 'hidden' ? 5 : v === 'roller' ? 12.5 : 13; }, {full: true})}),
+          h('div', {class: 'row'}, UI.num('Ray payı (her yan)', 'railGap', {min: 0, max: 30}), UI.num('Çekmece gövde kal.', 'drawerT', {min: 6, max: 30, full: true}))) : []),
+        ...sub('Kenar bandı',
+          UI.chips('Gövde ön kenarları', 'bandBody', [[0, 'Yok'], [.4, '0,4'], [.8, '0,8'], [1, '1'], [2, '2']]),
+          hasDoor ? UI.chips('Kapak / çekmece önü (4 kenar)', 'bandFront', [[0, 'Yok (boyalı)'], [.8, '0,8'], [1, '1'], [2, '2']]) : null,
+          hasDrw ? UI.chips('Çekmece kutusu üst kenarı', 'bandDrawer', [[0, 'Yok'], [.4, '0,4'], [.8, '0,8'], [1, '1']]) : null,
+          UI.check('Bant kalınlığını kesim ölçüsünden düş', 'deduct'),
+          h('p', {class: 'tip'}, 'Örn. 560 derinlikli yan, 0,8 bantla 559,2 kesilir.')),
+        A.job.cabs.length > 1 ? h('button', {class: 'btn full', type: 'button', onclick: () => A.applyAll()}, 'Bu ayarları tüm dolaplara uygula') : null),
+      UI.grp('mats', 'Renk, malzeme ve levha', 'tüm iş', UI.mats()),
       h('div', {class: 'row', style: 'margin:14px 0 6px'},
         h('button', {class: 'btn', type: 'button', onclick: () => A.dupCab()}, icon(IC.copy), 'Çoğalt'),
-        h('button', {class: 'btn danger', type: 'button', onclick: () => A.delCab(), disabled: A.job.cabs.length < 2}, icon(IC.trash), 'Sil')),
-      A.job.cabs.length > 1 ? h('button', {class: 'btn full', type: 'button', onclick: () => A.applyAll()}, 'Gövde / bant / kapak ayarlarını tüm dolaplara uygula') : null,
+        h('button', {class: 'btn danger', type: 'button', onclick: () => A.delCab()}, icon(IC.trash), 'Sil')),
     );
     UI.sum();
     $('#side').scrollTop = sc;
   },
   secs() {
-    const c = A.cab, n = c.sections.length, R = A.R, ws = R.dims ? R.dims.widths : [];
+    const c = A.cab, n = c.sections.length, R = A.R;
     const wrap = h('div', {class: 'secs'});
-    wrap.append(h('div', {class: 'lblrow'}, h('span', null, 'Bölme sayısı (ara dikme = bölme − 1)'), h('div', {class: 'step'},
-      h('button', {type: 'button', onclick: () => { if (n > 1) A.change(() => { A.cab.sections.pop(); }, {full: true}); }}, '−'), h('b', null, n),
-      h('button', {type: 'button', onclick: () => { if (n < 12) A.change(() => { const l = A.cab.sections[n - 1]; A.cab.sections.push(Object.assign({}, l, {w: 0, hinge: 'R'})); }, {full: true}); }}, '+'))));
-    c.sections.forEach((s, i) => {
-      const p = `sections.${i}`, fill = s.drawers > 0 && !(s.drawerH > 0);
-      const nDoor = R.secs[i] ? R.secs[i].doors : 0;
-      wrap.append(h('div', {class: 'sec'},
-        h('div', {class: 'sec-h'}, h('b', null, n > 1 ? `Bölme ${i + 1}` : 'İç düzen'), h('small', null, ws[i] ? `iç genişlik ${fmt(ws[i])} mm` : ''),
-          n > 1 ? h('button', {class: 'icon-btn sm', type: 'button', title: 'Bölmeyi sil', onclick: () => A.change(() => { A.cab.sections.splice(i, 1); }, {full: true})}, icon(IC.trash)) : null),
-        n > 1 ? UI.num('Genişlik', p + '.w', {empty: true, min: 0, max: 6000, ph: 'otomatik', auto: i, hint: 'Boş = kalan genişliği eşit paylaş'}) : null,
-        fill ? null : [
-          s.hanger ? null : UI.step('Raf sayısı', p + '.shelves', 0, 20),
-          s.hanger ? UI.check('Askı üstünde şapkalık raf', p + '.shelves') : null,
-          (s.shelves > 0) ? UI.chips(null, p + '.shelfType', [['adj', 'Hareketli raf'], ['fixed', 'Sabit raf']]) : null,
-          UI.check('Askı borusu (elbise)', p + '.hanger'),
-        ],
-        UI.step('Çekmece', p + '.drawers', 0, 10),
-        s.drawers > 0 ? UI.num('Çekmece önü yüksekliği', p + '.drawerH', {empty: true, min: 0, max: 1500, ph: 'tüm bölme, eşit', full: true, hint: 'Boş = çekmeceler bölmeyi doldurur; dolu = alta çekmece, üstüne raf/kapak'}) : null,
-        fill ? null : UI.chips('Kapak', p + '.door', [['auto', 'Otomatik'], ['none', 'Yok'], ['1', 'Tek'], ['2', 'Çift']]),
-        !fill && nDoor === 1 ? UI.chips('Menteşe', p + '.hinge', [['L', 'Solda'], ['R', 'Sağda']]) : null,
-      ));
-    });
+    wrap.append(h('div', {class: 'fld'}, h('span', null, 'Bölme sayısı'), Wg.tiles([1, 2, 3, 4].map(k => [k, k === 1 ? 'Tek' : `${k}`, secsPic(k)]), n, k => A.change(() => {
+      const cur = A.cab.sections;
+      if (k > cur.length) for (let i = cur.length; i < k; i++) cur.push(Object.assign({}, cur[cur.length - 1], {w: 0, hinge: 'R'}));
+      else cur.length = k;
+    }, {full: true}), {cls: 'mini4'})));
+    c.sections.forEach((s, i) => wrap.append(secCard(s, i, n, R, {
+      set: fn => A.change(() => fn(A.cab.sections[i]), {full: true}),
+      soft: (fn, key) => A.change(() => fn(A.cab.sections[i]), {key: 'sec' + key}),
+      del: () => A.change(() => { A.cab.sections.splice(i, 1); }, {full: true}),
+    })));
     return wrap;
   },
   mats() {
@@ -1662,14 +2045,14 @@ const UI = {
   },
   sum() {
     const el = $('#sum'); if (!el) return;
-    const R = A.R; el.innerHTML = '';
+    const R = A.R; el.innerHTML = ''; if (!R) return;
     el.append(h('h4', null, 'Hesap özeti'));
     if (R.sum.length) el.append(h('div', {class: 'kv'}, R.sum.flatMap(([k, v]) => [h('span', null, k), h('b', null, v)])));
     for (const w of [...R.warn.filter(x => x.lvl === 'err'), ...R.check, ...R.warn.filter(x => x.lvl !== 'err')]) el.append(h('div', {class: 'iss ' + w.lvl}, w.t));
-    const c = A.cab, ds = $('#form details[data-k=dims] summary small'); if (ds) ds.textContent = `${fmt(c.W)} × ${fmt(c.H)} × ${fmt(c.D)}`;
+    const c = A.cab; if (!c) return;
+    const ds = $('#form details[data-k=dims] summary small'); if (ds) ds.textContent = `${fmt(c.W)} × ${fmt(c.H)} × ${fmt(c.D)}`;
     const cs = $('#form details[data-k=cab] summary small'); if (cs) cs.textContent = c.name;
     /* bölme genişliği "otomatik" ipuçları */
-    for (const inp of $$('#form input[data-auto]')) { const i = +inp.dataset.auto, w = R.dims && R.dims.widths[i]; inp.placeholder = w ? `otomatik · ${fmt(w)}` : 'otomatik'; }
     for (const s of $$('#form .sec')) { const i = $$('#form .sec').indexOf(s), w = R.dims && R.dims.widths[i], sm = s.querySelector('.sec-h small'); if (sm) sm.textContent = w ? `iç genişlik ${fmt(w)} mm` : ''; }
   },
 
@@ -1694,11 +2077,11 @@ const UI = {
     A.sel = id || null;
     if (V.ready) V.select(A.sel);
     UI.pcard();
-    for (const tr of $$('#vcut tr[data-refs]')) tr.classList.toggle('on', !!A.sel && tr.dataset.refs.split(' ').includes(A.cab.id + ':' + A.sel));
+    for (const tr of $$('#vcut tr[data-refs]')) tr.classList.toggle('on', !!A.sel && A.cab && tr.dataset.refs.split(' ').includes(A.cab.id + ':' + A.sel));
     if (o.show && A.sel) A.show('3d');
   },
   pcard() {
-    const el = $('#pcard'), p = A.sel && A.R.parts.find(q => q.id === A.sel);
+    const el = $('#pcard'), p = A.sel && A.R && A.R.parts.find(q => q.id === A.sel);
     if (!p) { el.hidden = true; return; }
     const c = A.cab, m = A.job.mats[p.mat], same = A.R.parts.filter(q => q.name === p.name && q.cL === p.cL && q.cW === p.cW && bandSig(q) === bandSig(p)).length;
     const bandTxt = UI.bandText(p, true);
@@ -1766,7 +2149,7 @@ const UI = {
   },
 
   /* ---------- kesim listesi ---------- */
-  scopeCabs() { return Settings.v.scope === 'cab' ? [A.cab] : A.job.cabs; },
+  scopeCabs() { return Settings.v.scope === 'cab' ? [A.cab].filter(Boolean) : A.job.cabs; },
   scopeSeg(rerender) {
     const J = A.job;
     return h('div', {class: 'seg sm'}, [['job', `Tüm iş (${J.cabs.reduce((a, c) => a + c.qty, 0)} dolap)`], ['cab', 'Bu dolap']].map(([v, t]) => h('button', {type: 'button', class: Settings.v.scope === v ? 'on' : '', onclick: () => { Settings.set('scope', v); rerender(); }}, t)));
@@ -1780,7 +2163,7 @@ const UI = {
       h('div', {class: 'ptool'}, h('h2', null, 'Kesim listesi'), UI.scopeSeg(() => UI.cut()),
         h('button', {class: 'btn sm', type: 'button', onclick: () => UI.csv()}, icon(IC.table), 'Excel (CSV)'),
         h('button', {class: 'btn sm primary', type: 'button', onclick: () => UI.print()}, icon(IC.print), 'Yazdır / PDF')),
-      h('p', {class: 'pnote'}, 'Ölçüler mm. Boy = desen (su) yönü. Kalın yazılan kesim ölçüsüdür' + (A.cab.deduct ? ' (bant kalınlığı düşülmüş)' : '') + '; altında bitmiş ölçü görünür. Satıra dokununca parça 3B’de seçilir.'),
+      h('p', {class: 'pnote'}, 'Ölçüler mm. Boy = desen (su) yönü. Kalın yazılan kesim ölçüsüdür' + (A.cab && A.cab.deduct ? ' (bant kalınlığı düşülmüş)' : '') + '; altında bitmiş ölçü görünür. Satıra dokununca parça 3B’de seçilir.'),
       h('div', {class: 'tot'},
         h('div', null, h('span', null, 'Toplam parça'), h('b', null, tot)),
         h('div', null, h('span', null, 'Toplam alan'), h('b', null, fmt2(area) + ' m²')),
@@ -1793,7 +2176,7 @@ const UI = {
         const refs = r.refs.map(x => x.cab + ':' + x.id).join(' ');
         const cabTxt = [...r.cabs.entries()].map(([nm, q]) => cabs.length > 1 || J.cabs.length > 1 ? `${nm}${r.cabs.size > 1 ? ' ×' + q : ''}` : '').filter(Boolean).join(', ');
         const diff = Math.abs(r.cL - r.L) > .05 || Math.abs(r.cW - r.Wd) > .05;
-        tb.append(h('tr', {'data-refs': refs, class: A.sel && r.refs.some(x => x.cab === A.cab.id && x.id === A.sel) ? 'on' : '', onclick: () => A.pickRef(r.refs)},
+        tb.append(h('tr', {'data-refs': refs, class: A.sel && A.cab && r.refs.some(x => x.cab === A.cab.id && x.id === A.sel) ? 'on' : '', onclick: () => A.pickRef(r.refs)},
           h('td', {class: 'no'}, r.no),
           h('td', {class: r.off ? 'off' : ''}, r.name, r.ovr ? h('span', {class: 'badge', style: 'margin-left:6px'}, 'elle') : null, cabTxt ? h('span', {class: 'sub'}, cabTxt) : null),
           h('td', {class: 'num big' + (r.off ? ' off' : '')}, fmt(r.cL), diff && !r.ovr ? h('span', {class: 'sub'}, fmt(r.L)) : null),
@@ -1829,7 +2212,7 @@ const UI = {
       const N = nestGroup(g, J), col = (FINISHES[g.m.color] || FINISHES.beyaz)[1];
       const box = h('div', {class: 'sheets'});
       N.sheets.forEach((sh, i) => box.append(h('div', {class: 'sheet'}, h('div', {class: 'sheet-t'}, h('b', null, `Levha ${i + 1}`), h('span', null, `${sh.parts.length} parça · %${Math.round(sh.use * 100)} dolu`)),
-        sheetSVG(N, sh, {onPick: p => A.pickRef(p.row.refs), sel: p => A.sel && p.row.refs.some(x => x.cab === A.cab.id && x.id === A.sel)}))));
+        sheetSVG(N, sh, {onPick: p => A.pickRef(p.row.refs), sel: p => A.sel && A.cab && p.row.refs.some(x => x.cab === A.cab.id && x.id === A.sel)}))));
       inner.append(h('section', {class: 'card mgrp'},
         h('div', {class: 'mgrp-h'}, h('i', {class: 'chipx', style: `background:${col}`}), h('b', null, g.label), h('small', null, `${N.sheets.length} levha ${g.m.L}×${g.m.W} · ortalama doluluk %${Math.round(N.use * 100)}${g.m.grain ? ' · desenli: döndürme yok' : ''}`)),
         N.bad.length ? h('div', {class: 'iss', style: 'margin:10px 16px 0'}, `Sığmayan parça: ${[...new Set(N.bad.map(b => '#' + b.no))].join(', ')}`) : null,
@@ -1895,14 +2278,14 @@ const A = {
     this.job = normalizeJob(job); this.sel = null; this.undo = []; this.redo = [];
     this.recalc(); UI.cabs(); UI.form(); UI.pcard(); this.views(true); this.title(); this.saved();
   },
-  recalc() { this.R = calcCab(this.cab); },
+  recalc() { this.R = this.cab ? calcCab(this.cab) : null; },
   change(fn, o = {}) {
     const now = Date.now();
     if (!(o.key && this._coal && this._coal.key === o.key && now - this._coal.t < 1000)) { this.undo.push(JSON.stringify(this.job)); if (this.undo.length > 100) this.undo.shift(); this.redo = []; }
     this._coal = o.key ? {key: o.key, t: now} : null;
     fn();
     this.recalc();
-    if (this.sel && !this.R.parts.some(p => p.id === this.sel)) this.sel = null;
+    if (this.sel && !(this.R && this.R.parts.some(p => p.id === this.sel))) this.sel = null;
     if (o.full) UI.form(); else UI.sum();
     UI.cabs(); UI.pcard(); this.views(o.fit); this.title();
     this.dirty = true; this.saved(); this.saveSoon();
@@ -1911,7 +2294,7 @@ const A = {
     const cur = this.job.cur;
     this.job = normalizeJob(JSON.parse(snap));
     if (this.job.cabs.some(c => c.id === cur)) this.job.cur = cur;
-    this.recalc(); if (this.sel && !this.R.parts.some(p => p.id === this.sel)) this.sel = null;
+    this.recalc(); if (this.sel && !(this.R && this.R.parts.some(p => p.id === this.sel))) this.sel = null;
     UI.cabs(); UI.form(); UI.pcard(); this.views(); this.title();
     this.dirty = true; this.saved(); this.saveSoon();
   },
@@ -1934,9 +2317,9 @@ const A = {
     toast('Dolap çoğaltıldı');
   },
   async delCab() {
-    if (this.job.cabs.length < 2) return;
+    if (!this.cab) return;
     if (!await Modal.confirm(`“${this.cab.name}” silinsin mi?`, 'Sil', true)) return;
-    this.change(() => { const i = this.job.cabs.indexOf(this.cab); this.job.cabs.splice(i, 1); this.job.cur = this.job.cabs[Math.max(0, i - 1)].id; this.sel = null; }, {full: true, fit: true});
+    this.change(() => { const i = this.job.cabs.indexOf(this.cab); this.job.cabs.splice(i, 1); const nx = this.job.cabs[Math.max(0, i - 1)]; this.job.cur = nx ? nx.id : null; this.sel = null; }, {full: true, fit: true});
   },
   async applyAll() {
     if (!await Modal.confirm('Gövde kalınlığı, birleşim, arkalık, kapak, çekmece rayı ve kenar bandı ayarları diğer tüm dolaplara kopyalansın mı? (Ölçüler, baza ve iç düzen değişmez.)', 'Uygula')) return;
@@ -1945,8 +2328,8 @@ const A = {
     toast('Ayarlar tüm dolaplara uygulandı');
   },
   pickRef(refs) {
-    const mine = refs.find(r => r.cab === this.cab.id), r = mine || refs[0]; if (!r) return;
-    if (r.cab !== this.cab.id) this.setCab(r.cab);
+    const mine = this.cab && refs.find(r => r.cab === this.cab.id), r = mine || refs[0]; if (!r) return;
+    if (!this.cab || r.cab !== this.cab.id) this.setCab(r.cab);
     UI.selectPart(r.id, {show: true});
   },
 
@@ -1954,12 +2337,14 @@ const A = {
   show(v) {
     if (this.mobile()) { this.m = v; $('#app').dataset.m = v; for (const b of $$('#mtabs button')) b.classList.toggle('on', b.dataset.v === v); }
     if (v !== 'form') { this.view = v; Settings.set('view', v); for (const b of $$('#viewSeg button')) b.classList.toggle('on', b.dataset.v === v); }
-    $('#v3d').hidden = this.view !== '3d'; $('#vcut').hidden = this.view !== 'cut'; $('#vnest').hidden = this.view !== 'nest';
     this.views();
   },
   views(fit) {
-    const v = this.visible();
+    const v = this.visible(), none = !this.cab;
     if (fit) this._fit = true;
+    $('#empty').hidden = !none || !v;
+    if (none) { $('#v3d').hidden = $('#vcut').hidden = $('#vnest').hidden = true; return; }
+    $('#v3d').hidden = this.view !== '3d'; $('#vcut').hidden = this.view !== 'cut'; $('#vnest').hidden = this.view !== 'nest';
     if (v === '3d') {
       if (!V.ready) { V.init().then(() => { V.onPick = id => UI.selectPart(id); UI.tools(); this.views(true); }).catch(() => {}); return; }
       V.resize(); V.build(this.cab, this.R, this.job.mats, this._fit); this._fit = false;
@@ -1989,7 +2374,7 @@ const A = {
   openJob(id) { this.saveNow(); const j = Store.load(id); if (!j) { toast('İş açılamadı', 'err'); return; } Store.set('last', id); this.load(j); toast(`“${j.name}” açıldı`); },
   async newJobAsk() {
     const name = await Modal.prompt('Yeni iş', 'Yeni iş', 'İş / müşteri adı'); if (!name) return;
-    this.saveNow(); const j = newJob(name); Store.save(j); this.load(j); toast('Yeni iş açıldı');
+    this.saveNow(); const j = newJob(name); Store.save(j); this.load(j); Wiz.open('new');
   },
   async rename() { const n = await Modal.prompt('İşi yeniden adlandır', this.job.name, 'İş / müşteri adı'); if (!n) return; this.change(() => { this.job.name = n; }); },
   exportJson() { this.saveNow(); download(fileSafe(this.job.name) + '.dolap.json', JSON.stringify(Object.assign({app: 'dolap-tasarimi', v: 1}, this.job), null, 1), 'application/json'); toast('JSON indirildi'); },
@@ -2019,10 +2404,10 @@ const A = {
   },
   help() {
     Modal.open({title: 'Dolap Tasarımı', wide: true, body: h('div', {class: 'help'},
-      h('h4', null, '1 · Ölçüleri gir'),
-      h('p', null, 'Sol panelde dolabın dış genişlik, yükseklik ve derinliğini (mm) gir. Gövde kalınlığı, birleşim şekli (yanlar tam boy / üst tabla üstte / tablalar tam), üst (tabla ya da kuşak), baza, arkalık ve kapak tipini seç. Her değişiklikte tüm parçalar anında yeniden hesaplanır.'),
-      h('h4', null, '2 · İç düzen'),
-      h('p', null, 'Bölme sayısını artırınca ara dikmeler eklenir. Her bölme için raf sayısı (hareketli / sabit), çekmece, askı borusu ve kapak (otomatik / yok / tek / çift) seçilir. Çekmece önü yüksekliği boş bırakılırsa çekmeceler bölmeyi eşit doldurur; yazılırsa alta çekmece, üstüne ara tabla + raf/kapak gelir.'),
+      h('h4', null, '1 · Dolap oluştur'),
+      h('p', null, '“Dolap oluştur”a bas. Tip, ölçü, bölme sayısı, bölmelerin içi, kapak, alt kısım ve malzeme sırayla sorulur. Her adımda “Geri” ile ya da üstteki adım numaralarına dokunarak geri dönüp düzeltebilirsin; sağdaki çizim anında güncellenir.'),
+      h('h4', null, '2 · Düzelt'),
+      h('p', null, '“Soru soru düzenle” ile aynı adımları mevcut değerlerle yeniden açabilir ya da sol paneldeki ölçü, iç düzen ve alt kısım kutularını doğrudan değiştirebilirsin. Kalınlık, arkalık kanalı, kapak payları ve kenar bandı gibi teknik ayarlar “Usta ayarları” bölümündedir.'),
       h('h4', null, '3 · Kontrol et'),
       h('p', null, '“Hesap özeti” iç ölçüleri, montaj kontrolünü (parçalar birleşince dış ölçünün tuttuğunu) ve çakışma kontrolünü gösterir. 3B görünümde parçaya dokun: üstünde boy / en / kalınlık çizgileri ve kartta formülüyle kesim ölçüsü görünür. Gerekirse kesim ölçüsünü elle düzelt.'),
       h('h4', null, '4 · Kesime gönder'),
@@ -2043,7 +2428,7 @@ const Theme = {
     const mode = glass ? 'dark' : m0 === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : m0;
     r.dataset.mode = mode; if (glass) r.dataset.glass = '1'; else delete r.dataset.glass;
     const meta = $('meta[name=theme-color]'); if (meta) meta.content = glass ? '#0A1020' : mode === 'dark' ? '#1B201E' : '#FFFFFF';
-    if (V.ready && A.job) { V.build(A.cab, A.R, A.job.mats); }
+    if (V.ready && A.job && A.cab) { V.build(A.cab, A.R, A.job.mats); }
   },
 };
 
@@ -2052,6 +2437,7 @@ const Theme = {
   Settings.load(); Theme.apply();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (Settings.v.mode === 'auto') Theme.apply(); });
   let job = Store.load(Store.get('last', '')) || (Store.list()[0] && Store.load(Store.list()[0].id));
+  const first = !job;
   if (!job) { job = newJob('İlk iş'); Store.save(job); }
   A.view = ['3d', 'cut', 'nest'].includes(Settings.v.view) ? Settings.v.view : '3d';
   A.load(job);
@@ -2063,6 +2449,8 @@ const Theme = {
   $('#btnJobs').onclick = () => A.jobs();
   $('#btnMenu').onclick = e => A.menu(e.currentTarget);
   $('#jobName').onclick = () => A.rename();
+  $('#emptyNew').onclick = () => Wiz.open('new');
+  if (first) Wiz.open('new');
   addEventListener('keydown', e => {
     const tag = (e.target.tagName || '').toLowerCase(), typing = tag === 'input' || tag === 'textarea' || tag === 'select';
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
@@ -2071,6 +2459,9 @@ const Theme = {
       else if (k === 'y' && !typing) { e.preventDefault(); A.doRedo(); }
       else if (k === 's') { e.preventDefault(); A.dirty = true; A.saveNow(); toast('Kaydedildi'); }
       else if (k === 'p') { e.preventDefault(); UI.print(); }
+    } else if (!$('#wiz').hidden && !$('#modal').open) {
+      if (e.key === 'Escape') Wiz.close();
+      else if (e.key === 'Enter' && tag !== 'textarea' && tag !== 'button') { e.preventDefault(); Wiz.next(); }
     } else if (e.key === 'Escape' && A.sel && !$('#modal').open) UI.selectPart(null);
   });
   let wasMobile = A.mobile();

@@ -59,6 +59,9 @@ bilgisayarda çalışır, kurulum gerektirmez; projeler cihazın tarayıcısınd
 yan dikme, üst/alt tabla, kuşak, ara dikme, raf, arkalık, kapak, çekmece (ön, yan, iç ön/arka, taban)
 ve baza parçalarının **kesim ölçüleri milimetre hassasiyetinde** hesaplanır.
 
+- **Adım adım sihirbaz:** “Dolap oluştur” deyince tip, ölçü, bölme, bölmelerin içi (raf / çekmece / askı),
+  kapak, alt kısım ve malzeme büyük düğmelerle tek tek sorulur; her adımda geri dönülüp düzeltilebilir,
+  canlı ön görünüş çizimi güncellenir. “Soru soru düzenle” aynı adımları mevcut dolapla yeniden açar.
 - Gövde kalınlığı, birleşim şekli (yanlar tam boy / üst tabla üstte / tablalar tam), üst tabla veya kuşak,
   baza (ayak + klipsli baza, yanlar yere iner, baza kasası, duvara asma), arkalık (kanallı, çakma, gömme)
 - Bölmeler: raf (hareketli/sabit), çekmece (eşit ya da sabit ön yüksekliği), askı borusu, kapak (tek/çift),

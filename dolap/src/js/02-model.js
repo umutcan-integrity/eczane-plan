@@ -68,9 +68,7 @@ function normalizeCab(c) {
   return c;
 }
 function newJob(name = 'Yeni iş') {
-  const j = {id: uid(), name, created: Date.now(), updated: Date.now(), mats: DEF_MATS(), kerf: 4, trim: 10, cabs: [], cur: null};
-  const c = newCab('base', j); j.cabs.push(c); j.cur = c.id;
-  return j;
+  return {id: uid(), name, created: Date.now(), updated: Date.now(), mats: DEF_MATS(), kerf: 4, trim: 10, cabs: [], cur: null};
 }
 function normalizeJob(j) {
   j = Object.assign({id: uid(), name: 'İş', created: Date.now(), updated: Date.now(), kerf: 4, trim: 10}, j || {});
@@ -78,8 +76,7 @@ function normalizeJob(j) {
   for (const k of MAT_KEYS) { j.mats[k] = Object.assign({}, dm[k], j.mats[k] || {}); for (const q of ['L', 'W']) j.mats[k][q] = Number(j.mats[k][q]) || dm[k][q]; j.mats[k].grain = !!j.mats[k].grain; }
   j.kerf = Math.max(0, Number(j.kerf) || 0); j.trim = Math.max(0, Number(j.trim) || 0);
   j.cabs = (Array.isArray(j.cabs) ? j.cabs : []).map(normalizeCab);
-  if (!j.cabs.length) j.cabs.push(newCab('base'));
-  if (!j.cabs.some(c => c.id === j.cur)) j.cur = j.cabs[0].id;
+  if (!j.cabs.some(c => c.id === j.cur)) j.cur = j.cabs.length ? j.cabs[0].id : null;
   return j;
 }
 
@@ -103,6 +100,6 @@ const Store = {
 };
 const Settings = {
   v: null,
-  load() { this.v = Object.assign({mode: null, open: {dims: 1, body: 1, secs: 1}, view: '3d', scope: 'job'}, Store.get('settings', {})); if (!this.v.mode) { try { this.v.mode = JSON.parse(localStorage.getItem('eczplan.v2.settings') || '{}').mode || 'auto'; } catch (e) { this.v.mode = 'auto'; } } },
+  load() { this.v = Object.assign({mode: null, open: {dims: 1, secs: 1, base: 1}, view: '3d', scope: 'job'}, Store.get('settings', {})); if (!this.v.mode) { try { this.v.mode = JSON.parse(localStorage.getItem('eczplan.v2.settings') || '{}').mode || 'auto'; } catch (e) { this.v.mode = 'auto'; } } },
   set(k, v) { this.v[k] = v; Store.set('settings', this.v); },
 };
