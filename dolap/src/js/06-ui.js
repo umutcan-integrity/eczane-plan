@@ -184,9 +184,8 @@ const UI = {
     const tb = (txt, ic, on, fn, title) => h('button', {class: 'tb' + (on ? ' on' : ''), type: 'button', title: title || txt, onclick: fn}, ic ? icon(ic) : null, txt);
     const dm = V.doorMode;
     t.append(
-      tb('Kapalı', IC.door, dm === 'closed', () => { V.setDoor('closed'); UI.tools(); }, 'Kapaklar kapalı'),
-      tb('Açık', null, dm === 'open', () => { V.setDoor('open'); UI.tools(); }, 'Kapakları aç, çekmeceleri çek'),
-      tb('Gizle', null, dm === 'hidden', () => { V.setDoor('hidden'); UI.tools(); }, 'Kapak ve çekmece önlerini gizle'),
+      h('div', {class: 'seg sm doorseg', role: 'group', 'aria-label': 'Kapaklar'}, ...[['closed', 'Kapalı', 'Kapaklar kapalı', IC.door], ['open', 'Açık', 'Kapakları aç, çekmeceleri çek'], ['hidden', 'Gizle', 'Kapak ve çekmece önlerini gizle']]
+        .map(([k, txt, title, ic]) => h('button', {type: 'button', class: dm === k ? 'on' : '', 'aria-pressed': String(dm === k), title, onclick: () => { V.setDoor(k); UI.tools(); }}, ic ? icon(ic) : null, txt))),
       h('i', {class: 'sep'}),
       tb('Patlat', IC.explode, V.explode, () => { V.setExplode(!V.explode); if (V.explode) setTimeout(() => { V.fit(); V.req(); }, 0); UI.tools(); }, 'Parçaları ayrık göster'),
       tb('Ölçüler', IC.ruler, V.dims, () => { V.dims = !V.dims; V.req(); UI.tools(); }, 'Dış ölçüleri göster'),
@@ -332,7 +331,7 @@ const UI = {
     inner.append(
       h('div', {class: 'ptool'}, h('h2', null, 'Kesim listesi'), UI.scopeSeg(() => UI.cut()),
         h('button', {class: 'btn sm', type: 'button', onclick: () => UI.csv()}, icon(IC.table), 'Excel (CSV)'),
-        h('button', {class: 'btn sm primary', type: 'button', onclick: () => UI.print()}, icon(IC.print), 'Yazdır / PDF')),
+        h('button', {class: 'btn sm', type: 'button', onclick: () => UI.print()}, icon(IC.print), 'Yazdır / PDF')),
       h('p', {class: 'pnote'}, 'Ölçüler mm. Boy = desen (su) yönü. Kalın yazılan kesim ölçüsüdür' + (A.cab && A.cab.deduct ? ' (bant kalınlığı düşülmüş)' : '') + '; altında bitmiş ölçü görünür. Satıra dokununca parça 3B’de seçilir.'),
       h('div', {class: 'tot'},
         h('div', null, h('span', null, 'Toplam parça'), h('b', null, tot)),

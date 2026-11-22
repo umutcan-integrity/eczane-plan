@@ -441,7 +441,7 @@ function frontSVG(c, R, opt = {}) {
     svg.append(sv('line', {x1, y1, x2, y2, stroke: '#c2410c', 'stroke-width': sw, class: 'pv-d'}));
     for (const [px, py] of [[x1, y1], [x2, y2]]) svg.append(sv('line', Object.assign(vert ? {x1: px - fs * .3, y1: py, x2: px + fs * .3, y2: py} : {x1: px, y1: py - fs * .3, x2: px, y2: py + fs * .3}, {stroke: '#c2410c', 'stroke-width': sw, class: 'pv-d'})));
     const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-    svg.append(sv('text', vert ? {x: mx - fs * .35, y: my, 'font-size': fs, 'text-anchor': 'middle', transform: `rotate(-90 ${mx - fs * .35} ${my})`, fill: '#c2410c', 'font-family': 'Arial', class: 'pv-t'} : {x: mx, y: my - fs * .3, 'font-size': fs, 'text-anchor': 'middle', fill: '#c2410c', 'font-family': 'Arial', class: 'pv-t'}, txt));
+    svg.append(sv('text', vert ? {x: mx - fs * .35, y: my, 'font-size': fs, 'text-anchor': 'middle', transform: `rotate(-90 ${mx - fs * .35} ${my})`, fill: '#c2410c', 'font-family': 'Saira, system-ui, sans-serif', class: 'pv-t'} : {x: mx, y: my - fs * .3, 'font-size': fs, 'text-anchor': 'middle', fill: '#c2410c', 'font-family': 'Saira, system-ui, sans-serif', class: 'pv-t'}, txt));
   };
   dl(0, -pad * .45, c.W, -pad * .45, fmt(c.W));
   dl(-pad * .45, 0, -pad * .45, c.H, fmt(c.H), true);

@@ -18,7 +18,7 @@ colors:
   seam-strong: "#A3ABB3"
   ink: "#161B20"
   ink-muted: "#49515A"
-  ink-faint: "#737C86"
+  ink-faint: "#5F6872"
   plan-select: "#A36F00"
   danger: "#C0352A"
   warn: "#B26400"
@@ -102,7 +102,7 @@ Sanayinin malzemesi ekrana taşınır: koyu çelik kabuk, galvaniz sac gibi hafi
 - **Galvaniz Zemin** (#D6DADE): sayfa zemini; plan ve 3B sahne zemini #CDD2D7.
 - **Sac** (#F5F6F7, #ECEEF0, #E0E3E6): paneller, kartlar, girişler, gömme alanlar.
 - **Dikiş** (#C4CAD0, güçlü #A3ABB3): kenarlıklar ve ayırıcılar.
-- **Mürekkep** (#161B20, ikincil #49515A, silik #737C86): metin.
+- **Mürekkep** (#161B20, ikincil #49515A, silik #5F6872): metin.
 
 ### Ölçü renkleri (Dolap)
 - **Boy** #C2410C, **En** #1D4ED8, **Kalınlık** #7E22CE: 3B ölçü etiketleri, parça kartı ve form satırlarında aynı üç renk; değişmez.

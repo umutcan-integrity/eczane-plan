@@ -3,7 +3,7 @@
 @font-face{font-family:"Saira";font-style:normal;font-display:swap;font-weight:100 900;font-stretch:50% 125%;src:url(vendor/fonts/saira-latin-wdth-normal.woff2) format("woff2-variations"),url(vendor/fonts/saira-latin-wdth-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 :root{
   --bg:#D6DADE; --surface:#F5F6F7; --surface-2:#ECEEF0; --surface-3:#E0E3E6;
-  --line:#C4CAD0; --line-2:#A3ABB3; --ink:#161B20; --muted:#49515A; --faint:#737C86;
+  --line:#C4CAD0; --line-2:#A3ABB3; --ink:#161B20; --muted:#49515A; --faint:#5F6872;
   --steel:#262C32; --steel-2:#353C43; --steel-ink:#EDF0F2; --steel-muted:#AEB6BD; --steel-line:rgba(255,255,255,.14);
   --accent:#F5B700; --accent-ink:#1A1500; --accent-fg:#7A5800; --accent-line:#C79500;
   --accent-soft:color-mix(in srgb,#F5B700 24%,var(--surface));
@@ -25,7 +25,7 @@
 }
 :root[data-mode="dark"]{
   --bg:#121518; --surface:#1C2024; --surface-2:#22272C; --surface-3:#2A3036;
-  --line:#313840; --line-2:#465058; --ink:#E7EAED; --muted:#A4ADB5; --faint:#78818A;
+  --line:#313840; --line-2:#465058; --ink:#E7EAED; --muted:#A4ADB5; --faint:#8A939C;
   --steel:#0C0F12; --steel-2:#1B2025; --steel-ink:#E7EAED; --steel-muted:#98A1A9; --steel-line:rgba(255,255,255,.1);
   --accent-fg:#F5B700; --accent-line:#A67C00; --accent-soft:rgba(245,183,0,.15);
   --danger:#F07361; --warn:#F2B13C; --ok:#5BC48A;
@@ -69,7 +69,6 @@ svg{flex:none}
 .icon-btn svg{width:20px;height:20px}
 .seg{display:inline-flex;background:var(--surface-3);border-radius:var(--r-sm);padding:3px;gap:2px;box-shadow:inset 0 1px 2px rgba(0,0,0,.12)}
 .seg button{justify-content:center;border:0;background:transparent;border-radius:calc(var(--r-sm) - 3px);padding:0 14px;min-height:32px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
-.seg button.on{background:var(--accent);color:var(--accent-ink);box-shadow:inset 0 -2px 0 rgba(0,0,0,.16)}
 .seg button svg{width:16px;height:16px}
 
 /* ---------- inputs ---------- */
@@ -90,7 +89,7 @@ svg{flex:none}
 .apptabs{display:inline-flex;background:rgba(0,0,0,.28);border-radius:var(--r-sm);padding:3px;gap:2px;flex:none;box-shadow:inset 0 1px 2px rgba(0,0,0,.35)}
 .apptabs a{text-decoration:none;font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-muted);padding:7px 14px;border-radius:calc(var(--r-sm) - 1px);white-space:nowrap}
 .apptabs a:hover{color:var(--steel-ink)}
-.apptabs a.on{background:var(--accent);color:var(--accent-ink);box-shadow:inset 0 -2px 0 rgba(0,0,0,.16)}
+
 @media (max-width:420px){.apptabs a{padding:7px 10px;font-size:13px}}
 .home-main{max-width:1080px;width:100%;margin:0 auto;padding:22px 18px 40px;display:grid;grid-template-columns:360px 1fr;gap:22px;align-items:start}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
@@ -117,7 +116,7 @@ svg{flex:none}
 .proj .nm{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:34px}
 .proj .sub{font-size:12.5px;color:var(--muted)}
 .proj .more{position:absolute;right:6px;bottom:14px}
-.proj .badge{position:absolute;left:10px;top:10px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:750;border-radius:var(--r-xs);padding:3px 8px;letter-spacing:.06em;text-transform:uppercase}
+.proj .badge{position:absolute;left:10px;top:10px;background:var(--steel);color:var(--steel-ink);font-size:11px;font-weight:750;border-radius:var(--r-xs);padding:3px 8px;letter-spacing:.06em;text-transform:uppercase}
 .empty{border:1.5px dashed var(--line-2);border-radius:var(--r);padding:34px 20px;text-align:center;color:var(--muted)}
 .empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
 .note{font-size:12.5px;color:var(--muted)}
@@ -138,7 +137,6 @@ svg{flex:none}
 .bar .btn:not(.primary):hover{background:#424A52}
 .bar .seg{background:rgba(0,0,0,.3);box-shadow:inset 0 1px 2px rgba(0,0,0,.35)}
 .bar .seg button{color:var(--steel-muted)}
-.bar .seg button.on{color:var(--accent-ink)}
 .pname{display:flex;flex-direction:column;align-items:flex-start;min-width:0;border:0;background:transparent;padding:4px 8px;border-radius:var(--r-xs);max-width:34vw;text-align:left}
 .pname:hover{background:var(--steel-2)}
 .pname b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
@@ -425,3 +423,4 @@ dialog.modal.wide{width:min(960px,calc(100vw - 28px))}
 .bar .seg button.on,.apptabs a.on{background:var(--steel-ink);color:var(--steel);box-shadow:inset 0 -3px 0 var(--accent)}
 .tb.tog.on{background:var(--accent-soft);color:var(--ink);box-shadow:inset 0 0 0 1px var(--accent-line)}
 @media (max-width:520px){.apptabs a{font-size:11.5px;letter-spacing:.02em;padding:6px 8px}}
+.home-band .logo i{background:var(--steel-2);color:var(--steel-ink);box-shadow:inset 0 0 0 1px var(--steel-line)}

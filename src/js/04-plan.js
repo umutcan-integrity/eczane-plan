@@ -12,6 +12,7 @@ function planColors() {
 
 /* ---------- Çizim (ekrana, küçük resme ve PNG'ye ortak) ---------- */
 function drawPlan(ctx, P, V, o) {
+  if ('fontStretch' in ctx) ctx.fontStretch = 'semi-condensed';
   const C = o.C, s = V.s, W = P.shop.w, D = P.shop.d, dpr = o.dpr, F = o.fs || 1;
   const segs = o.segs, A = o.A;
   const WT = () => ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * V.ox, dpr * V.oy);
@@ -251,8 +252,8 @@ function chainSeg(ctx, sg, arr, V, s, off, C, F) {
     ctx.fillText(t, 0, sg.n * 7.5 * F); ctx.restore();
   }
 }
-function getFont() { return 'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; }
-function getMono() { return 'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'; }
+function getFont() { return '"Saira",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; }
+function getMono() { return '"Saira",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'; }
 function pathPoly(ctx, P) { ctx.beginPath(); P.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); }
 function withItem(ctx, it, fn) { ctx.save(); ctx.translate(it.cx, it.cy); ctx.rotate((it.rot || 0) * D2R); fn(); ctx.restore(); }
 function dimLine(ctx, x0, y0, x1, y1, label, C, vert, F = 1) {
@@ -506,6 +507,7 @@ const Plan = {
 
   init() {
     this.cv = $('#plan'); this.ctx = this.cv.getContext('2d');
+    if (document.fonts) document.fonts.ready.then(() => this.req && this.req());
     new ResizeObserver(() => this.resize()).observe($('#stage'));
     const cv = this.cv;
     cv.addEventListener('pointerdown', e => this.down(e));

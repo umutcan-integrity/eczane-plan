@@ -23,7 +23,7 @@
 @font-face{font-family:"Saira";font-style:normal;font-display:swap;font-weight:100 900;font-stretch:50% 125%;src:url(vendor/fonts/saira-latin-wdth-normal.woff2) format("woff2-variations"),url(vendor/fonts/saira-latin-wdth-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 :root{
   --bg:#D6DADE; --surface:#F5F6F7; --surface-2:#ECEEF0; --surface-3:#E0E3E6;
-  --line:#C4CAD0; --line-2:#A3ABB3; --ink:#161B20; --muted:#49515A; --faint:#737C86;
+  --line:#C4CAD0; --line-2:#A3ABB3; --ink:#161B20; --muted:#49515A; --faint:#5F6872;
   --steel:#262C32; --steel-2:#353C43; --steel-ink:#EDF0F2; --steel-muted:#AEB6BD; --steel-line:rgba(255,255,255,.14);
   --accent:#F5B700; --accent-ink:#1A1500; --accent-fg:#7A5800; --accent-line:#C79500;
   --accent-soft:color-mix(in srgb,#F5B700 24%,var(--surface));
@@ -45,7 +45,7 @@
 }
 :root[data-mode="dark"]{
   --bg:#121518; --surface:#1C2024; --surface-2:#22272C; --surface-3:#2A3036;
-  --line:#313840; --line-2:#465058; --ink:#E7EAED; --muted:#A4ADB5; --faint:#78818A;
+  --line:#313840; --line-2:#465058; --ink:#E7EAED; --muted:#A4ADB5; --faint:#8A939C;
   --steel:#0C0F12; --steel-2:#1B2025; --steel-ink:#E7EAED; --steel-muted:#98A1A9; --steel-line:rgba(255,255,255,.1);
   --accent-fg:#F5B700; --accent-line:#A67C00; --accent-soft:rgba(245,183,0,.15);
   --danger:#F07361; --warn:#F2B13C; --ok:#5BC48A;
@@ -89,7 +89,6 @@ svg{flex:none}
 .icon-btn svg{width:20px;height:20px}
 .seg{display:inline-flex;background:var(--surface-3);border-radius:var(--r-sm);padding:3px;gap:2px;box-shadow:inset 0 1px 2px rgba(0,0,0,.12)}
 .seg button{justify-content:center;border:0;background:transparent;border-radius:calc(var(--r-sm) - 3px);padding:0 14px;min-height:32px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
-.seg button.on{background:var(--accent);color:var(--accent-ink);box-shadow:inset 0 -2px 0 rgba(0,0,0,.16)}
 .seg button svg{width:16px;height:16px}
 
 /* ---------- inputs ---------- */
@@ -110,7 +109,7 @@ svg{flex:none}
 .apptabs{display:inline-flex;background:rgba(0,0,0,.28);border-radius:var(--r-sm);padding:3px;gap:2px;flex:none;box-shadow:inset 0 1px 2px rgba(0,0,0,.35)}
 .apptabs a{text-decoration:none;font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--steel-muted);padding:7px 14px;border-radius:calc(var(--r-sm) - 1px);white-space:nowrap}
 .apptabs a:hover{color:var(--steel-ink)}
-.apptabs a.on{background:var(--accent);color:var(--accent-ink);box-shadow:inset 0 -2px 0 rgba(0,0,0,.16)}
+
 @media (max-width:420px){.apptabs a{padding:7px 10px;font-size:13px}}
 .home-main{max-width:1080px;width:100%;margin:0 auto;padding:22px 18px 40px;display:grid;grid-template-columns:360px 1fr;gap:22px;align-items:start}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
@@ -137,7 +136,7 @@ svg{flex:none}
 .proj .nm{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:34px}
 .proj .sub{font-size:12.5px;color:var(--muted)}
 .proj .more{position:absolute;right:6px;bottom:14px}
-.proj .badge{position:absolute;left:10px;top:10px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:750;border-radius:var(--r-xs);padding:3px 8px;letter-spacing:.06em;text-transform:uppercase}
+.proj .badge{position:absolute;left:10px;top:10px;background:var(--steel);color:var(--steel-ink);font-size:11px;font-weight:750;border-radius:var(--r-xs);padding:3px 8px;letter-spacing:.06em;text-transform:uppercase}
 .empty{border:1.5px dashed var(--line-2);border-radius:var(--r);padding:34px 20px;text-align:center;color:var(--muted)}
 .empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
 .note{font-size:12.5px;color:var(--muted)}
@@ -158,7 +157,6 @@ svg{flex:none}
 .bar .btn:not(.primary):hover{background:#424A52}
 .bar .seg{background:rgba(0,0,0,.3);box-shadow:inset 0 1px 2px rgba(0,0,0,.35)}
 .bar .seg button{color:var(--steel-muted)}
-.bar .seg button.on{color:var(--accent-ink)}
 .pname{display:flex;flex-direction:column;align-items:flex-start;min-width:0;border:0;background:transparent;padding:4px 8px;border-radius:var(--r-xs);max-width:34vw;text-align:left}
 .pname:hover{background:var(--steel-2)}
 .pname b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
@@ -445,6 +443,7 @@ dialog.modal.wide{width:min(960px,calc(100vw - 28px))}
 .bar .seg button.on,.apptabs a.on{background:var(--steel-ink);color:var(--steel);box-shadow:inset 0 -3px 0 var(--accent)}
 .tb.tog.on{background:var(--accent-soft);color:var(--ink);box-shadow:inset 0 0 0 1px var(--accent-line)}
 @media (max-width:520px){.apptabs a{font-size:11.5px;letter-spacing:.02em;padding:6px 8px}}
+.home-band .logo i{background:var(--steel-2);color:var(--steel-ink);box-shadow:inset 0 0 0 1px var(--steel-line)}
 
 </style>
 </head>
@@ -2023,6 +2022,7 @@ function planColors() {
 
 /* ---------- Çizim (ekrana, küçük resme ve PNG'ye ortak) ---------- */
 function drawPlan(ctx, P, V, o) {
+  if ('fontStretch' in ctx) ctx.fontStretch = 'semi-condensed';
   const C = o.C, s = V.s, W = P.shop.w, D = P.shop.d, dpr = o.dpr, F = o.fs || 1;
   const segs = o.segs, A = o.A;
   const WT = () => ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * V.ox, dpr * V.oy);
@@ -2262,8 +2262,8 @@ function chainSeg(ctx, sg, arr, V, s, off, C, F) {
     ctx.fillText(t, 0, sg.n * 7.5 * F); ctx.restore();
   }
 }
-function getFont() { return 'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; }
-function getMono() { return 'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'; }
+function getFont() { return '"Saira",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; }
+function getMono() { return '"Saira",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'; }
 function pathPoly(ctx, P) { ctx.beginPath(); P.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); }
 function withItem(ctx, it, fn) { ctx.save(); ctx.translate(it.cx, it.cy); ctx.rotate((it.rot || 0) * D2R); fn(); ctx.restore(); }
 function dimLine(ctx, x0, y0, x1, y1, label, C, vert, F = 1) {
@@ -2517,6 +2517,7 @@ const Plan = {
 
   init() {
     this.cv = $('#plan'); this.ctx = this.cv.getContext('2d');
+    if (document.fonts) document.fonts.ready.then(() => this.req && this.req());
     new ResizeObserver(() => this.resize()).observe($('#stage'));
     const cv = this.cv;
     cv.addEventListener('pointerdown', e => this.down(e));
@@ -3211,6 +3212,8 @@ function doorGaps(o, segs) {
   return res;
 }
 
+/* 3B sahnedeki yazılar (tabela, etiket) arayüz yazı tipinden bağımsız */
+const SCENE_FONT = 'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif', SCENE_MONO = 'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
 /* =====================================================================
    3B görünüm: yörünge kamera + insan gözüyle gezinti (WASD / joystick)
    Plan (x, y) → sahne (x, 0, z=y). Yerel ön yüz (+y) → sahnede yerel +z.
@@ -3401,12 +3404,12 @@ const View3D = {
   textTex(lines, color) {
     const T = this.T, c = document.createElement('canvas'), g = c.getContext('2d');
     const fs = 64, pad = 16;
-    g.font = `700 ${fs}px ${getFont()}`;
-    const w = Math.max(...lines.map((l, i) => { g.font = i ? `500 ${fs * .72}px ${getMono()}` : `700 ${fs}px ${getFont()}`; return g.measureText(l).width; })) + pad * 2;
+    g.font = `700 ${fs}px ${SCENE_FONT}`;
+    const w = Math.max(...lines.map((l, i) => { g.font = i ? `500 ${fs * .72}px ${SCENE_MONO}` : `700 ${fs}px ${SCENE_FONT}`; return g.measureText(l).width; })) + pad * 2;
     const h = fs * 1.25 + (lines.length - 1) * fs * .95 + pad;
     c.width = Math.ceil(w); c.height = Math.ceil(h);
     g.textAlign = 'center'; g.textBaseline = 'top'; g.fillStyle = color;
-    lines.forEach((l, i) => { g.font = i ? `500 ${fs * .72}px ${getMono()}` : `700 ${fs}px ${getFont()}`; g.globalAlpha = i ? .75 : .9; g.fillText(l, c.width / 2, pad / 2 + (i ? fs * 1.15 + (i - 1) * fs * .95 : 0)); });
+    lines.forEach((l, i) => { g.font = i ? `500 ${fs * .72}px ${SCENE_MONO}` : `700 ${fs}px ${SCENE_FONT}`; g.globalAlpha = i ? .75 : .9; g.fillText(l, c.width / 2, pad / 2 + (i ? fs * 1.15 + (i - 1) * fs * .95 : 0)); });
     const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4;
     return {t, aspect: c.width / c.height};
   },
@@ -3931,7 +3934,7 @@ const View3D = {
   signTex(text) {
     const T = this.T, c = document.createElement('canvas'), g = c.getContext('2d');
     const Hh = 256, fs = 132;
-    g.font = `800 ${fs}px ${getFont()}`;
+    g.font = `800 ${fs}px ${SCENE_FONT}`;
     const tw = g.measureText(text).width;
     const Wd = Math.ceil(Math.min(4096, Hh + 90 + tw + 90));
     c.width = Wd; c.height = Hh;
@@ -3940,12 +3943,12 @@ const View3D = {
     // Logo
     const L = Hh - 70, lx = 40, ly = 30;
     g.beginPath(); g.roundRect(lx, ly, L, L, 26); g.fill();
-    g.fillStyle = '#FFFFFF'; g.font = `900 ${L * .82}px ${getFont()}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = '#FFFFFF'; g.font = `900 ${L * .82}px ${SCENE_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText('E', lx + L / 2, ly + L / 2 + L * .04);
     // Yazı
-    let f = fs; g.font = `800 ${f}px ${getFont()}`;
+    let f = fs; g.font = `800 ${f}px ${SCENE_FONT}`;
     const avail = Wd - (lx + L + 60) - 50;
-    while (g.measureText(text).width > avail && f > 40) { f -= 4; g.font = `800 ${f}px ${getFont()}`; }
+    while (g.measureText(text).width > avail && f > 40) { f -= 4; g.font = `800 ${f}px ${SCENE_FONT}`; }
     g.fillStyle = '#C8102E'; g.textAlign = 'left';
     g.fillText(text, lx + L + 60, Hh / 2 + 4);
     const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 8;
@@ -3957,7 +3960,7 @@ const View3D = {
     const g = c.getContext('2d');
     g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, 256, 256);
     g.strokeStyle = '#D0102B'; g.lineWidth = 16; g.strokeRect(8, 8, 240, 240);
-    g.fillStyle = '#D0102B'; g.font = `900 200px ${getFont()}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = '#D0102B'; g.font = `900 200px ${SCENE_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText('E', 128, 138);
     const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace;
     return (this._et = t);
@@ -4015,8 +4018,8 @@ const View3D = {
     const T = this.T, c = document.createElement('canvas'); c.width = 1024; c.height = 160;
     const g = c.getContext('2d');
     g.fillStyle = bg; g.fillRect(0, 0, 1024, 160);
-    let f = 96; g.font = `800 ${f}px ${getFont()}`;
-    while (g.measureText(text).width > 940 && f > 30) { f -= 4; g.font = `800 ${f}px ${getFont()}`; }
+    let f = 96; g.font = `800 ${f}px ${SCENE_FONT}`;
+    while (g.measureText(text).width > 940 && f > 30) { f -= 4; g.font = `800 ${f}px ${SCENE_FONT}`; }
     g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 512, 84);
     const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4;
     return t;
@@ -4872,7 +4875,7 @@ const View3D = {
       const off = document.createElement('canvas'); off.width = cv.width; off.height = cv.height;
       const C = planColors();
       drawPlan(off.getContext('2d'), P, V, {w: cw, h: ch, dpr, C: Object.assign({}, C, {bg: C.floor, glass: false}), segs: Ed.segs, A: Ed.A, grid: false, clear: false, labels: false, dims: false});
-      if (multiLevel(P)) { const g2 = off.getContext('2d'); g2.setTransform(dpr, 0, 0, dpr, 0, 0); g2.font = `800 11px ${getFont()}`; g2.fillStyle = C.ink; g2.textAlign = 'left'; g2.textBaseline = 'top'; g2.fillText(levelName(P, P.cur), 6, 4); }
+      if (multiLevel(P)) { const g2 = off.getContext('2d'); g2.setTransform(dpr, 0, 0, dpr, 0, 0); g2.font = `800 11px ${SCENE_FONT}`; g2.fillStyle = C.ink; g2.textAlign = 'left'; g2.textBaseline = 'top'; g2.fillText(levelName(P, P.cur), 6, 4); }
       this.mini = {cw, ch, V, off}; this.miniDirty = false;
     }
     const m = this.mini, g = cv.getContext('2d'), k = this.wk;
@@ -5056,7 +5059,7 @@ const View3D = {
     const cp = {x: cam.position.x - O.x, y: cam.position.y - O.y, z: cam.position.z - O.z};
     const pill = (x, y, lines, ang = 0, dark = true) => {
       g.save(); g.translate(x, y); g.rotate(ang);
-      const f1 = `700 ${15 * k}px ${getFont()}`, f2 = `500 ${12.5 * k}px ${getMono()}`;
+      const f1 = `700 ${15 * k}px ${SCENE_FONT}`, f2 = `500 ${12.5 * k}px ${SCENE_MONO}`;
       g.font = f1; let w = g.measureText(lines[0]).width;
       if (lines[1]) { g.font = f2; w = Math.max(w, g.measureText(lines[1]).width); }
       const hh = (lines[1] ? 40 : 24) * k, ww = w + 20 * k;
