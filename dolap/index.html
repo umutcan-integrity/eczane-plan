@@ -1484,7 +1484,7 @@ const V = {
     const q0 = new T.Quaternion(); m.getWorldQuaternion(q0); q0.multiply(new T.Quaternion().setFromRotationMatrix(M));
     const p0 = new T.Vector3(); m.getWorldPosition(p0);
     /* hedef: dolabın soluna, ayakta, kameraya dönük */
-    const gap = Math.max(380, c.W * .3 + 120);
+    const gap = Math.max(650, c.W * .5 + 220);
     const tp = new T.Vector3(-(gap + p.Wd / 2) * MM, Math.max(p.L / 2 + 50, c.H / 2) * MM, fd / 2 * MM);
     const k = o.keep;
     this.det = {id, g, p, t: o.instant ? 1 : 0, dir: 1, p0, q0, tp, base: k ? k.base : this.orb.th, yaw: k ? k.yaw : 0, yawT: k ? k.yawT : 0, pitch: k ? k.pitch : 0, pitchT: k ? k.pitchT : 0};
@@ -1497,7 +1497,7 @@ const V = {
   placeGhost() {
     const d = this.det; if (!d) return;
     const t = d.t, e = t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    const pos = d.p0.clone().lerp(d.tp, e); pos.y += Math.sin(Math.PI * e) * .12;
+    const pos = d.p0.clone().lerp(d.tp, e); pos.y += Math.sin(Math.PI * e) * .16;
     d.g.position.copy(pos);
     d.g.quaternion.copy(d.q0).slerp(this.ghostQuat(), e);
   },
@@ -1562,6 +1562,8 @@ const V = {
   req() { if (!this._raf && this.ren) this._raf = requestAnimationFrame(() => { this._raf = 0; this.render(); }); },
   render() {
     if (!this.ren || !this.cab) return;
+    /* animasyon hızı ekran tazelemesinden bağımsız: 60 Hz'de 1 kare = 1 adım */
+    const now = performance.now(), el = now - (this._lt || 0), k = el > 0 && el < 120 ? clamp(el / 16.7, .5, 3) : 1; this._lt = now;
     if (this._anim) {
       const to = this.doorMode === 'open' ? 1 : 0, te = this.explode ? 1 : 0;
       this.open += (to - this.open) * .2; this.exp += (te - this.exp) * .18;
@@ -1572,13 +1574,13 @@ const V = {
     const d = this.det;
     if (d) {
       let more = false;
-      if ((d.dir > 0 && d.t < 1) || (d.dir < 0 && d.t > 0)) { d.t = clamp(d.t + d.dir * .07, 0, 1); more = true; }
+      if ((d.dir > 0 && d.t < 1) || (d.dir < 0 && d.t > 0)) { d.t = clamp(d.t + d.dir * .035 * k, 0, 1); more = true; }
       if (Math.abs(d.yawT - d.yaw) > .002 || Math.abs(d.pitchT - d.pitch) > .002) { d.yaw += (d.yawT - d.yaw) * .2; d.pitch += (d.pitchT - d.pitch) * .2; more = true; } else { d.yaw = d.yawT; d.pitch = d.pitchT; }
       if (d.dir < 0 && d.t <= 0) { this.dropGhost(); this.applyState(); } else this.placeGhost();
       if (more) this.req();
     }
     if (this.camA) {
-      const a = this.camA; a.t = Math.min(1, a.t + .06); const e = a.t < .5 ? 2 * a.t * a.t : 1 - Math.pow(-2 * a.t + 2, 2) / 2;
+      const a = this.camA; a.t = Math.min(1, a.t + .03 * k); const e = a.t < .5 ? 2 * a.t * a.t : 1 - Math.pow(-2 * a.t + 2, 2) / 2;
       for (const k of ['tx', 'ty', 'tz', 'r', 'ix', 'iy']) this.orb[k] = a.from[k] + (a.to[k] - a.from[k]) * e;
       if (a.t >= 1) this.camA = null; else this.req();
     }
