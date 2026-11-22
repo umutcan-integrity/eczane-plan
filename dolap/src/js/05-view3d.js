@@ -7,10 +7,10 @@ const MM = .001;
 
 const V = {
   T: null, ready: false, loading: null,
-  doorMode: 'closed', explode: false, dims: true, focus: true,
+  doorMode: 'closed', explode: false, dims: true, focus: false, det: null, camA: null,
   open: 0, exp: 0, sel: null, hover: null,
   holders: [], meshes: [], byId: new Map(), extras: [],
-  orb: {th: .6, ph: 1.12, r: 3, tx: 0, ty: 0, tz: 0},
+  orb: {th: .6, ph: 1.12, r: 3, tx: 0, ty: 0, tz: 0, ix: 0, iy: 0}, inset: {r: 0, b: 0},
   cab: null, R: null, onPick: null, lastKey: '',
 
   async init() {
@@ -100,9 +100,14 @@ const V = {
     this.shadow.scale.set(c.W * MM * 1.6, fd * MM * 2.2, 1); this.shadow.position.set(c.W * MM / 2, .0005, fd * MM / 2);
     this.shadow.visible = c.base !== 'wall';
     const key = `${c.id}|${Math.round(c.W / 50)}|${Math.round(c.H / 50)}|${Math.round(c.D / 50)}`;
-    if (fitCam || key !== this.lastKey) this.fit();
+    const refit = fitCam || key !== this.lastKey;
     this.lastKey = key;
     if (this.sel && !this.byId.has(this.sel)) this.sel = null;
+    /* seçili parça ayrık duruyorsa yeni ölçülerle yerinde yeniden kur */
+    const old = this.det && this.det.dir > 0 ? this.det : null;
+    this.dropGhost();
+    if (this.sel) this.detach(this.sel, {instant: !!(old && old.id === this.sel), keep: old && old.id === this.sel ? old : null});
+    if (refit) this.fit();
     this.applyState(); this.req();
   },
   addHandle(mesh, p, ext, ctr, mat, type) {
@@ -149,23 +154,95 @@ const V = {
       m.visible = !(hideFronts && (p.kind === 'door' || p.kind === 'dfront')) || m === selM;
       const isSel = m === selM, isHov = m.userData.p.id === this.hover && !isSel;
       mt.emissive.set(isSel ? acc : isHov ? acc : 0x000000); mt.emissiveIntensity = isSel ? .55 : isHov ? .22 : 0;
-      const fade = selM && this.focus && !isSel;
-      mt.transparent = fade || !!p.off; mt.opacity = fade ? .14 : p.off ? .25 : 1; mt.depthWrite = !fade;
+      const fade = selM && this.focus && !isSel, ghost = isSel && this.det && this.det.id === p.id;
+      mt.transparent = fade || ghost || !!p.off; mt.opacity = ghost ? .2 : fade ? .14 : p.off ? .25 : 1; mt.depthWrite = !fade && !ghost;
+      if (ghost) mt.emissiveIntensity = .4;
       ed.opacity = isSel ? 1 : fade ? .12 : .55; ed.color.set(isSel ? acc : (document.documentElement.dataset.mode === 'dark' ? 0x0b0d0c : 0x2c3330));
       m.renderOrder = isSel ? 2 : 0;
       for (const ch of m.children) if (ch !== m.userData.edges && ch.material) ch.visible = !fade;
     }
   },
-  select(id) { this.sel = id; this.applyState(); this.req(); },
+  select(id) {
+    const d = this.det;
+    if (id && d && d.id === id) { if (d.dir < 0) { d.dir = 1; this.camTo(true); } this.sel = id; this.applyState(); this.req(); return; }
+    if (!id && !this.sel) return;
+    this.sel = id;
+    if (d) { if (id) this.dropGhost(); else { d.dir = -1; this.camTo(false); } }
+    if (id) this.detach(id, {});
+    this.applyState(); this.req();
+  },
+
+  /* ---------- seçilen parça: sola ayrılır, tek başına gösterilir, çevrilebilir ---------- */
+  detach(id, o = {}) {
+    const T = this.T, m = this.byId.get(id); if (!m || !this.cab) return;
+    const p = m.userData.p, c = this.cab, fd = this.R && this.R.dims ? this.R.dims.fdepth : c.D;
+    this.root.updateMatrixWorld(true);
+    const geo = new T.BoxGeometry(p.Wd * MM, p.L * MM, p.T * MM);
+    const mat = new T.MeshStandardMaterial({color: m.userData.col.clone(), roughness: .6, metalness: 0, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1});
+    const g = new T.Mesh(geo, mat);
+    g.add(new T.LineSegments(new T.EdgesGeometry(geo), new T.LineBasicMaterial({color: this.accent()})));
+    /* başlangıç: parçanın dolaptaki duruşu (yerel eksenler: x = en, y = boy, z = kalınlık) */
+    const E = [new T.Vector3(1, 0, 0), new T.Vector3(0, 1, 0), new T.Vector3(0, 0, 1)];
+    const bx = E[AXI[p.ax[1]]], by = E[AXI[p.ax[0]]], bz = E[AXI[p.ax[2]]].clone();
+    const M = new T.Matrix4().makeBasis(bx, by, bz); if (M.determinant() < 0) M.makeBasis(bx, by, bz.negate());
+    const q0 = new T.Quaternion(); m.getWorldQuaternion(q0); q0.multiply(new T.Quaternion().setFromRotationMatrix(M));
+    const p0 = new T.Vector3(); m.getWorldPosition(p0);
+    /* hedef: dolabın soluna, ayakta, kameraya dönük */
+    const gap = Math.max(380, c.W * .3 + 120);
+    const tp = new T.Vector3(-(gap + p.Wd / 2) * MM, Math.max(p.L / 2 + 50, c.H / 2) * MM, fd / 2 * MM);
+    const k = o.keep;
+    this.det = {id, g, p, t: o.instant ? 1 : 0, dir: 1, p0, q0, tp, base: k ? k.base : this.orb.th, yaw: k ? k.yaw : 0, yawT: k ? k.yawT : 0, pitch: k ? k.pitch : 0, pitchT: k ? k.pitchT : 0};
+    this.scene.add(g); this.placeGhost();
+    if (!o.instant) this.camTo(true);
+    this.req();
+  },
+  accent() { return new this.T.Color(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#1F7A5A'); },
+  ghostQuat() { const d = this.det; return new this.T.Quaternion().setFromEuler(new this.T.Euler(d.pitch, d.base + d.yaw, 0, 'YXZ')); },
+  placeGhost() {
+    const d = this.det; if (!d) return;
+    const t = d.t, e = t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    const pos = d.p0.clone().lerp(d.tp, e); pos.y += Math.sin(Math.PI * e) * .12;
+    d.g.position.copy(pos);
+    d.g.quaternion.copy(d.q0).slerp(this.ghostQuat(), e);
+  },
+  dropGhost() { const d = this.det; if (!d) return; this.scene.remove(d.g); d.g.traverse(q => { if (q.geometry) q.geometry.dispose(); if (q.material) q.material.dispose(); }); this.det = null; },
+  turn(k) {
+    const d = this.det; if (!d) return;
+    if (k === 'l') d.yawT -= Math.PI / 2; else if (k === 'r') d.yawT += Math.PI / 2;
+    else if (k === 'edge') d.pitchT = Math.abs(d.pitchT) > .1 ? 0 : -Math.PI / 2;
+    else { d.yawT = Math.round(d.yaw / (2 * Math.PI)) * 2 * Math.PI; d.pitchT = 0; }
+    this.req();
+  },
+  camTarget(withSel) {
+    const c = this.cab, fd = this.R && this.R.dims ? this.R.dims.fdepth : c.D, box = [[0, c.W], [0, c.H], [0, fd]];
+    if (withSel && this.det) {
+      const d = this.det, rr = .5 * Math.hypot(d.p.L, d.p.Wd, d.p.T), t = d.tp.clone().multiplyScalar(1000);
+      box[0][0] = Math.min(box[0][0], t.x - rr); box[1][0] = Math.min(0, t.y - rr); box[1][1] = Math.max(box[1][1], t.y + rr);
+    }
+    const ctr = box.map(([a, b]) => (a + b) / 2), rs = .5 * Math.hypot(...box.map(([a, b]) => b - a)) * MM * (this.explode ? 1.4 : 1);
+    /* parça kartının kapladığı alanı çıkar: görüntü boş alanda ortalanır */
+    const el = this.ren.domElement, w = el.clientWidth || 1, hh = el.clientHeight || 1, ir = Math.min(this.inset.r, w * .6), ib = Math.min(this.inset.b, hh * .6);
+    const fovV0 = this.cam.fov * Math.PI / 180, fovV = 2 * Math.atan(Math.tan(fovV0 / 2) * (hh - ib) / hh), fovH = 2 * Math.atan(Math.tan(fovV0 / 2) * (w - ir) / hh);
+    const pad = withSel && this.det ? (w < 700 ? 1.3 : 1.12) : 1.05;
+    return {tx: ctr[0] * MM, ty: ctr[1] * MM, tz: ctr[2] * MM, r: rs / Math.sin(Math.min(fovV, fovH) / 2) * pad, ix: ir / 2, iy: ib / 2};
+  },
+  camTo(withSel) { const o = this.orb; this.camA = {from: {tx: o.tx, ty: o.ty, tz: o.tz, r: o.r, ix: o.ix, iy: o.iy}, to: this.camTarget(withSel), t: 0}; this.req(); },
+  setInset(r, b) {
+    if (Math.abs(r - this.inset.r) < 2 && Math.abs(b - this.inset.b) < 2) return;
+    this.inset = {r, b}; if (this.ren && this.cab) this.camTo(!!(this.det && this.det.dir > 0));
+  },
+  ghostHit(cx, cy) {
+    if (!this.det || this.det.dir < 0) return false;
+    const r = this.ren.domElement.getBoundingClientRect();
+    this.ray.setFromCamera(new this.T.Vector2((cx - r.left) / r.width * 2 - 1, -(cy - r.top) / r.height * 2 + 1), this.cam);
+    return this.ray.intersectObject(this.det.g, false).length > 0;
+  },
 
   /* ---------- kamera ---------- */
   fit() {
-    const c = this.cab; if (!c) return;
-    const fd = this.R && this.R.dims ? this.R.dims.fdepth : c.D;
-    const o = this.orb; o.tx = c.W / 2 * MM; o.ty = c.H / 2 * MM; o.tz = fd / 2 * MM;
-    const rs = .5 * Math.hypot(c.W, c.H, fd) * MM * (this.explode ? 1.5 : 1);
-    const fovV = this.cam.fov * Math.PI / 180, fovH = 2 * Math.atan(Math.tan(fovV / 2) * this.cam.aspect);
-    o.r = rs / Math.sin(Math.min(fovV, fovH) / 2) * 1.08;
+    if (!this.cab) return;
+    this.camA = null;
+    Object.assign(this.orb, this.camTarget(!!(this.det && this.det.dir > 0)));
     this.camUpd();
   },
   view(name) {
@@ -177,6 +254,8 @@ const V = {
     const o = this.orb, cm = this.cam;
     cm.position.set(o.tx + o.r * Math.sin(o.ph) * Math.sin(o.th), o.ty + o.r * Math.cos(o.ph), o.tz + o.r * Math.sin(o.ph) * Math.cos(o.th));
     cm.lookAt(o.tx, o.ty, o.tz);
+    const el = this.ren.domElement, w = el.clientWidth, hh = el.clientHeight;
+    if (w && hh && (Math.abs(o.ix) > .5 || Math.abs(o.iy) > .5)) cm.setViewOffset(w, hh, o.ix, o.iy, w, hh); else if (cm.view) cm.clearViewOffset();
     cm.near = Math.max(.005, o.r / 200); cm.far = o.r * 20 + 10; cm.updateProjectionMatrix();
   },
   resize() {
@@ -194,6 +273,19 @@ const V = {
       this.applyState();
       if (this._anim) this.req();
     }
+    const d = this.det;
+    if (d) {
+      let more = false;
+      if ((d.dir > 0 && d.t < 1) || (d.dir < 0 && d.t > 0)) { d.t = clamp(d.t + d.dir * .07, 0, 1); more = true; }
+      if (Math.abs(d.yawT - d.yaw) > .002 || Math.abs(d.pitchT - d.pitch) > .002) { d.yaw += (d.yawT - d.yaw) * .2; d.pitch += (d.pitchT - d.pitch) * .2; more = true; } else { d.yaw = d.yawT; d.pitch = d.pitchT; }
+      if (d.dir < 0 && d.t <= 0) { this.dropGhost(); this.applyState(); } else this.placeGhost();
+      if (more) this.req();
+    }
+    if (this.camA) {
+      const a = this.camA; a.t = Math.min(1, a.t + .06); const e = a.t < .5 ? 2 * a.t * a.t : 1 - Math.pow(-2 * a.t + 2, 2) / 2;
+      for (const k of ['tx', 'ty', 'tz', 'r', 'ix', 'iy']) this.orb[k] = a.from[k] + (a.to[k] - a.from[k]) * e;
+      if (a.t >= 1) this.camA = null; else this.req();
+    }
     this.camUpd();
     this.root.updateMatrixWorld(true);
     this.updDims();
@@ -208,15 +300,18 @@ const V = {
     for (const ch of this.dimG.children) { ch.geometry.dispose(); ch.material.dispose(); }
     this.dimG.clear(); this.labels = [];
     const seg = (pts, cssVar) => { const g = new T.BufferGeometry().setFromPoints(pts); const l = new T.LineSegments(g, this.lineMat(cssVar)); l.renderOrder = 999; this.dimG.add(l); };
-    const selM = this.sel ? this.byId.get(this.sel) : null;
-    if (selM && selM.visible) {
-      const p = selM.userData.p, ext = selM.userData.ext, hh = ext.map(v => v / 2 * MM);
+    const dt = this.det;
+    if (dt && dt.dir > 0 && dt.t > .9) {
+      const selM = dt.g, p = dt.p, hh = [p.Wd, p.L, p.T].map(v => v / 2 * MM);
+      selM.updateMatrixWorld(true);
       const camL = selM.worldToLocal(this.cam.position.clone()), cl = [camL.x, camL.y, camL.z];
-      const off = Math.max(.018, this.orb.r * .012), tick = off * .55;
-      const roles = {}; ['L', 'W', 'T'].forEach((r, i) => roles[AXI[p.ax[i]]] = r);
+      const off = Math.max(.022, this.orb.r * .014), tick = off * .55;
+      const roles = {0: 'W', 1: 'L', 2: 'T'};
       for (let a = 0; a < 3; a++) {
         const role = roles[a], b = (a + 1) % 3, c2 = (a + 2) % 3;
-        const sb = cl[b] >= 0 ? 1 : -1, sc = cl[c2] >= 0 ? 1 : -1;
+        let sb = cl[b] >= 0 ? 1 : -1, sc = cl[c2] >= 0 ? 1 : -1;
+        /* ayrık parçada ölçüler dolaba uzak tarafta: boy solda, en ve kalınlık üstte */
+        if (a === 1) sc = -1; else if (a === 0) sb = 1; else { sb = -1; sc = -1; }
         /* çizgiyi, kameraya bakan kenara, dışarı doğru kaydırarak koy */
         const ob = off, oc = off * .4;
         const mk = (ta, db, dc) => { const v = [0, 0, 0]; v[a] = ta; v[b] = sb * (hh[b] + db); v[c2] = sc * (hh[c2] + dc); return selM.localToWorld(new T.Vector3(...v)); };
@@ -224,10 +319,11 @@ const V = {
         const pts = [p0, p1, mk(-hh[a], 0, 0), mk(-hh[a], ob + tick, oc), mk(hh[a], 0, 0), mk(hh[a], ob + tick, oc)];
         seg(pts, role === 'L' ? '--dimL' : role === 'W' ? '--dimW' : '--dimT');
         const net = role === 'L' ? p.L : role === 'W' ? p.Wd : p.T, cut = role === 'L' ? p.cL : role === 'W' ? p.cW : p.T;
-        const txt = `<em>${role === 'L' ? 'Boy' : role === 'W' ? 'En' : 'Kal.'}</em>${fmt(net)}${Math.abs(cut - net) > .05 ? ` <em>· kesim ${fmt(cut)}</em>` : ''}`;
-        this.labels.push({pos: p0.clone().add(p1).multiplyScalar(.5), html: txt, cls: role});
+        const txt = `<em>${role === 'L' ? 'Boy' : role === 'W' ? 'En' : 'Kal.'}</em>${fmt(cut)}${Math.abs(cut - net) > .05 ? ` <em>(bitmiş ${fmt(net)})</em>` : ''}`;
+        this.labels.push({pos: p0.clone().add(p1).multiplyScalar(.5), html: txt, cls: role + ' big'});
       }
-    } else if (this.dims && this.cab && !this.sel) {
+      this.labels.push({pos: selM.localToWorld(new T.Vector3(hh[0] * .35, -hh[1] - off * 2.6, 0)), html: `${p.name}${p.sub ? ' · ' + p.sub : ''}`, cls: 'pn'});
+    } else if (this.dims && this.cab && !this.sel && !dt) {
       const c = this.cab, fd = this.R && this.R.dims ? this.R.dims.fdepth : c.D, o = Math.max(.05, this.orb.r * .02), tk = o * .5;
       const V3 = (x, y, z) => new T.Vector3(x, y, z), W = c.W * MM, H = c.H * MM, D = fd * MM;
       const ex = this.exp * .3;
@@ -266,11 +362,14 @@ const V = {
   bindEvents(cv) {
     const ptr = new Map(); let moved = 0, last = null, pinch = null;
     cv.addEventListener('contextmenu', e => e.preventDefault());
-    cv.addEventListener('pointerdown', e => { const hn = $('#hint3d'); if (hn) hn.hidden = true; cv.setPointerCapture(e.pointerId); ptr.set(e.pointerId, {x: e.clientX, y: e.clientY}); moved = 0; last = {x: e.clientX, y: e.clientY, b: e.button, sh: e.shiftKey || e.ctrlKey || e.metaKey}; pinch = null; });
+    cv.addEventListener('pointerdown', e => { const hn = $('#hint3d'); if (hn) hn.hidden = true; cv.setPointerCapture(e.pointerId); ptr.set(e.pointerId, {x: e.clientX, y: e.clientY}); moved = 0; last = {x: e.clientX, y: e.clientY, b: e.button, sh: e.shiftKey || e.ctrlKey || e.metaKey, piece: e.button === 0 && ptr.size === 1 && this.ghostHit(e.clientX, e.clientY)}; pinch = null; this.camA = null; if (last.piece) cv.style.cursor = 'grabbing'; });
     cv.addEventListener('pointermove', e => {
       const o = this.orb;
       if (!ptr.has(e.pointerId)) {
-        if (e.pointerType === 'mouse' && this.ready && this.cab) { const id = this.pick(e.clientX, e.clientY); if (id !== this.hover) { this.hover = id; cv.style.cursor = id ? 'pointer' : ''; this.applyState(); this.req(); } }
+        if (e.pointerType === 'mouse' && this.ready && this.cab) {
+          if (this.ghostHit(e.clientX, e.clientY)) { cv.style.cursor = 'grab'; if (this.hover) { this.hover = null; this.applyState(); this.req(); } return; }
+          const id = this.pick(e.clientX, e.clientY); if (id !== this.hover) { this.hover = id; this.applyState(); this.req(); } cv.style.cursor = id ? 'pointer' : '';
+        }
         return;
       }
       const pr = ptr.get(e.pointerId), dx = e.clientX - pr.x, dy = e.clientY - pr.y;
@@ -279,19 +378,21 @@ const V = {
         const [a, b] = [...ptr.values()], d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
         if (pinch) { o.r = clamp(o.r * pinch.d / Math.max(d, 1), .2, 30); this.pan(mx - pinch.mx, my - pinch.my); }
         pinch = {d, mx, my};
-      } else if (last && (last.b === 2 || last.b === 1 || last.sh)) this.pan(dx, dy);
+      } else if (last && last.piece && this.det) { const d = this.det; d.yawT += dx * .012; d.pitchT = clamp(d.pitchT + dy * .01, -1.6, 1.6); d.yaw = d.yawT; d.pitch = d.pitchT; }
+      else if (last && (last.b === 2 || last.b === 1 || last.sh)) this.pan(dx, dy);
       else { o.th -= dx * .008; o.ph = clamp(o.ph - dy * .008, .03, Math.PI - .03); }
       this.req();
     });
     const up = e => {
       if (!ptr.has(e.pointerId)) return;
       ptr.delete(e.pointerId);
+      if (last && last.piece) { cv.style.cursor = 'grab'; if (!ptr.size) last = null; return; }
       if (!ptr.size && moved < 6 && last && last.b === 0 && this.ready) { const id = this.pick(e.clientX, e.clientY); this.onPick && this.onPick(id); }
       if (ptr.size < 2) pinch = null;
     };
     cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
     cv.addEventListener('pointerleave', () => { if (this.hover) { this.hover = null; this.applyState(); this.req(); } });
-    cv.addEventListener('wheel', e => { e.preventDefault(); this.orb.r = clamp(this.orb.r * Math.exp(e.deltaY * .0012), .2, 30); this.req(); }, {passive: false});
+    cv.addEventListener('wheel', e => { e.preventDefault(); this.camA = null; this.orb.r = clamp(this.orb.r * Math.exp(e.deltaY * .0012), .2, 30); this.req(); }, {passive: false});
     cv.addEventListener('dblclick', e => { const id = this.pick(e.clientX, e.clientY), m = id && this.byId.get(id); if (m) { const v = new this.T.Vector3(); m.getWorldPosition(v); Object.assign(this.orb, {tx: v.x, ty: v.y, tz: v.z}); this.req(); } });
   },
   pan(dx, dy) {
