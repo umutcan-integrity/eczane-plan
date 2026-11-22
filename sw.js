@@ -1,5 +1,5 @@
 /* Eczane Plan — çevrimdışı çalışma için önbellek */
-const CACHE = 'eczplan-4a692ec1a0';
+const CACHE = 'eczplan-1771474281';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './vendor/three.module.min.js',
   './dolap/', './dolap/icon.svg', './dolap/vendor/three.module.min.js'];
 

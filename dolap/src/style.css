@@ -115,7 +115,7 @@ a{color:inherit}
 .fld>small{font-size:11.5px;color:var(--faint);line-height:1.3}
 .inpw{position:relative;display:flex;align-items:center}
 .inpw i{position:absolute;right:10px;font-style:normal;font-size:12px;color:var(--faint);pointer-events:none}
-.inp{width:100%;min-height:40px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);padding:0 34px 0 11px;font-size:15px;font-variant-numeric:tabular-nums}
+.inp{width:100%;min-height:44px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--surface);padding:0 34px 0 12px;font-size:16px;font-variant-numeric:tabular-nums}
 .inp.txt{padding-right:11px}
 .inp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .inp.bad{border-color:var(--danger);box-shadow:0 0 0 3px var(--danger-soft)}
@@ -394,3 +394,128 @@ dialog.modal::backdrop{background:rgba(10,15,13,.42);backdrop-filter:blur(2px)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 @media (max-width:1100px){.hint3d{display:none}}
+
+/* ---------- kolay kullanım: kartlar, büyük düğmeler ---------- */
+.btn.big{min-height:50px;font-size:16px;padding:0 20px;border-radius:var(--r)}
+.btn:disabled{opacity:.45;cursor:default}
+.inp.big{min-height:56px;font-size:22px;font-weight:700;padding-left:16px;padding-right:44px}
+.inp.big+i{font-size:14px;right:14px}
+.inp.txt.big{font-size:18px;font-weight:600;padding-right:16px}
+.step.big{height:50px}
+.step.big button{width:50px;font-size:24px}
+.step.big b{min-width:44px;font-size:20px}
+.step button:disabled{opacity:.3;cursor:default}
+.chk.big{font-size:15px;min-height:44px}
+.chk.big input{width:22px;height:22px}
+.chips button{min-height:38px;padding:5px 14px;font-size:14px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.tiles button{position:relative;border:1.5px solid var(--line-2);background:var(--surface);border-radius:var(--r);padding:12px 8px 10px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;transition:border-color .12s,background .12s,transform .12s;color:var(--ink)}
+.tiles button:hover{border-color:var(--accent)}
+.tiles button:active{transform:scale(.98)}
+.tiles button.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1.5px var(--accent) inset}
+.tiles button svg{width:52px;height:46px;color:var(--accent)}
+.tiles button b{font-size:14.5px;line-height:1.2}
+.tiles button small{font-size:12px;color:var(--muted);line-height:1.3}
+.tiles button em{position:absolute;top:6px;right:6px;font-style:normal;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:2px 7px}
+.tiles.sm{grid-template-columns:repeat(5,1fr);gap:6px}
+.tiles.sm button{padding:8px 2px 7px;gap:3px;border-radius:var(--r-sm)}
+.tiles.sm button svg{width:34px;height:30px}
+.tiles.sm button b{font-size:12px}
+.tiles.mini4{grid-template-columns:repeat(4,1fr);gap:6px}
+.tiles.mini4 button{padding:7px 2px;border-radius:var(--r-sm);gap:2px}
+.tiles.mini4 button svg{width:34px;height:28px}
+.tiles.mini4 button b{font-size:12.5px}
+.tiles.mini{grid-template-columns:repeat(3,1fr)}
+.tiles.mini button{padding:12px 4px}
+.tiles.mini button b{font-size:17px}
+.tiles.big{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tiles.big button{padding:14px 10px 12px;gap:6px}
+.tiles.big button svg{width:64px;height:76px;color:var(--accent)}
+.tiles.big2{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.tiles.big2 button svg{width:64px;height:54px}
+.tiles.big4{grid-template-columns:repeat(4,1fr);gap:10px}
+.tiles.big4 button svg{width:64px;height:56px}
+.tiles.big4 button b{font-size:16px}
+.tiles.big svg[viewBox]{color:var(--ink)}
+.sec .tiles.sm button.on svg{color:var(--accent)}
+.cabhead{display:flex;flex-direction:column;gap:10px;padding:6px 0 12px}
+.cabhead .inp.nm{font-size:17px;font-weight:700;padding-right:12px}
+.subh{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:8px 0 -4px;padding-top:10px;border-top:1px dashed var(--line)}
+.subh:first-child{border-top:0;padding-top:0;margin-top:0}
+.empty-side{border:1.5px dashed var(--line-2);border-radius:var(--r);padding:22px 16px;text-align:center;display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.empty-side b{font-size:16px}
+.empty-side p{margin:0 0 6px;color:var(--muted);font-size:13.5px}
+.empty-st{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:30px 20px;text-align:center}
+.empty-st svg{width:120px;height:120px;color:var(--accent);opacity:.85}
+.empty-st h2{margin:4px 0 0;font-size:24px}
+.empty-st p{margin:0 0 10px;color:var(--muted);max-width:420px}
+.cab .ic{color:var(--ink)}
+
+/* ---------- sihirbaz ---------- */
+.wiz{position:fixed;inset:0;z-index:100;background:rgba(10,15,13,.45);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px}
+body.wiz-on{overflow:hidden}
+.wiz-card{background:var(--surface);color:var(--ink);border-radius:22px;box-shadow:var(--shadow-lg);width:min(980px,100%);height:min(720px,100%);display:flex;flex-direction:column;overflow:hidden}
+.wiz-head{display:flex;align-items:center;gap:10px;padding:14px 16px 6px 22px}
+.wiz-head div{flex:1;display:flex;flex-direction:column}
+.wiz-head b{font-size:17px}
+.wiz-head small{color:var(--muted);font-size:12.5px}
+.wiz-steps{display:flex;gap:4px;padding:6px 18px 10px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line)}
+.wiz-steps::-webkit-scrollbar{display:none}
+.wiz-steps button{flex:1;min-width:66px;display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:transparent;padding:4px 2px;color:var(--muted);font-size:12px;font-weight:650;border-radius:10px}
+.wiz-steps button i{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:13px;background:var(--surface-3);color:var(--muted);border:2px solid transparent}
+.wiz-steps button.done i{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.wiz-steps button.on{color:var(--ink)}
+.wiz-steps button.on i{background:var(--accent);color:var(--accent-ink)}
+.wiz-steps button:disabled{opacity:.45;cursor:default}
+.wiz-body{flex:1;overflow:auto;padding:18px 22px 24px;overscroll-behavior:contain}
+.wiz-q h2{margin:0;font-size:24px;letter-spacing:-.01em}
+.wiz-q p{margin:4px 0 16px;color:var(--muted)}
+.wiz-cols{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:22px;align-items:start}
+.wiz-cols:has(> :only-child){grid-template-columns:1fr}
+.wiz-main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.wiz-pv{position:sticky;top:0;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:8px}
+.wiz-pv svg{width:100%;height:auto;max-height:340px}
+.pv-info{text-align:center;font-weight:650;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.wiz-foot{display:flex;align-items:center;gap:10px;padding:12px 18px;padding-bottom:max(12px,env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--surface)}
+.wiz-foot .btn.big{min-width:120px}
+.dimf{display:flex;flex-direction:column;gap:8px}
+.chips.sugg button{min-height:34px;font-size:13px;padding:4px 12px;font-variant-numeric:tabular-nums}
+.sw.big button{width:36px;height:36px}
+.tip.big{font-size:15px;color:var(--ink)}
+/* temalı ön görünüş */
+.pvw .pv-b{fill:var(--surface);stroke:var(--ink)}
+.pvw .pv-f{fill:var(--accent);fill-opacity:.1;stroke:var(--accent)}
+.pvw .pv-h{stroke:var(--accent);opacity:.35}
+.pvw .pv-k{stroke:var(--ink)}
+.pvw .pv-r{stroke:var(--muted)}
+.pvw .pv-l{fill:var(--ink)}
+.pvw .pv-x{stroke:var(--faint)}
+.pvw .pv-d{stroke:var(--dimL)}
+.pvw .pv-t{fill:var(--dimL);font-weight:700}
+@media (max-width:760px){
+  .wiz{padding:0;background:var(--surface)}
+  .wiz-card{border-radius:0;height:100%;width:100%;box-shadow:none}
+  .wiz-head{padding:10px 10px 4px 16px;padding-top:max(10px,env(safe-area-inset-top))}
+  .wiz-steps{padding:4px 10px 8px}
+  .wiz-steps button{min-width:44px;font-size:10.5px}
+  .wiz-steps button i{width:26px;height:26px}
+  .wiz-body{padding:14px 14px 20px}
+  .wiz-q h2{font-size:21px}
+  .wiz-q p{margin-bottom:12px;font-size:13.5px}
+  .wiz-cols{grid-template-columns:1fr;gap:14px}
+  .wiz-pv{order:-1;position:static;flex-direction:row;align-items:center;padding:8px 10px}
+  .wiz-pv svg{width:96px;max-height:110px;flex:none}
+  .wiz-pv .pv-info{text-align:left;flex:1}
+  .wiz-pv .iss{display:none}
+  .tiles.big,.tiles.big2{grid-template-columns:1fr 1fr}
+  .tiles.big4{grid-template-columns:1fr 1fr}
+  .tiles.big button svg{width:56px;height:64px}
+  .wiz-foot .btn.big{min-width:0;flex:1}
+  .wiz-foot .grow{display:none}
+  .wiz-foot .btn.ghost{display:none}
+}
+:root[data-glass] .wiz-card{background:var(--glass),rgba(16,24,44,.78);border:1px solid var(--line);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)}
+:root[data-glass] .wiz-foot{background:transparent}
+:root[data-glass] :is(.tiles button,.wiz-pv){background:rgba(255,255,255,.06)}
+:root[data-glass] .tiles button.on{background:color-mix(in srgb,var(--accent) 22%,transparent)}
+@media (max-width:760px){:root[data-glass] .wiz{background:var(--bg)}}

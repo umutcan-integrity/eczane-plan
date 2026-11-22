@@ -12,14 +12,14 @@ const A = {
     this.job = normalizeJob(job); this.sel = null; this.undo = []; this.redo = [];
     this.recalc(); UI.cabs(); UI.form(); UI.pcard(); this.views(true); this.title(); this.saved();
   },
-  recalc() { this.R = calcCab(this.cab); },
+  recalc() { this.R = this.cab ? calcCab(this.cab) : null; },
   change(fn, o = {}) {
     const now = Date.now();
     if (!(o.key && this._coal && this._coal.key === o.key && now - this._coal.t < 1000)) { this.undo.push(JSON.stringify(this.job)); if (this.undo.length > 100) this.undo.shift(); this.redo = []; }
     this._coal = o.key ? {key: o.key, t: now} : null;
     fn();
     this.recalc();
-    if (this.sel && !this.R.parts.some(p => p.id === this.sel)) this.sel = null;
+    if (this.sel && !(this.R && this.R.parts.some(p => p.id === this.sel))) this.sel = null;
     if (o.full) UI.form(); else UI.sum();
     UI.cabs(); UI.pcard(); this.views(o.fit); this.title();
     this.dirty = true; this.saved(); this.saveSoon();
@@ -28,7 +28,7 @@ const A = {
     const cur = this.job.cur;
     this.job = normalizeJob(JSON.parse(snap));
     if (this.job.cabs.some(c => c.id === cur)) this.job.cur = cur;
-    this.recalc(); if (this.sel && !this.R.parts.some(p => p.id === this.sel)) this.sel = null;
+    this.recalc(); if (this.sel && !(this.R && this.R.parts.some(p => p.id === this.sel))) this.sel = null;
     UI.cabs(); UI.form(); UI.pcard(); this.views(); this.title();
     this.dirty = true; this.saved(); this.saveSoon();
   },
@@ -51,9 +51,9 @@ const A = {
     toast('Dolap çoğaltıldı');
   },
   async delCab() {
-    if (this.job.cabs.length < 2) return;
+    if (!this.cab) return;
     if (!await Modal.confirm(`“${this.cab.name}” silinsin mi?`, 'Sil', true)) return;
-    this.change(() => { const i = this.job.cabs.indexOf(this.cab); this.job.cabs.splice(i, 1); this.job.cur = this.job.cabs[Math.max(0, i - 1)].id; this.sel = null; }, {full: true, fit: true});
+    this.change(() => { const i = this.job.cabs.indexOf(this.cab); this.job.cabs.splice(i, 1); const nx = this.job.cabs[Math.max(0, i - 1)]; this.job.cur = nx ? nx.id : null; this.sel = null; }, {full: true, fit: true});
   },
   async applyAll() {
     if (!await Modal.confirm('Gövde kalınlığı, birleşim, arkalık, kapak, çekmece rayı ve kenar bandı ayarları diğer tüm dolaplara kopyalansın mı? (Ölçüler, baza ve iç düzen değişmez.)', 'Uygula')) return;
@@ -62,8 +62,8 @@ const A = {
     toast('Ayarlar tüm dolaplara uygulandı');
   },
   pickRef(refs) {
-    const mine = refs.find(r => r.cab === this.cab.id), r = mine || refs[0]; if (!r) return;
-    if (r.cab !== this.cab.id) this.setCab(r.cab);
+    const mine = this.cab && refs.find(r => r.cab === this.cab.id), r = mine || refs[0]; if (!r) return;
+    if (!this.cab || r.cab !== this.cab.id) this.setCab(r.cab);
     UI.selectPart(r.id, {show: true});
   },
 
@@ -71,12 +71,14 @@ const A = {
   show(v) {
     if (this.mobile()) { this.m = v; $('#app').dataset.m = v; for (const b of $$('#mtabs button')) b.classList.toggle('on', b.dataset.v === v); }
     if (v !== 'form') { this.view = v; Settings.set('view', v); for (const b of $$('#viewSeg button')) b.classList.toggle('on', b.dataset.v === v); }
-    $('#v3d').hidden = this.view !== '3d'; $('#vcut').hidden = this.view !== 'cut'; $('#vnest').hidden = this.view !== 'nest';
     this.views();
   },
   views(fit) {
-    const v = this.visible();
+    const v = this.visible(), none = !this.cab;
     if (fit) this._fit = true;
+    $('#empty').hidden = !none || !v;
+    if (none) { $('#v3d').hidden = $('#vcut').hidden = $('#vnest').hidden = true; return; }
+    $('#v3d').hidden = this.view !== '3d'; $('#vcut').hidden = this.view !== 'cut'; $('#vnest').hidden = this.view !== 'nest';
     if (v === '3d') {
       if (!V.ready) { V.init().then(() => { V.onPick = id => UI.selectPart(id); UI.tools(); this.views(true); }).catch(() => {}); return; }
       V.resize(); V.build(this.cab, this.R, this.job.mats, this._fit); this._fit = false;
@@ -106,7 +108,7 @@ const A = {
   openJob(id) { this.saveNow(); const j = Store.load(id); if (!j) { toast('İş açılamadı', 'err'); return; } Store.set('last', id); this.load(j); toast(`“${j.name}” açıldı`); },
   async newJobAsk() {
     const name = await Modal.prompt('Yeni iş', 'Yeni iş', 'İş / müşteri adı'); if (!name) return;
-    this.saveNow(); const j = newJob(name); Store.save(j); this.load(j); toast('Yeni iş açıldı');
+    this.saveNow(); const j = newJob(name); Store.save(j); this.load(j); Wiz.open('new');
   },
   async rename() { const n = await Modal.prompt('İşi yeniden adlandır', this.job.name, 'İş / müşteri adı'); if (!n) return; this.change(() => { this.job.name = n; }); },
   exportJson() { this.saveNow(); download(fileSafe(this.job.name) + '.dolap.json', JSON.stringify(Object.assign({app: 'dolap-tasarimi', v: 1}, this.job), null, 1), 'application/json'); toast('JSON indirildi'); },
@@ -136,10 +138,10 @@ const A = {
   },
   help() {
     Modal.open({title: 'Dolap Tasarımı', wide: true, body: h('div', {class: 'help'},
-      h('h4', null, '1 · Ölçüleri gir'),
-      h('p', null, 'Sol panelde dolabın dış genişlik, yükseklik ve derinliğini (mm) gir. Gövde kalınlığı, birleşim şekli (yanlar tam boy / üst tabla üstte / tablalar tam), üst (tabla ya da kuşak), baza, arkalık ve kapak tipini seç. Her değişiklikte tüm parçalar anında yeniden hesaplanır.'),
-      h('h4', null, '2 · İç düzen'),
-      h('p', null, 'Bölme sayısını artırınca ara dikmeler eklenir. Her bölme için raf sayısı (hareketli / sabit), çekmece, askı borusu ve kapak (otomatik / yok / tek / çift) seçilir. Çekmece önü yüksekliği boş bırakılırsa çekmeceler bölmeyi eşit doldurur; yazılırsa alta çekmece, üstüne ara tabla + raf/kapak gelir.'),
+      h('h4', null, '1 · Dolap oluştur'),
+      h('p', null, '“Dolap oluştur”a bas. Tip, ölçü, bölme sayısı, bölmelerin içi, kapak, alt kısım ve malzeme sırayla sorulur. Her adımda “Geri” ile ya da üstteki adım numaralarına dokunarak geri dönüp düzeltebilirsin; sağdaki çizim anında güncellenir.'),
+      h('h4', null, '2 · Düzelt'),
+      h('p', null, '“Soru soru düzenle” ile aynı adımları mevcut değerlerle yeniden açabilir ya da sol paneldeki ölçü, iç düzen ve alt kısım kutularını doğrudan değiştirebilirsin. Kalınlık, arkalık kanalı, kapak payları ve kenar bandı gibi teknik ayarlar “Usta ayarları” bölümündedir.'),
       h('h4', null, '3 · Kontrol et'),
       h('p', null, '“Hesap özeti” iç ölçüleri, montaj kontrolünü (parçalar birleşince dış ölçünün tuttuğunu) ve çakışma kontrolünü gösterir. 3B görünümde parçaya dokun: üstünde boy / en / kalınlık çizgileri ve kartta formülüyle kesim ölçüsü görünür. Gerekirse kesim ölçüsünü elle düzelt.'),
       h('h4', null, '4 · Kesime gönder'),
@@ -160,7 +162,7 @@ const Theme = {
     const mode = glass ? 'dark' : m0 === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : m0;
     r.dataset.mode = mode; if (glass) r.dataset.glass = '1'; else delete r.dataset.glass;
     const meta = $('meta[name=theme-color]'); if (meta) meta.content = glass ? '#0A1020' : mode === 'dark' ? '#1B201E' : '#FFFFFF';
-    if (V.ready && A.job) { V.build(A.cab, A.R, A.job.mats); }
+    if (V.ready && A.job && A.cab) { V.build(A.cab, A.R, A.job.mats); }
   },
 };
 
@@ -169,6 +171,7 @@ const Theme = {
   Settings.load(); Theme.apply();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (Settings.v.mode === 'auto') Theme.apply(); });
   let job = Store.load(Store.get('last', '')) || (Store.list()[0] && Store.load(Store.list()[0].id));
+  const first = !job;
   if (!job) { job = newJob('İlk iş'); Store.save(job); }
   A.view = ['3d', 'cut', 'nest'].includes(Settings.v.view) ? Settings.v.view : '3d';
   A.load(job);
@@ -180,6 +183,8 @@ const Theme = {
   $('#btnJobs').onclick = () => A.jobs();
   $('#btnMenu').onclick = e => A.menu(e.currentTarget);
   $('#jobName').onclick = () => A.rename();
+  $('#emptyNew').onclick = () => Wiz.open('new');
+  if (first) Wiz.open('new');
   addEventListener('keydown', e => {
     const tag = (e.target.tagName || '').toLowerCase(), typing = tag === 'input' || tag === 'textarea' || tag === 'select';
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
@@ -188,6 +193,9 @@ const Theme = {
       else if (k === 'y' && !typing) { e.preventDefault(); A.doRedo(); }
       else if (k === 's') { e.preventDefault(); A.dirty = true; A.saveNow(); toast('Kaydedildi'); }
       else if (k === 'p') { e.preventDefault(); UI.print(); }
+    } else if (!$('#wiz').hidden && !$('#modal').open) {
+      if (e.key === 'Escape') Wiz.close();
+      else if (e.key === 'Enter' && tag !== 'textarea' && tag !== 'button') { e.preventDefault(); Wiz.next(); }
     } else if (e.key === 'Escape' && A.sel && !$('#modal').open) UI.selectPart(null);
   });
   let wasMobile = A.mobile();

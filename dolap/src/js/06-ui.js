@@ -62,9 +62,9 @@ const UI = {
   cabs() {
     const box = $('#cabs'), J = A.job; box.innerHTML = '';
     box.append(h('div', {class: 'cabs-head'}, h('b', null, `Dolaplar · ${J.cabs.length}`),
-      h('button', {class: 'btn sm', type: 'button', onclick: () => UI.addCab()}, icon(IC.plus), 'Dolap ekle')));
+      h('button', {class: 'btn sm primary', type: 'button', onclick: () => Wiz.open('new')}, icon(IC.plus), 'Dolap oluştur')));
     for (const c of J.cabs) {
-      const R = c.id === A.cab.id ? A.R : calcCab(c);
+      const R = A.cab && c.id === A.cab.id ? A.R : calcCab(c);
       const bad = R.warn.some(w => w.lvl === 'err') || R.check.some(w => w.lvl === 'err'), wr = R.warn.some(w => w.lvl === 'warn');
       const ic = R.parts.length ? frontSVG(c, R, {mini: true, cls: 'ic'}) : pic(BASE_IC.none);
       ic.classList.add('ic');
@@ -74,93 +74,78 @@ const UI = {
         h('span', {class: 'qty', title: 'Adet'}, `× ${c.qty}`)));
     }
   },
-  addCab() {
-    const body = h('div', {class: 'presets'}, PRESETS.map(p => {
-      const c = newCab(p.k), R = calcCab(c), ic = frontSVG(c, R, {mini: true});
-      return h('button', {type: 'button', onclick: () => { Modal.close(p.k); }}, ic, h('div', null, h('b', null, p.n), h('small', null, `${p.d} · ${c.W}×${c.H}×${c.D}`)));
-    }));
-    Modal.open({title: 'Dolap ekle', body: [h('p', null, 'Bir şablonla başla; tüm ölçüler ve iç düzen sonradan değiştirilebilir.'), body], wide: true}).then(k => {
-      if (!k) return;
-      const c = newCab(k, A.job), cur = A.cab;
-      if (cur) for (const key of ['t', 'backT', 'frontT', 'drawerT', 'bandBody', 'bandFront', 'bandDrawer', 'deduct', 'overlay', 'gap', 'edge', 'railGap', 'railType', 'back', 'grooveD', 'grooveO', 'backTol']) c[key] = cur[key];
-      A.change(() => { A.job.cabs.push(c); A.job.cur = c.id; A.sel = null; }, {full: true, fit: true});
-      toast(`${c.name} eklendi`);
-    });
-  },
-
-  /* ---------- form ---------- */
+  /* ---------- form (düzenleme) ---------- */
   form() {
     const c = A.cab, R = A.R, F = $('#form'), sc = $('#side').scrollTop;
     F.innerHTML = '';
+    if (!c) {
+      F.append(h('div', {class: 'empty-side'}, h('b', null, 'Bu işte henüz dolap yok'), h('p', null, 'Dolap oluştur’a bas; tipini, ölçüsünü ve içini adım adım soracağız.'),
+        h('button', {class: 'btn primary big full', type: 'button', onclick: () => Wiz.open('new')}, icon(IC.plus), 'Dolap oluştur')));
+      return;
+    }
+    const hasDrw = c.sections.some(s => s.drawers), hasDoor = R.parts.some(p => p.kind === 'door' || p.kind === 'dfront');
+    const sub = (t, ...kids) => [h('div', {class: 'subh'}, t), ...kids];
     F.append(
-      UI.grp('cab', 'Dolap', c.name,
-        h('label', {class: 'fld'}, h('span', null, 'Dolap adı'), h('input', {class: 'inp txt', value: c.name, maxlength: 60, oninput: e => A.change(() => { A.cab.name = e.target.value || 'Dolap'; }, {key: 'name'})})),
-        UI.step('Adet (aynı dolaptan)', 'qty', 1, 99)),
-      UI.grp('dims', 'Dış ölçüler', `${fmt(c.W)} × ${fmt(c.H)} × ${fmt(c.D)}`,
+      h('div', {class: 'cabhead'},
+        h('input', {class: 'inp txt nm', value: c.name, maxlength: 60, 'aria-label': 'Dolap adı', oninput: e => A.change(() => { A.cab.name = e.target.value || 'Dolap'; }, {key: 'name'})}),
+        UI.step('Adet', 'qty', 1, 99),
+        h('button', {class: 'btn primary big full', type: 'button', onclick: () => Wiz.open('edit', A.cab)}, icon(IC.edit), 'Soru soru düzenle')),
+      UI.grp('dims', 'Ölçüler', `${fmt(c.W)} × ${fmt(c.H)} × ${fmt(c.D)}`,
         h('div', {class: 'row r3'}, UI.num('Genişlik', 'W', {min: 100, max: 6000}), UI.num('Yükseklik', 'H', {min: 100, max: 4000}), UI.num('Derinlik', 'D', {min: 100, max: 1500})),
-        h('p', {class: 'tip'}, 'Ölçüler mm. Yükseklik ayak / baza dahil toplam yüksekliktir. Kutuya “600-18” gibi hesap da yazabilirsin.')),
+        h('p', {class: 'tip'}, 'mm olarak. Yükseklik ayak / baza dahil.')),
       h('div', {class: 'sum', id: 'sum'}),
-      UI.grp('body', 'Gövde', `${fmt(c.t)} mm · ${({sides: 'yanlar tam boy', top: 'üst tabla üstte', over: 'tablalar tam'})[c.build]}`,
-        h('div', {class: 'row'}, UI.num('Gövde kalınlığı', 't', {min: 5, max: 50, full: true}), h('div', {class: 'fld'}, h('span', null, 'Hızlı seç'), UI.chips(null, 't', [[16, '16'], [18, '18'], [25, '25']]))),
-        UI.chips('Birleşim', 'build', [['sides', 'Yanlar tam boy', BUILD_IC.sides, 'Üst ve alt tabla yanların arasında'], ['top', 'Üst tabla üstte', BUILD_IC.top, 'Üst tabla yanların üstüne oturur, alt tabla arada'], ['over', 'Tablalar tam', BUILD_IC.over, 'Alt ve üst tabla tam genişlik, yanlar arada']], {blocks: true}),
-        UI.chips('Üst', 'top', [['panel', 'Üst tabla'], ['rails', 'Kuşak (ön + arka)'], ['none', 'Açık']], {hint: c.top === 'rails' ? 'Tezgâh altı dolaplarda üst tabla yerine iki kuşak kullanılır.' : null}),
-        c.top === 'rails' ? UI.num('Kuşak eni', 'railW', {min: 40, max: 300}) : null),
-      UI.grp('base', 'Baza / ayak', ({none: 'yok', legs: 'ayak + baza', plinth: 'yanlar yere iner', frame: 'baza kasası', wall: 'duvara asma'})[c.base] + (['legs', 'plinth', 'frame'].includes(c.base) ? ` · ${fmt(c.baseH)} mm` : ''),
-        UI.chips(null, 'base', [['none', 'Yok', BASE_IC.none], ['legs', 'Ayak + baza', BASE_IC.legs], ['plinth', 'Yanlar yere iner', BASE_IC.plinth], ['frame', 'Baza kasası', BASE_IC.frame], ['wall', 'Duvara asma', BASE_IC.wall]], {blocks: true}),
-        ['legs', 'plinth', 'frame'].includes(c.base) ? h('div', {class: 'row'}, UI.num(c.base === 'legs' ? 'Ayak yüksekliği' : 'Baza yüksekliği', 'baseH', {min: 20, max: 400}), UI.num('Bazanın geri çekmesi', 'plinthSet', {min: 0, max: 200})) : null),
-      UI.grp('back', 'Arkalık', ({groove: 'kanallı', nailed: 'çakma', inset: 'gömme', none: 'yok'})[c.back] + (c.back !== 'none' ? ` · ${fmt(c.backT)} mm` : ''),
-        UI.chips(null, 'back', [['groove', 'Kanallı'], ['nailed', 'Arkadan çakma'], ['inset', 'Gömme (tam kalınlık)'], ['none', 'Yok']]),
-        c.back !== 'none' ? h('div', {class: 'row'}, UI.num('Arkalık kalınlığı', 'backT', {min: 2, max: 30, full: true}), c.back !== 'inset' ? UI.num(c.back === 'groove' ? 'Kanal boşluk payı' : 'Kenardan içeri pay', 'backTol', {min: 0, max: 10, hint: 'her kenarda'}) : h('div')) : null,
-        c.back === 'groove' ? h('div', {class: 'row'}, UI.num('Kanal derinliği', 'grooveD', {min: 2, max: 20}), UI.num('Kanalın arkadan mesafesi', 'grooveO', {min: 0, max: 80})) : null,
-        h('p', {class: 'tip'}, 'Çekmece tabanları da arkalık malzemesinden (aynı kalınlıkta) hesaplanır.')),
-      UI.grp('secs', 'Bölmeler ve iç düzen', `${c.sections.length} bölme`, UI.secs()),
-      UI.grp('front', 'Kapak, çekmece, raf ayarları', `${({full: 'tam bindirme', half: 'yarım bindirme', inset: 'gömme'})[c.overlay]} · ${fmt(c.frontT)} mm`,
-        UI.chips('Kapak tipi', 'overlay', [['full', 'Tam bindirme'], ['half', 'Yarım bindirme'], ['inset', 'Gömme kapak']], {hint: c.overlay === 'half' ? 'Yan yana dolaplarda ortak yanı paylaşan kapaklar için: dış kenarda yanın yarısını örter.' : null}),
-        h('div', {class: 'row r3'}, UI.num('Kapak kalınlığı', 'frontT', {min: 3, max: 40, full: true}), UI.num('Kapak arası', 'gap', {min: 0, max: 10}), UI.num('Dış kenar payı', 'edge', {min: 0, max: 10})),
-        h('div', {class: 'row'}, UI.num('Raf yan boşluğu', 'shelfGap', {min: 0, max: 5, hint: 'hareketli raf, her yanda'}), UI.num('Raf geri çekme', 'shelfSet', {min: 0, max: 100, hint: 'hareketli raf, önden'})),
-        c.sections.some(s => s.drawers) ? [
-          UI.chips('Çekmece rayı', 'railType', [['ball', 'Bilyalı'], ['roller', 'Makaralı'], ['hidden', 'Gizli ray']], {set: v => A.change(() => { A.cab.railType = v; A.cab.railGap = v === 'hidden' ? 5 : v === 'roller' ? 12.5 : 13; }, {full: true})}),
-          h('div', {class: 'row'}, UI.num('Ray payı (her yan)', 'railGap', {min: 0, max: 30}), UI.num('Çekmece gövde kal.', 'drawerT', {min: 6, max: 30, full: true}))] : null),
-      UI.grp('band', 'Kenar bandı', `gövde ${fmt(c.bandBody)} · kapak ${fmt(c.bandFront)} mm`,
-        UI.chips('Gövde ön kenarları', 'bandBody', [[0, 'Yok'], [.4, '0,4'], [.8, '0,8'], [1, '1'], [2, '2']]),
-        UI.chips('Kapak / çekmece önü (4 kenar)', 'bandFront', [[0, 'Yok (boyalı)'], [.8, '0,8'], [1, '1'], [2, '2']]),
-        c.sections.some(s => s.drawers) ? UI.chips('Çekmece kutusu üst kenarı', 'bandDrawer', [[0, 'Yok'], [.4, '0,4'], [.8, '0,8'], [1, '1']]) : null,
-        UI.check('Bant kalınlığını kesim ölçüsünden düş', 'deduct'),
-        h('p', {class: 'tip'}, 'Açıkken kesim ölçüsü = bitmiş ölçü − bantlı kenarların bant kalınlığı. Örn. 560 derinlikli yan, 0,8 bantla 559,2 kesilir.')),
-      UI.grp('mats', 'Malzeme ve levha (tüm iş)', `${A.job.mats.body.L}×${A.job.mats.body.W}`, UI.mats()),
+      UI.grp('secs', 'İç düzen', `${c.sections.length} bölme`, UI.secs()),
+      UI.grp('base', 'Alt ve üst', ({none: 'düz', legs: 'ayaklı', plinth: 'bazalı', frame: 'baza kasası', wall: 'duvara asılı'})[c.base] + (['legs', 'plinth', 'frame'].includes(c.base) ? ` · ${fmt(c.baseH)} mm` : ''),
+        Wg.tiles([['legs', 'Ayaklı', BASE_IC.legs], ['plinth', 'Bazalı', BASE_IC.plinth], ['none', 'Düz', BASE_IC.none], ['wall', 'Duvara asılı', BASE_IC.wall]], c.base === 'frame' ? 'plinth' : c.base, v => A.change(() => { A.cab.base = v; }, {full: true}), {cls: 'sm'}),
+        ['legs', 'plinth', 'frame'].includes(c.base) ? UI.num(c.base === 'legs' ? 'Ayak yüksekliği' : 'Baza yüksekliği', 'baseH', {min: 20, max: 400}) : null,
+        UI.chips('Üstü', 'top', [['panel', 'Üst tabla'], ['rails', 'Kuşak (tezgâh altı)'], ['none', 'Açık']])),
+      UI.grp('adv', 'Usta ayarları', 'kalınlık, arkalık, paylar, bant',
+        ...sub('Gövde',
+          h('div', {class: 'row'}, UI.num('Gövde kalınlığı', 't', {min: 5, max: 50, full: true}), h('div', {class: 'fld'}, h('span', null, 'Hızlı seç'), UI.chips(null, 't', [[16, '16'], [18, '18'], [25, '25']]))),
+          UI.chips('Birleşim', 'build', [['sides', 'Yanlar tam boy', BUILD_IC.sides, 'Üst ve alt tabla yanların arasında'], ['top', 'Üst tabla üstte', BUILD_IC.top, 'Üst tabla yanların üstüne oturur, alt tabla arada'], ['over', 'Tablalar tam', BUILD_IC.over, 'Alt ve üst tabla tam genişlik, yanlar arada']], {blocks: true}),
+          c.top === 'rails' ? UI.num('Kuşak eni', 'railW', {min: 40, max: 300}) : null,
+          ['legs', 'plinth', 'frame'].includes(c.base) ? UI.chips('Baza tipi', 'base', [['legs', 'Ayak + klipsli baza'], ['plinth', 'Yanlar yere iner'], ['frame', 'Baza kasası']]) : null,
+          ['legs', 'plinth', 'frame'].includes(c.base) ? UI.num('Bazanın önden geri çekmesi', 'plinthSet', {min: 0, max: 200}) : null),
+        ...sub('Arkalık',
+          UI.chips(null, 'back', [['groove', 'Kanallı'], ['nailed', 'Arkadan çakma'], ['inset', 'Gömme (tam kalınlık)'], ['none', 'Yok']]),
+          c.back !== 'none' ? h('div', {class: 'row'}, UI.num('Arkalık kalınlığı', 'backT', {min: 2, max: 30, full: true}), c.back !== 'inset' ? UI.num(c.back === 'groove' ? 'Kanal boşluk payı' : 'Kenardan içeri pay', 'backTol', {min: 0, max: 10, hint: 'her kenarda'}) : h('div')) : null,
+          c.back === 'groove' ? h('div', {class: 'row'}, UI.num('Kanal derinliği', 'grooveD', {min: 2, max: 20}), UI.num('Kanalın arkadan mesafesi', 'grooveO', {min: 0, max: 80})) : null),
+        ...(hasDoor ? sub('Kapak',
+          UI.chips('Kapak tipi', 'overlay', [['full', 'Tam bindirme'], ['half', 'Yarım bindirme'], ['inset', 'Gömme']], {hint: c.overlay === 'half' ? 'Yan yana dolaplarda: dış kenarda yanın yarısını örter.' : null}),
+          h('div', {class: 'row r3'}, UI.num('Kapak kalınlığı', 'frontT', {min: 3, max: 40, full: true}), UI.num('Kapak arası', 'gap', {min: 0, max: 10}), UI.num('Dış kenar payı', 'edge', {min: 0, max: 10}))) : []),
+        ...sub('Raf',
+          h('div', {class: 'row'}, UI.num('Raf yan boşluğu', 'shelfGap', {min: 0, max: 5, hint: 'hareketli raf, her yanda'}), UI.num('Raf geri çekme', 'shelfSet', {min: 0, max: 100, hint: 'hareketli raf, önden'}))),
+        ...(hasDrw ? sub('Çekmece',
+          UI.chips('Ray', 'railType', [['ball', 'Bilyalı'], ['roller', 'Makaralı'], ['hidden', 'Gizli ray']], {set: v => A.change(() => { A.cab.railType = v; A.cab.railGap = v === 'hidden' ? 5 : v === 'roller' ? 12.5 : 13; }, {full: true})}),
+          h('div', {class: 'row'}, UI.num('Ray payı (her yan)', 'railGap', {min: 0, max: 30}), UI.num('Çekmece gövde kal.', 'drawerT', {min: 6, max: 30, full: true}))) : []),
+        ...sub('Kenar bandı',
+          UI.chips('Gövde ön kenarları', 'bandBody', [[0, 'Yok'], [.4, '0,4'], [.8, '0,8'], [1, '1'], [2, '2']]),
+          hasDoor ? UI.chips('Kapak / çekmece önü (4 kenar)', 'bandFront', [[0, 'Yok (boyalı)'], [.8, '0,8'], [1, '1'], [2, '2']]) : null,
+          hasDrw ? UI.chips('Çekmece kutusu üst kenarı', 'bandDrawer', [[0, 'Yok'], [.4, '0,4'], [.8, '0,8'], [1, '1']]) : null,
+          UI.check('Bant kalınlığını kesim ölçüsünden düş', 'deduct'),
+          h('p', {class: 'tip'}, 'Örn. 560 derinlikli yan, 0,8 bantla 559,2 kesilir.')),
+        A.job.cabs.length > 1 ? h('button', {class: 'btn full', type: 'button', onclick: () => A.applyAll()}, 'Bu ayarları tüm dolaplara uygula') : null),
+      UI.grp('mats', 'Renk, malzeme ve levha', 'tüm iş', UI.mats()),
       h('div', {class: 'row', style: 'margin:14px 0 6px'},
         h('button', {class: 'btn', type: 'button', onclick: () => A.dupCab()}, icon(IC.copy), 'Çoğalt'),
-        h('button', {class: 'btn danger', type: 'button', onclick: () => A.delCab(), disabled: A.job.cabs.length < 2}, icon(IC.trash), 'Sil')),
-      A.job.cabs.length > 1 ? h('button', {class: 'btn full', type: 'button', onclick: () => A.applyAll()}, 'Gövde / bant / kapak ayarlarını tüm dolaplara uygula') : null,
+        h('button', {class: 'btn danger', type: 'button', onclick: () => A.delCab()}, icon(IC.trash), 'Sil')),
     );
     UI.sum();
     $('#side').scrollTop = sc;
   },
   secs() {
-    const c = A.cab, n = c.sections.length, R = A.R, ws = R.dims ? R.dims.widths : [];
+    const c = A.cab, n = c.sections.length, R = A.R;
     const wrap = h('div', {class: 'secs'});
-    wrap.append(h('div', {class: 'lblrow'}, h('span', null, 'Bölme sayısı (ara dikme = bölme − 1)'), h('div', {class: 'step'},
-      h('button', {type: 'button', onclick: () => { if (n > 1) A.change(() => { A.cab.sections.pop(); }, {full: true}); }}, '−'), h('b', null, n),
-      h('button', {type: 'button', onclick: () => { if (n < 12) A.change(() => { const l = A.cab.sections[n - 1]; A.cab.sections.push(Object.assign({}, l, {w: 0, hinge: 'R'})); }, {full: true}); }}, '+'))));
-    c.sections.forEach((s, i) => {
-      const p = `sections.${i}`, fill = s.drawers > 0 && !(s.drawerH > 0);
-      const nDoor = R.secs[i] ? R.secs[i].doors : 0;
-      wrap.append(h('div', {class: 'sec'},
-        h('div', {class: 'sec-h'}, h('b', null, n > 1 ? `Bölme ${i + 1}` : 'İç düzen'), h('small', null, ws[i] ? `iç genişlik ${fmt(ws[i])} mm` : ''),
-          n > 1 ? h('button', {class: 'icon-btn sm', type: 'button', title: 'Bölmeyi sil', onclick: () => A.change(() => { A.cab.sections.splice(i, 1); }, {full: true})}, icon(IC.trash)) : null),
-        n > 1 ? UI.num('Genişlik', p + '.w', {empty: true, min: 0, max: 6000, ph: 'otomatik', auto: i, hint: 'Boş = kalan genişliği eşit paylaş'}) : null,
-        fill ? null : [
-          s.hanger ? null : UI.step('Raf sayısı', p + '.shelves', 0, 20),
-          s.hanger ? UI.check('Askı üstünde şapkalık raf', p + '.shelves') : null,
-          (s.shelves > 0) ? UI.chips(null, p + '.shelfType', [['adj', 'Hareketli raf'], ['fixed', 'Sabit raf']]) : null,
-          UI.check('Askı borusu (elbise)', p + '.hanger'),
-        ],
-        UI.step('Çekmece', p + '.drawers', 0, 10),
-        s.drawers > 0 ? UI.num('Çekmece önü yüksekliği', p + '.drawerH', {empty: true, min: 0, max: 1500, ph: 'tüm bölme, eşit', full: true, hint: 'Boş = çekmeceler bölmeyi doldurur; dolu = alta çekmece, üstüne raf/kapak'}) : null,
-        fill ? null : UI.chips('Kapak', p + '.door', [['auto', 'Otomatik'], ['none', 'Yok'], ['1', 'Tek'], ['2', 'Çift']]),
-        !fill && nDoor === 1 ? UI.chips('Menteşe', p + '.hinge', [['L', 'Solda'], ['R', 'Sağda']]) : null,
-      ));
-    });
+    wrap.append(h('div', {class: 'fld'}, h('span', null, 'Bölme sayısı'), Wg.tiles([1, 2, 3, 4].map(k => [k, k === 1 ? 'Tek' : `${k}`, secsPic(k)]), n, k => A.change(() => {
+      const cur = A.cab.sections;
+      if (k > cur.length) for (let i = cur.length; i < k; i++) cur.push(Object.assign({}, cur[cur.length - 1], {w: 0, hinge: 'R'}));
+      else cur.length = k;
+    }, {full: true}), {cls: 'mini4'})));
+    c.sections.forEach((s, i) => wrap.append(secCard(s, i, n, R, {
+      set: fn => A.change(() => fn(A.cab.sections[i]), {full: true}),
+      soft: (fn, key) => A.change(() => fn(A.cab.sections[i]), {key: 'sec' + key}),
+      del: () => A.change(() => { A.cab.sections.splice(i, 1); }, {full: true}),
+    })));
     return wrap;
   },
   mats() {
@@ -182,14 +167,14 @@ const UI = {
   },
   sum() {
     const el = $('#sum'); if (!el) return;
-    const R = A.R; el.innerHTML = '';
+    const R = A.R; el.innerHTML = ''; if (!R) return;
     el.append(h('h4', null, 'Hesap özeti'));
     if (R.sum.length) el.append(h('div', {class: 'kv'}, R.sum.flatMap(([k, v]) => [h('span', null, k), h('b', null, v)])));
     for (const w of [...R.warn.filter(x => x.lvl === 'err'), ...R.check, ...R.warn.filter(x => x.lvl !== 'err')]) el.append(h('div', {class: 'iss ' + w.lvl}, w.t));
-    const c = A.cab, ds = $('#form details[data-k=dims] summary small'); if (ds) ds.textContent = `${fmt(c.W)} × ${fmt(c.H)} × ${fmt(c.D)}`;
+    const c = A.cab; if (!c) return;
+    const ds = $('#form details[data-k=dims] summary small'); if (ds) ds.textContent = `${fmt(c.W)} × ${fmt(c.H)} × ${fmt(c.D)}`;
     const cs = $('#form details[data-k=cab] summary small'); if (cs) cs.textContent = c.name;
     /* bölme genişliği "otomatik" ipuçları */
-    for (const inp of $$('#form input[data-auto]')) { const i = +inp.dataset.auto, w = R.dims && R.dims.widths[i]; inp.placeholder = w ? `otomatik · ${fmt(w)}` : 'otomatik'; }
     for (const s of $$('#form .sec')) { const i = $$('#form .sec').indexOf(s), w = R.dims && R.dims.widths[i], sm = s.querySelector('.sec-h small'); if (sm) sm.textContent = w ? `iç genişlik ${fmt(w)} mm` : ''; }
   },
 
@@ -214,11 +199,11 @@ const UI = {
     A.sel = id || null;
     if (V.ready) V.select(A.sel);
     UI.pcard();
-    for (const tr of $$('#vcut tr[data-refs]')) tr.classList.toggle('on', !!A.sel && tr.dataset.refs.split(' ').includes(A.cab.id + ':' + A.sel));
+    for (const tr of $$('#vcut tr[data-refs]')) tr.classList.toggle('on', !!A.sel && A.cab && tr.dataset.refs.split(' ').includes(A.cab.id + ':' + A.sel));
     if (o.show && A.sel) A.show('3d');
   },
   pcard() {
-    const el = $('#pcard'), p = A.sel && A.R.parts.find(q => q.id === A.sel);
+    const el = $('#pcard'), p = A.sel && A.R && A.R.parts.find(q => q.id === A.sel);
     if (!p) { el.hidden = true; return; }
     const c = A.cab, m = A.job.mats[p.mat], same = A.R.parts.filter(q => q.name === p.name && q.cL === p.cL && q.cW === p.cW && bandSig(q) === bandSig(p)).length;
     const bandTxt = UI.bandText(p, true);
@@ -286,7 +271,7 @@ const UI = {
   },
 
   /* ---------- kesim listesi ---------- */
-  scopeCabs() { return Settings.v.scope === 'cab' ? [A.cab] : A.job.cabs; },
+  scopeCabs() { return Settings.v.scope === 'cab' ? [A.cab].filter(Boolean) : A.job.cabs; },
   scopeSeg(rerender) {
     const J = A.job;
     return h('div', {class: 'seg sm'}, [['job', `Tüm iş (${J.cabs.reduce((a, c) => a + c.qty, 0)} dolap)`], ['cab', 'Bu dolap']].map(([v, t]) => h('button', {type: 'button', class: Settings.v.scope === v ? 'on' : '', onclick: () => { Settings.set('scope', v); rerender(); }}, t)));
@@ -300,7 +285,7 @@ const UI = {
       h('div', {class: 'ptool'}, h('h2', null, 'Kesim listesi'), UI.scopeSeg(() => UI.cut()),
         h('button', {class: 'btn sm', type: 'button', onclick: () => UI.csv()}, icon(IC.table), 'Excel (CSV)'),
         h('button', {class: 'btn sm primary', type: 'button', onclick: () => UI.print()}, icon(IC.print), 'Yazdır / PDF')),
-      h('p', {class: 'pnote'}, 'Ölçüler mm. Boy = desen (su) yönü. Kalın yazılan kesim ölçüsüdür' + (A.cab.deduct ? ' (bant kalınlığı düşülmüş)' : '') + '; altında bitmiş ölçü görünür. Satıra dokununca parça 3B’de seçilir.'),
+      h('p', {class: 'pnote'}, 'Ölçüler mm. Boy = desen (su) yönü. Kalın yazılan kesim ölçüsüdür' + (A.cab && A.cab.deduct ? ' (bant kalınlığı düşülmüş)' : '') + '; altında bitmiş ölçü görünür. Satıra dokununca parça 3B’de seçilir.'),
       h('div', {class: 'tot'},
         h('div', null, h('span', null, 'Toplam parça'), h('b', null, tot)),
         h('div', null, h('span', null, 'Toplam alan'), h('b', null, fmt2(area) + ' m²')),
@@ -313,7 +298,7 @@ const UI = {
         const refs = r.refs.map(x => x.cab + ':' + x.id).join(' ');
         const cabTxt = [...r.cabs.entries()].map(([nm, q]) => cabs.length > 1 || J.cabs.length > 1 ? `${nm}${r.cabs.size > 1 ? ' ×' + q : ''}` : '').filter(Boolean).join(', ');
         const diff = Math.abs(r.cL - r.L) > .05 || Math.abs(r.cW - r.Wd) > .05;
-        tb.append(h('tr', {'data-refs': refs, class: A.sel && r.refs.some(x => x.cab === A.cab.id && x.id === A.sel) ? 'on' : '', onclick: () => A.pickRef(r.refs)},
+        tb.append(h('tr', {'data-refs': refs, class: A.sel && A.cab && r.refs.some(x => x.cab === A.cab.id && x.id === A.sel) ? 'on' : '', onclick: () => A.pickRef(r.refs)},
           h('td', {class: 'no'}, r.no),
           h('td', {class: r.off ? 'off' : ''}, r.name, r.ovr ? h('span', {class: 'badge', style: 'margin-left:6px'}, 'elle') : null, cabTxt ? h('span', {class: 'sub'}, cabTxt) : null),
           h('td', {class: 'num big' + (r.off ? ' off' : '')}, fmt(r.cL), diff && !r.ovr ? h('span', {class: 'sub'}, fmt(r.L)) : null),
@@ -349,7 +334,7 @@ const UI = {
       const N = nestGroup(g, J), col = (FINISHES[g.m.color] || FINISHES.beyaz)[1];
       const box = h('div', {class: 'sheets'});
       N.sheets.forEach((sh, i) => box.append(h('div', {class: 'sheet'}, h('div', {class: 'sheet-t'}, h('b', null, `Levha ${i + 1}`), h('span', null, `${sh.parts.length} parça · %${Math.round(sh.use * 100)} dolu`)),
-        sheetSVG(N, sh, {onPick: p => A.pickRef(p.row.refs), sel: p => A.sel && p.row.refs.some(x => x.cab === A.cab.id && x.id === A.sel)}))));
+        sheetSVG(N, sh, {onPick: p => A.pickRef(p.row.refs), sel: p => A.sel && A.cab && p.row.refs.some(x => x.cab === A.cab.id && x.id === A.sel)}))));
       inner.append(h('section', {class: 'card mgrp'},
         h('div', {class: 'mgrp-h'}, h('i', {class: 'chipx', style: `background:${col}`}), h('b', null, g.label), h('small', null, `${N.sheets.length} levha ${g.m.L}×${g.m.W} · ortalama doluluk %${Math.round(N.use * 100)}${g.m.grain ? ' · desenli: döndürme yok' : ''}`)),
         N.bad.length ? h('div', {class: 'iss', style: 'margin:10px 16px 0'}, `Sığmayan parça: ${[...new Set(N.bad.map(b => '#' + b.no))].join(', ')}`) : null,

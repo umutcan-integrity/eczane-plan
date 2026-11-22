@@ -318,19 +318,27 @@ function frontSVG(c, R, opt = {}) {
     if (!fronts.length) for (const p of body.filter(q => q.kind === 'shelf' || q.kind === 'divider')) rect(p.box, {fill: 'currentColor', stroke: 'none', opacity: .55});
     return svg;
   }
-  for (const p of body) rect(p.box, {fill: '#e8e4dc', stroke: '#222', 'stroke-width': sw});
-  for (const p of R.parts.filter(q => q.kind === 'dfb' && q.id.endsWith('-F'))) rect(p.box, {fill: 'none', stroke: '#888', 'stroke-width': sw * .7, 'stroke-dasharray': `${sw * 4} ${sw * 3}`});
+  if (opt.theme) svg.classList.add('pvw');
+  for (const x of R.extras.filter(q => q.type === 'leg' && q.z > c.D / 2)) svg.append(sv('rect', {x: x.x - 16, y: Y(x.h), width: 32, height: x.h, class: 'pv-l', fill: '#333'}));
+  for (const p of body) rect(p.box, {fill: '#e8e4dc', stroke: '#222', 'stroke-width': sw, class: 'pv-b'});
+  for (const p of R.parts.filter(q => q.kind === 'dfb' && q.id.endsWith('-F'))) rect(p.box, {fill: 'none', stroke: '#888', 'stroke-width': sw * .7, 'stroke-dasharray': `${sw * 4} ${sw * 3}`, class: 'pv-x'});
+  for (const x of R.extras.filter(q => q.type === 'rod')) svg.append(sv('line', {x1: x.x0, y1: Y(x.y), x2: x.x1, y2: Y(x.y), stroke: '#555', 'stroke-width': sw * 2.4, 'stroke-linecap': 'round', class: 'pv-r'}));
   for (const p of fronts) {
-    rect(p.box, {fill: 'none', stroke: '#1d4ed8', 'stroke-width': sw * 1.1, 'stroke-dasharray': `${sw * 8} ${sw * 4}`});
-    if (p.hinge) { const b = p.box, hx = p.hinge.side === 'L' ? b[0] : b[3], fxx = p.hinge.side === 'L' ? b[3] : b[0]; svg.append(sv('path', {d: `M${fxx} ${Y(b[4])} L${hx} ${Y((b[1] + b[4]) / 2)} L${fxx} ${Y(b[1])}`, fill: 'none', stroke: '#1d4ed8', 'stroke-width': sw * .6, opacity: .6})); }
+    const b = p.box;
+    rect(b, {fill: 'none', stroke: '#1d4ed8', 'stroke-width': sw * 1.1, 'stroke-dasharray': opt.theme ? null : `${sw * 8} ${sw * 4}`, class: 'pv-f'});
+    if (p.hinge) { const hx = p.hinge.side === 'L' ? b[0] : b[3], fxx = p.hinge.side === 'L' ? b[3] : b[0]; svg.append(sv('path', {d: `M${fxx} ${Y(b[4])} L${hx} ${Y((b[1] + b[4]) / 2)} L${fxx} ${Y(b[1])}`, fill: 'none', stroke: '#1d4ed8', 'stroke-width': sw * .6, opacity: .6, class: 'pv-h'})); }
+    if (opt.theme) {
+      const hl = p.hinge ? Math.min(160, (b[4] - b[1]) * .3) : Math.min(160, (b[3] - b[0]) * .4);
+      if (p.hinge) { const xh = p.hinge.side === 'L' ? b[3] - 40 : b[0] + 40, ym = c.base === 'wall' ? b[1] + 70 + hl / 2 : (b[4] - b[1]) > 1100 ? clamp(1050, b[1] + 120, b[4] - 120) : b[4] - 70 - hl / 2; svg.append(sv('line', {x1: xh, y1: Y(ym - hl / 2), x2: xh, y2: Y(ym + hl / 2), class: 'pv-k', 'stroke-width': sw * 2.2, 'stroke-linecap': 'round'})); }
+      else { const xm = (b[0] + b[3]) / 2, ym = (b[4] - b[1]) > 260 ? b[4] - 60 : (b[1] + b[4]) / 2; svg.append(sv('line', {x1: xm - hl / 2, y1: Y(ym), x2: xm + hl / 2, y2: Y(ym), class: 'pv-k', 'stroke-width': sw * 2.2, 'stroke-linecap': 'round'})); }
+    }
   }
-  for (const x of R.extras.filter(q => q.type === 'rod')) svg.append(sv('line', {x1: x.x0, y1: Y(x.y), x2: x.x1, y2: Y(x.y), stroke: '#555', 'stroke-width': sw * 2.4, 'stroke-linecap': 'round'}));
   /* ölçüler */
   const fs = Math.max(c.W, c.H) / 26, dl = (x1, y1, x2, y2, txt, vert) => {
-    svg.append(sv('line', {x1, y1, x2, y2, stroke: '#c2410c', 'stroke-width': sw}));
-    for (const [px, py] of [[x1, y1], [x2, y2]]) svg.append(sv('line', Object.assign(vert ? {x1: px - fs * .3, y1: py, x2: px + fs * .3, y2: py} : {x1: px, y1: py - fs * .3, x2: px, y2: py + fs * .3}, {stroke: '#c2410c', 'stroke-width': sw})));
+    svg.append(sv('line', {x1, y1, x2, y2, stroke: '#c2410c', 'stroke-width': sw, class: 'pv-d'}));
+    for (const [px, py] of [[x1, y1], [x2, y2]]) svg.append(sv('line', Object.assign(vert ? {x1: px - fs * .3, y1: py, x2: px + fs * .3, y2: py} : {x1: px, y1: py - fs * .3, x2: px, y2: py + fs * .3}, {stroke: '#c2410c', 'stroke-width': sw, class: 'pv-d'})));
     const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-    svg.append(sv('text', vert ? {x: mx - fs * .35, y: my, 'font-size': fs, 'text-anchor': 'middle', transform: `rotate(-90 ${mx - fs * .35} ${my})`, fill: '#c2410c', 'font-family': 'Arial'} : {x: mx, y: my - fs * .3, 'font-size': fs, 'text-anchor': 'middle', fill: '#c2410c', 'font-family': 'Arial'}, txt));
+    svg.append(sv('text', vert ? {x: mx - fs * .35, y: my, 'font-size': fs, 'text-anchor': 'middle', transform: `rotate(-90 ${mx - fs * .35} ${my})`, fill: '#c2410c', 'font-family': 'Arial', class: 'pv-t'} : {x: mx, y: my - fs * .3, 'font-size': fs, 'text-anchor': 'middle', fill: '#c2410c', 'font-family': 'Arial', class: 'pv-t'}, txt));
   };
   dl(0, -pad * .45, c.W, -pad * .45, fmt(c.W));
   dl(-pad * .45, 0, -pad * .45, c.H, fmt(c.H), true);
