@@ -332,7 +332,7 @@ const UI = {
       h('div', {class: 'ptool'}, h('h2', null, 'Kesim listesi'), UI.scopeSeg(() => UI.cut()),
         h('button', {class: 'btn sm', type: 'button', onclick: () => UI.csv()}, icon(IC.table), 'Excel (CSV)'),
         h('button', {class: 'btn sm', type: 'button', onclick: () => UI.print()}, icon(IC.print), 'Yazdır / PDF')),
-      h('p', {class: 'pnote'}, 'Ölçüler mm. Boy = desen (su) yönü. Kalın yazılan kesim ölçüsüdür' + (A.cab && A.cab.deduct ? ' (bant kalınlığı düşülmüş)' : '') + '; altında bitmiş ölçü görünür. Satıra dokununca parça 3B’de seçilir.'),
+      h('p', {class: 'pnote'}, 'Ölçüler mm. Boy = desen (su) yönü. Kalın yazılan kesim ölçüsüdür' + (A.cab && A.cab.deduct ? ' (bant kalınlığı düşülmüş)' : '') + '; altında bantlandıktan sonraki (bitmiş) ölçü görünür. Satıra dokununca parça 3B’de seçilir.'),
       h('div', {class: 'tot'},
         h('div', null, h('span', null, 'Toplam parça'), h('b', null, tot)),
         h('div', null, h('span', null, 'Toplam alan'), h('b', null, fmt2(area) + ' m²')),
@@ -405,7 +405,7 @@ const UI = {
     P.append(h('h2', null, 'Dolaplar (ön görünüş)'), grid);
     for (const g of G) {
       P.append(h('h2', null, `${g.label} — ${g.count} parça, ${fmt2(g.area)} m²`),
-        h('table', null, h('thead', null, h('tr', null, ['No', 'Parça', 'Dolap', 'Boy (kesim)', 'En (kesim)', 'Adet', 'Bant', 'Bitmiş ölçü'].map((x, i) => h('th', {class: i >= 3 && i <= 5 ? 'num' : ''}, x)))),
+        h('table', null, h('thead', null, h('tr', null, ['No', 'Parça', 'Dolap', 'Boy (kesim)', 'En (kesim)', 'Adet', 'Bant', 'Bantlı (bitmiş) ölçü'].map((x, i) => h('th', {class: i >= 3 && i <= 5 ? 'num' : ''}, x)))),
           h('tbody', null, g.rows.filter(r => !r.off).map(r => h('tr', null, h('td', null, r.no), h('td', null, r.name + (r.ovr ? ' (elle)' : '')), h('td', null, [...r.cabs.keys()].join(', ')), h('td', {class: 'num big'}, fmt(r.cL)), h('td', {class: 'num big'}, fmt(r.cW)), h('td', {class: 'num big'}, r.n),
             h('td', null, h('div', {style: 'display:flex;gap:6px;align-items:center'}, UI.bandSVG(r), UI.bandShort(r))), h('td', null, `${fmt(r.L)} × ${fmt(r.Wd)} × ${fmt(r.T)}`))))));
     }
