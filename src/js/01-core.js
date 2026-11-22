@@ -135,7 +135,7 @@ const CATALOG_BY_KEY = Object.fromEntries(CATALOG.flatMap(g => g.list).map(e => 
 /* Palet simgeleri (üstten görünüş) */
 function palIcon(k) {
   const S = (inner) => `<svg viewBox="0 0 44 30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">${inner}</svg>`;
-  const acc = 'var(--accent)';
+  const acc = 'var(--accent-fg)';
   switch (k) {
     case 'room': return S(`<rect x="6" y="3" width="32" height="24" rx="1" stroke-width="2.6"/>`);
     case 'draw': return S(`<rect x="6" y="3" width="32" height="24" rx="1" stroke-dasharray="3 3"/><path d="M26 15l8 8m0-5v5h-5" stroke="${acc}" stroke-width="2"/>`);

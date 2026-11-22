@@ -1,3 +1,5 @@
+/* 3B sahnedeki yazılar (tabela, etiket) arayüz yazı tipinden bağımsız */
+const SCENE_FONT = 'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif', SCENE_MONO = 'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
 /* =====================================================================
    3B görünüm: yörünge kamera + insan gözüyle gezinti (WASD / joystick)
    Plan (x, y) → sahne (x, 0, z=y). Yerel ön yüz (+y) → sahnede yerel +z.
@@ -188,12 +190,12 @@ const View3D = {
   textTex(lines, color) {
     const T = this.T, c = document.createElement('canvas'), g = c.getContext('2d');
     const fs = 64, pad = 16;
-    g.font = `700 ${fs}px ${getFont()}`;
-    const w = Math.max(...lines.map((l, i) => { g.font = i ? `500 ${fs * .72}px ${getMono()}` : `700 ${fs}px ${getFont()}`; return g.measureText(l).width; })) + pad * 2;
+    g.font = `700 ${fs}px ${SCENE_FONT}`;
+    const w = Math.max(...lines.map((l, i) => { g.font = i ? `500 ${fs * .72}px ${SCENE_MONO}` : `700 ${fs}px ${SCENE_FONT}`; return g.measureText(l).width; })) + pad * 2;
     const h = fs * 1.25 + (lines.length - 1) * fs * .95 + pad;
     c.width = Math.ceil(w); c.height = Math.ceil(h);
     g.textAlign = 'center'; g.textBaseline = 'top'; g.fillStyle = color;
-    lines.forEach((l, i) => { g.font = i ? `500 ${fs * .72}px ${getMono()}` : `700 ${fs}px ${getFont()}`; g.globalAlpha = i ? .75 : .9; g.fillText(l, c.width / 2, pad / 2 + (i ? fs * 1.15 + (i - 1) * fs * .95 : 0)); });
+    lines.forEach((l, i) => { g.font = i ? `500 ${fs * .72}px ${SCENE_MONO}` : `700 ${fs}px ${SCENE_FONT}`; g.globalAlpha = i ? .75 : .9; g.fillText(l, c.width / 2, pad / 2 + (i ? fs * 1.15 + (i - 1) * fs * .95 : 0)); });
     const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4;
     return {t, aspect: c.width / c.height};
   },
@@ -718,7 +720,7 @@ const View3D = {
   signTex(text) {
     const T = this.T, c = document.createElement('canvas'), g = c.getContext('2d');
     const Hh = 256, fs = 132;
-    g.font = `800 ${fs}px ${getFont()}`;
+    g.font = `800 ${fs}px ${SCENE_FONT}`;
     const tw = g.measureText(text).width;
     const Wd = Math.ceil(Math.min(4096, Hh + 90 + tw + 90));
     c.width = Wd; c.height = Hh;
@@ -727,12 +729,12 @@ const View3D = {
     // Logo
     const L = Hh - 70, lx = 40, ly = 30;
     g.beginPath(); g.roundRect(lx, ly, L, L, 26); g.fill();
-    g.fillStyle = '#FFFFFF'; g.font = `900 ${L * .82}px ${getFont()}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = '#FFFFFF'; g.font = `900 ${L * .82}px ${SCENE_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText('E', lx + L / 2, ly + L / 2 + L * .04);
     // Yazı
-    let f = fs; g.font = `800 ${f}px ${getFont()}`;
+    let f = fs; g.font = `800 ${f}px ${SCENE_FONT}`;
     const avail = Wd - (lx + L + 60) - 50;
-    while (g.measureText(text).width > avail && f > 40) { f -= 4; g.font = `800 ${f}px ${getFont()}`; }
+    while (g.measureText(text).width > avail && f > 40) { f -= 4; g.font = `800 ${f}px ${SCENE_FONT}`; }
     g.fillStyle = '#C8102E'; g.textAlign = 'left';
     g.fillText(text, lx + L + 60, Hh / 2 + 4);
     const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 8;
@@ -744,7 +746,7 @@ const View3D = {
     const g = c.getContext('2d');
     g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, 256, 256);
     g.strokeStyle = '#D0102B'; g.lineWidth = 16; g.strokeRect(8, 8, 240, 240);
-    g.fillStyle = '#D0102B'; g.font = `900 200px ${getFont()}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = '#D0102B'; g.font = `900 200px ${SCENE_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText('E', 128, 138);
     const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace;
     return (this._et = t);
@@ -802,8 +804,8 @@ const View3D = {
     const T = this.T, c = document.createElement('canvas'); c.width = 1024; c.height = 160;
     const g = c.getContext('2d');
     g.fillStyle = bg; g.fillRect(0, 0, 1024, 160);
-    let f = 96; g.font = `800 ${f}px ${getFont()}`;
-    while (g.measureText(text).width > 940 && f > 30) { f -= 4; g.font = `800 ${f}px ${getFont()}`; }
+    let f = 96; g.font = `800 ${f}px ${SCENE_FONT}`;
+    while (g.measureText(text).width > 940 && f > 30) { f -= 4; g.font = `800 ${f}px ${SCENE_FONT}`; }
     g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 512, 84);
     const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4;
     return t;
@@ -1659,7 +1661,7 @@ const View3D = {
       const off = document.createElement('canvas'); off.width = cv.width; off.height = cv.height;
       const C = planColors();
       drawPlan(off.getContext('2d'), P, V, {w: cw, h: ch, dpr, C: Object.assign({}, C, {bg: C.floor, glass: false}), segs: Ed.segs, A: Ed.A, grid: false, clear: false, labels: false, dims: false});
-      if (multiLevel(P)) { const g2 = off.getContext('2d'); g2.setTransform(dpr, 0, 0, dpr, 0, 0); g2.font = `800 11px ${getFont()}`; g2.fillStyle = C.ink; g2.textAlign = 'left'; g2.textBaseline = 'top'; g2.fillText(levelName(P, P.cur), 6, 4); }
+      if (multiLevel(P)) { const g2 = off.getContext('2d'); g2.setTransform(dpr, 0, 0, dpr, 0, 0); g2.font = `800 11px ${SCENE_FONT}`; g2.fillStyle = C.ink; g2.textAlign = 'left'; g2.textBaseline = 'top'; g2.fillText(levelName(P, P.cur), 6, 4); }
       this.mini = {cw, ch, V, off}; this.miniDirty = false;
     }
     const m = this.mini, g = cv.getContext('2d'), k = this.wk;
@@ -1843,7 +1845,7 @@ const View3D = {
     const cp = {x: cam.position.x - O.x, y: cam.position.y - O.y, z: cam.position.z - O.z};
     const pill = (x, y, lines, ang = 0, dark = true) => {
       g.save(); g.translate(x, y); g.rotate(ang);
-      const f1 = `700 ${15 * k}px ${getFont()}`, f2 = `500 ${12.5 * k}px ${getMono()}`;
+      const f1 = `700 ${15 * k}px ${SCENE_FONT}`, f2 = `500 ${12.5 * k}px ${SCENE_MONO}`;
       g.font = f1; let w = g.measureText(lines[0]).width;
       if (lines[1]) { g.font = f2; w = Math.max(w, g.measureText(lines[1]).width); }
       const hh = (lines[1] ? 40 : 24) * k, ww = w + 20 * k;

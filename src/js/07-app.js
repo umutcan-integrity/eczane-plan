@@ -313,29 +313,22 @@ async function startVideo(st) {
 const Theme = {
   apply() {
     const v = Settings.v, root = document.documentElement;
-    const glass = v.mode === 'glass';
-    const mode = glass ? 'dark' : v.mode === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : v.mode;
+    /* eski "şeffaf" tercih koyuya taşınır; vurgu rengi artık tasarımın parçası */
+    if (v.mode === 'glass') Settings.set('mode', 'dark');
+    const mode = v.mode === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : v.mode;
     root.dataset.mode = mode;
-    if (glass) root.dataset.glass = '1'; else delete root.dataset.glass;
-    const a = ACCENTS[v.accent] || ACCENTS.yesil;
-    const col = mode === 'dark' ? a.d : a.l;
-    root.style.setProperty('--accent', col);
-    root.style.setProperty('--accent-ink', mode === 'dark' ? '#0E1512' : '#FFFFFF');
-    const meta = $('meta[name=theme-color]'); if (meta) meta.content = glass ? '#0A1020' : mode === 'dark' ? '#1B201E' : '#FFFFFF';
+    delete root.dataset.glass; root.style.removeProperty('--accent'); root.style.removeProperty('--accent-ink');
+    const meta = $('meta[name=theme-color]'); if (meta) meta.content = mode === 'dark' ? '#0C0F12' : '#262C32';
     if (Ed.P) { Plan.req(); View3D.markDirty(); View3D.miniDirty = true; Props.render(); }
   },
   dialog() {
     return modal(b => {
       b.append(h('h2', null, 'Görünüm'));
-      const modes = [['auto', 'Sistem'], ['light', 'Açık'], ['dark', 'Koyu'], ['glass', 'Şeffaf']];
+      const modes = [['auto', 'Sistem'], ['light', 'Açık'], ['dark', 'Koyu']];
       const seg = h('div', {class: 'seg', style: 'width:100%'});
-      const drawSeg = () => { seg.innerHTML = ''; for (const [k, t] of modes) seg.append(h('button', {type: 'button', class: Settings.v.mode === k ? 'on' : '', style: 'flex:1;padding:0 6px', onclick: () => { Settings.set('mode', k); Theme.apply(); drawSeg(); drawAcc(); }}, t)); };
+      const drawSeg = () => { seg.innerHTML = ''; for (const [k, t] of modes) seg.append(h('button', {type: 'button', class: Settings.v.mode === k ? 'on' : '', style: 'flex:1;padding:0 6px', onclick: () => { Settings.set('mode', k); Theme.apply(); drawSeg(); }}, t)); };
       drawSeg();
       b.append(h('div', {class: 'fl'}, h('span', null, 'Tema'), seg));
-      const acc = h('div', {class: 'accents'});
-      const drawAcc = () => { acc.innerHTML = ''; const dark = document.documentElement.dataset.mode === 'dark'; for (const [k, a] of Object.entries(ACCENTS)) acc.append(h('button', {type: 'button', title: a.n, 'aria-label': a.n, class: Settings.v.accent === k ? 'on' : '', style: `background:${dark ? a.d : a.l}`, onclick: () => { Settings.set('accent', k); Theme.apply(); drawAcc(); }})); };
-      drawAcc();
-      b.append(h('div', {class: 'fl'}, h('span', null, 'Vurgu rengi'), acc));
       const auto = h('input', {type: 'checkbox'}); auto.checked = Settings.v.autosave;
       auto.onchange = () => { Settings.set('autosave', auto.checked); if (Ed.P) { if (auto.checked && Ed.dirty) Ed.save(true); Ed.updateSaveUI(); } };
       b.append(h('label', {class: 'switch'}, auto, h('span', null, 'Otomatik kaydet', h('small', null, 'Açıkken her değişiklik birkaç saniye içinde cihaza kaydedilir. Kapalıyken yalnızca Kaydet’e basınca kaydedilir.'))));
