@@ -49,6 +49,7 @@ bilgisayarda çalışır, kurulum gerektirmez; projeler cihazın tarayıcısınd
   bak, **W A S D** / oklar yürü, Shift koş, Q/E dön, Esc bırak. Telefonda sol alttaki joystick ile
   yürü, ekranı sürükleyerek dön. Duvar ve eşyalardan geçilmez, kapılardan geçilir. Mini haritaya
   dokununca oraya yürür.
+- **Tanıtım:** Her ekranda (ana ekran, 2B plan, 3B; Dolap’ta sihirbaz, dolap ekranı, parça, kesim listesi, levha planı) ilk girişte bir kez spotlight tanıtım: önemli yer aydınlanır, yanında ne işe yaradığı yazar. Menüden / yardımdan “Tanıtımı yeniden göster”.
 - **Görünüm:** “Galvaniz atölye” tasarım dili (çelik üst bant, sac paneller, seçili olan iş güvenliği sarısı); sistem / açık / koyu tema. Yazı tipi Saira uygulamanın içinde gelir (`vendor/fonts`, OFL), çevrimdışı da çalışır. Tasarım kuralları `DESIGN.md`, ürün bilgisi `PRODUCT.md` içinde.
 - **Dışa aktarma:** Plan PNG, 3B görüntü PNG, JSON yedek, paylaş (telefonda).
 - Çevrimdışı çalışır ve ana ekrana “uygulama” olarak eklenebilir (PWA).
@@ -71,8 +72,10 @@ ve baza parçalarının **kesim ölçüleri milimetre hassasiyetinde** hesaplan�
   boy/en/kalınlık ölçüleriyle (kalın kenar vurgusu, oklu ölçü çizgisi, yazı çizginin dışında; bantlıysa “bantlanınca …” ölçüsü) görünür, sürükleyerek ya da düğmelerle çevrilir (asıl yeri hayalet olarak kalır)
 - Parçadan ölçü değiştirme: o ölçüyü belirleyen dolap ayarı (yükseklik, genişlik, bölme genişliği, kalınlık…)
   değişir, tüm parçalar birlikte güncellenir; istenirse yalnız kesim listesinde elle düzeltme
-- Kesim listesi (malzeme/kalınlığa göre, aynı parçalar adetli), hırdavat listesi, bant metrajı,
-  giyotin levha yerleşimi (testere payı, kenar traşı, desen yönü), yazdır/PDF, CSV (Excel)
+- Kesim listesi (malzeme/kalınlığa göre, aynı parçalar adetli), hırdavat listesi, bant metrajı, yazdır/PDF, CSV (Excel)
+- Levha planı: kaç levha alınacağı (alışveriş listesi), her levhada parçalar türüne göre renkli, adı ve ölçüsüyle;
+  levha ölçüleri, artan (fire) alan, levha altında parça listesi (dokununca parça levhada işaretlenir, 3B’de gösterilir);
+  kesim payları sade dille (testere izi, kenar temizleme), desen yönü korunur
 
 `dolap/` klasörü kendi kaynağı (`dolap/src`), derleyicisi (`python3 dolap/build.py`) ve three.js kopyasıyla
 bağımsızdır; ayrı bir depoya olduğu gibi taşınabilir. Kayıtlar `dolap.v1.*` anahtarlarıyla bu cihazda tutulur.

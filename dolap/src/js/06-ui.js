@@ -284,6 +284,7 @@ const UI = {
         h('p', {class: 'tip'}, 'Dolabı değiştirmeden yalnız kesim listesindeki ölçüyü değiştirir; “elle” etiketiyle işaretlenir.')),
     );
     el.hidden = false;
+    Tour.auto('part', 1600);
     for (const d of el.querySelectorAll('details')) d.addEventListener('toggle', () => UI.cardInset());
     UI.cardInset();
   },
@@ -373,20 +374,47 @@ const UI = {
   nest() {
     const el = $('#vnest'), J = A.job, cabs = UI.scopeCabs(), G = cutRows(J, cabs), sc = el.scrollTop;
     el.innerHTML = '';
-    const inner = h('div', {class: 'pane-in'});
-    const jn = (label, key) => { const inp = h('input', {class: 'inp', inputmode: 'decimal', value: fmt(J[key]), style: 'width:90px'}); inp.addEventListener('change', () => { const x = evalNum(inp.value); if (x >= 0 && x <= 50) A.change(() => { A.job[key] = x; }, {full: true}); else inp.value = fmt(J[key]); }); return h('label', {class: 'fld', style: 'flex-direction:row;align-items:center;gap:6px'}, h('span', null, label), h('div', {class: 'inpw'}, inp, h('i', null, 'mm'))); };
-    inner.append(h('div', {class: 'ptool'}, h('h2', null, 'Levha planı'), UI.scopeSeg(() => UI.nest()), jn('Testere', 'kerf'), jn('Traş', 'trim'), h('button', {class: 'btn sm primary', type: 'button', onclick: () => UI.print()}, icon(IC.print), 'Yazdır')),
-      h('p', {class: 'pnote'}, 'Giyotin (uçtan uca düz) kesime uygun yerleşim. Numaralar kesim listesindeki “No” sütunudur. ↻ işaretli parça levhada döndürülmüştür. Levha ölçüsü, desen ve paylar “Malzeme ve levha” bölümünden değişir.'));
-    for (const g of G) {
-      const N = nestGroup(g, J), col = (FINISHES[g.m.color] || FINISHES.beyaz)[1];
-      const box = h('div', {class: 'sheets'});
-      N.sheets.forEach((sh, i) => box.append(h('div', {class: 'sheet'}, h('div', {class: 'sheet-t'}, h('b', null, `Levha ${i + 1}`), h('span', null, `${sh.parts.length} parça · %${Math.round(sh.use * 100)} dolu`)),
-        sheetSVG(N, sh, {onPick: p => A.pickRef(p.row.refs), sel: p => A.sel && A.cab && p.row.refs.some(x => x.cab === A.cab.id && x.id === A.sel)}))));
-      inner.append(h('section', {class: 'card mgrp'},
-        h('div', {class: 'mgrp-h'}, h('i', {class: 'chipx', style: `background:${col}`}), h('b', null, g.label), h('small', null, `${N.sheets.length} levha ${g.m.L}×${g.m.W} · ortalama doluluk %${Math.round(N.use * 100)}${g.m.grain ? ' · desenli: döndürme yok' : ''}`)),
-        N.bad.length ? h('div', {class: 'iss', style: 'margin:10px 16px 0'}, `Sığmayan parça: ${[...new Set(N.bad.map(b => '#' + b.no))].join(', ')}`) : null,
-        N.sheets.length ? box : h('p', {class: 'pnote', style: 'padding:14px 16px'}, 'Bu malzemede parça yok.')));
+    const inner = h('div', {class: 'pane-in nest'});
+    const NS = G.map(g => ({g, N: nestGroup(g, J)})).filter(x => x.N.sheets.length || x.N.bad.length);
+    const total = NS.reduce((a, x) => a + x.N.sheets.length, 0);
+    inner.append(h('div', {class: 'ptool'}, h('h2', null, 'Levha planı'), UI.scopeSeg(() => UI.nest()), h('button', {class: 'btn sm', type: 'button', onclick: () => UI.print()}, icon(IC.print), 'Yazdır')),
+      h('p', {class: 'nest-what'}, 'Kesimhaneye kaç levha götüreceğini ve her parçanın levhanın neresinden kesileceğini gösterir. Bir parçaya ya da listedeki satıra dokun: aynı parçalar levhada işaretlenir.'));
+    /* alışveriş listesi */
+    const buy = h('section', {class: 'card buy', id: 'nestBuy'}, h('div', {class: 'buy-h'}, h('span', null, 'Alınacak levha'), h('b', null, String(total))));
+    for (const {g, N} of NS) {
+      const col = (FINISHES[g.m.color] || FINISHES.beyaz)[1];
+      buy.append(h('div', {class: 'buy-r'}, h('i', {class: 'chipx', style: `background:${col}`}), h('div', {class: 'tx'}, h('b', null, g.label), h('small', null, `${fmt(g.m.L)} × ${fmt(g.m.W)} mm levha · parçalar levhanın %${Math.round(N.use * 100)}’ini kullanıyor, %${100 - Math.round(N.use * 100)} artıyor`)), h('strong', null, `${N.sheets.length} levha`)));
     }
+    inner.append(buy);
+    /* kesim payları (sade dil) */
+    const pay = (label, help, key) => { const inp = h('input', {class: 'inp', inputmode: 'decimal', value: fmt(J[key]), 'aria-label': label}); inp.addEventListener('change', () => { const x = evalNum(inp.value); if (x >= 0 && x <= 50) A.change(() => { A.job[key] = x; }, {full: true}); else inp.value = fmt(J[key]); }); return h('label', {class: 'fld'}, h('span', null, label), h('div', {class: 'inpw'}, inp, h('i', null, 'mm')), h('small', null, help)); };
+    inner.append(h('details', {class: 'card pays'}, h('summary', null, h('b', null, 'Kesim payları'), h('small', null, `testere izi ${fmt(J.kerf)} mm · kenar temizleme ${fmt(J.trim)} mm`)),
+      h('div', {class: 'row'}, pay('Testere izi', 'Her kesimde testere ağzının yiyip yok ettiği pay. Parçalar arasına bu kadar boşluk bırakılır.', 'kerf'),
+        pay('Kenar temizleme', 'Levhanın fabrika kenarı genelde düzgün değildir; her kenardan bu kadar kesilip atılır.', 'trim')),
+      h('p', {class: 'pnote'}, 'Levha ölçüsü ve desen (damar) yönü soldaki “Malzeme ve levha” bölümünden değişir. Parçalar düz, uçtan uca kesimlerle (panel ebatlama makinesine uygun) yerleştirilir.')));
+    /* açıklama: renkler ve taralı alan */
+    const used = new Set(NS.flatMap(({N}) => N.sheets.flatMap(sh => sh.parts.map(p => partGroup(p.row.kind).k))));
+    inner.append(h('div', {class: 'nest-key'}, ...PART_GROUPS.filter(pg => used.has(pg.k)).map(pg => h('span', null, h('i', {class: 'kc k-' + pg.k}), pg.n)),
+      h('span', null, h('i', {class: 'kc waste'}), 'Taralı: artan parça (fire)')));
+    for (const {g, N} of NS) {
+      const col = (FINISHES[g.m.color] || FINISHES.beyaz)[1], sec = h('section', {class: 'card mgrp'});
+      let cur = null;
+      const mark = no => { cur = cur === no ? null : no; for (const e of sec.querySelectorAll('[data-no]')) e.classList.toggle('hl', cur != null && e.dataset.no === String(cur)); };
+      const box = h('div', {class: 'sheets'});
+      N.sheets.forEach((sh, i) => {
+        const cnt = new Map(); for (const p of sh.parts) cnt.set(p.no, (cnt.get(p.no) || {row: p.row, n: 0})), cnt.get(p.no).n++;
+        const leg = h('ul', {class: 'sleg'}, ...[...cnt.entries()].sort((a, b) => a[0] - b[0]).map(([no, {row, n}]) => h('li', {'data-no': no, class: 'k-' + partGroup(row.kind).k, onclick: () => mark(no)},
+          h('i', {class: 'kc'}), h('b', null, String(no)), h('span', {class: 'nm'}, row.name), h('span', {class: 'sz'}, `${fmt(row.cL)} × ${fmt(row.cW)}`), h('em', null, `× ${n}`),
+          h('button', {type: 'button', class: 'icon-btn sm', title: '3B’de göster', 'aria-label': `${row.name} parçasını 3B’de göster`, onclick: e => { e.stopPropagation(); A.pickRef(row.refs); A.show('3d'); }}, icon(IC.cube)))));
+        box.append(h('div', {class: 'sheet'}, h('div', {class: 'sheet-t'}, h('b', null, `${i + 1}. levha`), h('span', null, `${sh.parts.length} parça · %${Math.round(sh.use * 100)} kullanılıyor`)),
+          sheetSVG(N, sh, {onPick: p => mark(p.no), sel: p => A.sel && A.cab && p.row.refs.some(x => x.cab === A.cab.id && x.id === A.sel)}), leg));
+      });
+      sec.append(h('div', {class: 'mgrp-h'}, h('i', {class: 'chipx', style: `background:${col}`}), h('b', null, g.label), h('small', null, `${N.sheets.length} levha · ${fmt(g.m.L)} × ${fmt(g.m.W)} mm${g.m.grain ? ' · desenli: parçalar damar yönünde yerleştirildi' : ''}`)),
+        ...(N.bad.length ? [h('div', {class: 'iss', style: 'margin:10px 16px 0'}, `Levhaya sığmayan parça: ${[...new Set(N.bad.map(b => b.no + ' (' + b.row.name + ')'))].join(', ')}. Levha ölçüsünü ya da parçayı kontrol et.`)] : []),
+        box);
+      inner.append(sec);
+    }
+    if (!NS.length) inner.append(h('p', {class: 'pnote'}, 'Kesilecek parça yok.'));
     el.append(inner); el.scrollTop = sc;
   },
 

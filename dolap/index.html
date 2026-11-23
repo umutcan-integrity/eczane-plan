@@ -272,8 +272,6 @@ table.cl td.off{opacity:.45;text-decoration:line-through}
 .sheet svg{width:100%;height:auto;display:block;border-radius:6px;background:var(--surface-3)}
 .sheet svg .pl{fill:color-mix(in srgb,var(--surface-3) 70%,var(--line-2))}
 .sheet svg .us{fill:url(#hatch)}
-.sheet svg .pt{fill:var(--surface);stroke:var(--ink);stroke-width:2.2;cursor:pointer}
-.sheet svg .pt:hover,.sheet svg .pt.on{fill:var(--accent-soft);stroke:var(--accent-fg)}
 .sheet svg text{fill:var(--ink);font-family:var(--font);font-variant-numeric:tabular-nums;pointer-events:none}
 .sheet svg .gr{stroke:var(--muted);stroke-width:2;opacity:.5}
 .pnote{font-size:12.5px;color:var(--muted);margin:0}
@@ -333,7 +331,7 @@ dialog.modal::backdrop{background:rgba(10,15,13,.42);backdrop-filter:blur(2px)}
   .print .psheets{display:grid;grid-template-columns:1fr 1fr;gap:5mm}
   .print .psheet{break-inside:avoid;font-size:9pt}
   .print .psheet svg{width:100%;height:auto;max-height:110mm;border:0.3mm solid #999}
-  .print .psheet svg .pl{fill:#ddd}.print .psheet svg .us{fill:#f2f2f2}.print .psheet svg .pt{fill:#fff;stroke:#000;stroke-width:2.5}
+  .print .psheet svg .pl{fill:#ddd}.print .psheet svg .us{fill:#f2f2f2}.print .psheet svg .pt{stroke:#000;stroke-width:2.5}.print .psheet svg .sdim{color:#000}
   .print .psheet svg text{fill:#000;font-family:var(--font)}
   .print .pbreak{break-before:page}
   .print .bsvg{width:30px;height:18px}.print .bsvg rect{fill:#eee;stroke:#999}.print .bsvg line{stroke:#000;stroke-width:3.5}
@@ -544,6 +542,70 @@ body.wiz-on{overflow:hidden}
 .lbl small{display:block;font-size:11px;font-weight:600;opacity:.8;line-height:1.15;text-align:center}
 .lbl.big small{font-size:12px}
 .lbl.dim{text-align:center;line-height:1.2}
+/* ---------- levha planı: renkler, açıklama, alışveriş listesi ---------- */
+:root{--k-g:#C9D6E3;--k-s:#CFE3C6;--k-d:#F0CDBF;--k-c:#DCD0EC;--k-b:#E8DDC4;--k-p:#D3D6D9}
+:root[data-mode="dark"]{--k-g:#3A4A5A;--k-s:#3B5236;--k-d:#5E3E33;--k-c:#4A3F5E;--k-b:#55492F;--k-p:#3E444A}
+.k-g{--k:var(--k-g)}.k-s{--k:var(--k-s)}.k-d{--k:var(--k-d)}.k-c{--k:var(--k-c)}.k-b{--k:var(--k-b)}.k-p{--k:var(--k-p)}
+.sheet svg .pt{fill:var(--k,var(--surface));stroke:var(--ink);stroke-width:2.2;cursor:pointer}
+.sheet svg .pg{cursor:pointer}
+.sheet svg .pg:hover .pt{stroke-width:5}
+.sheet svg .pg.hl .pt,.sheet svg .pg.on .pt{fill:var(--accent);stroke:var(--ink);stroke-width:6}
+.sheet svg .pg.hl text,.sheet svg .pg.on text{fill:#1A1500}
+.sheet svg .sz{font-weight:500;opacity:.8}
+.sheet svg .sdim{color:var(--muted)}
+.sheet svg .sdim line{stroke:currentColor;stroke-width:4}
+.sheet svg .sdim path{fill:currentColor}
+.sheet svg .sdim text{fill:currentColor}
+.sheet svg{background:transparent}
+.sheet svg .gr{stroke:var(--muted);stroke-width:3;opacity:.55}
+.nest-what{margin:0;font-size:14px;line-height:1.45;max-width:72ch}
+.buy{padding:0;overflow:hidden}
+.buy-h{display:flex;align-items:baseline;gap:12px;padding:12px 16px;background:var(--steel);color:var(--steel-ink)}
+.buy-h span{font-size:13px;font-weight:750;letter-spacing:.1em;text-transform:uppercase}
+.buy-h b{font-size:30px;font-stretch:75%;font-weight:800;line-height:1;color:var(--accent)}
+.buy-r{display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--line)}
+.buy-r .chipx{width:18px;height:18px;border-radius:var(--r-xs);border:1px solid var(--line-2);flex:none}
+.buy-r .tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.buy-r .tx b{font-size:15px}
+.buy-r .tx small{color:var(--muted);font-size:12.5px}
+.buy-r strong{font-size:22px;font-stretch:75%;font-weight:800;white-space:nowrap}
+.pays{padding:0 16px}
+.pays>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:12px 0;cursor:pointer;flex-wrap:wrap}
+.pays>summary::-webkit-details-marker{display:none}
+.pays>summary small{color:var(--muted)}
+.pays>summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--faint);border-bottom:2px solid var(--faint);transform:rotate(45deg);margin:-4px 4px 0 auto}
+.pays[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
+.pays[open]{padding-bottom:14px;display:flex;flex-direction:column;gap:10px}
+.nest-key{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+.nest-key span{display:inline-flex;align-items:center;gap:6px}
+.kc{width:16px;height:12px;border-radius:2px;border:1px solid var(--line-2);background:var(--k,var(--surface));flex:none;display:inline-block}
+.kc.waste{background:repeating-linear-gradient(-45deg,var(--surface-3) 0 3px,var(--line-2) 3px 4px)}
+.sleg{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden}
+.sleg li{display:grid;grid-template-columns:16px 28px minmax(0,1fr) auto 34px 32px;align-items:center;gap:6px;padding:4px 6px 4px 10px;font-size:13px;cursor:pointer;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.sleg li:first-child{border-top:0}
+.sleg li:hover{background:var(--surface-2)}
+.sleg li.hl{background:var(--accent);color:var(--accent-ink)}
+.sleg li.hl .sz,.sleg li.hl em{color:var(--accent-ink)}
+.sleg li b{font-weight:800}
+.sleg .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sleg .sz{font-weight:650;white-space:nowrap}
+.sleg em{font-style:normal;color:var(--muted);text-align:right}
+.sleg .icon-btn{color:inherit}
+.sheet{gap:8px}
+.sheets{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
+@media (max-width:520px){.sheets{grid-template-columns:1fr;padding:12px}.sleg li{grid-template-columns:14px 24px minmax(0,1fr) auto 30px 32px;font-size:12.5px}}
+
+/* ---------- tanıtım (spotlight) ---------- */
+.tour{position:fixed;inset:0;z-index:400}
+.tour-hole{position:fixed;border-radius:var(--r);box-shadow:0 0 0 200vmax rgba(8,10,13,.66);outline:3px solid var(--accent);outline-offset:0;transition:left .28s cubic-bezier(.2,.8,.2,1),top .28s cubic-bezier(.2,.8,.2,1),width .28s cubic-bezier(.2,.8,.2,1),height .28s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+.tour-card{position:fixed;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:14px 14px 12px;display:flex;flex-direction:column;gap:6px;transition:left .28s cubic-bezier(.2,.8,.2,1),top .28s cubic-bezier(.2,.8,.2,1)}
+.tour-card:focus{outline:none}
+.tour-t{font-size:17px;font-weight:750;font-stretch:80%;text-transform:uppercase;letter-spacing:.03em}
+.tour-d{margin:0;font-size:14px;line-height:1.45;color:var(--ink)}
+.tour-f{display:flex;align-items:center;gap:6px;margin-top:6px}
+.tour-n{margin-right:auto;font-size:12.5px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.tour .btn{min-height:36px;padding:0 12px;font-size:13.5px}
+@media (prefers-reduced-motion:reduce){.tour-hole,.tour-card{transition:none}}
 
 </style>
 </head>
@@ -1251,26 +1313,57 @@ function nestGroup(G, job) {
 }
 
 /* Levha çizimi (SVG, mm ölçekli) */
+/* parça grupları: levha planında renk ve açıklama */
+const PART_GROUPS = [
+  {k: 'g', n: 'Gövde', kinds: ['side', 'top', 'bottom', 'rail', 'divider', 'sep']},
+  {k: 's', n: 'Raf', kinds: ['shelf']},
+  {k: 'd', n: 'Kapak', kinds: ['door']},
+  {k: 'c', n: 'Çekmece', kinds: ['dfront', 'dside', 'dfb', 'dbottom']},
+  {k: 'b', n: 'Arkalık', kinds: ['back']},
+  {k: 'p', n: 'Baza', kinds: ['plinth']},
+];
+const partGroup = kind => PART_GROUPS.find(g => g.kinds.includes(kind)) || PART_GROUPS[0];
+
 function sheetSVG(N, sh, opts = {}) {
-  const {L, W, trim} = N, fs = Math.max(40, Math.min(L, W) / 18);
-  const svg = sv('svg', {viewBox: `0 0 ${L} ${W}`, role: 'img', 'aria-label': `Levha ${L} × ${W}`});
-  svg.append(sv('defs', null, sv('pattern', {id: 'hatch', width: 40, height: 40, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)'}, sv('rect', {width: 40, height: 40, class: 'pl', style: 'fill:transparent'}), sv('line', {x1: 0, y1: 0, x2: 0, y2: 40, class: 'gr'}))));
+  const {L, W, trim} = N, fs = Math.max(42, Math.min(L, W) / 17), m = fs * 1.9;
+  const svg = sv('svg', {viewBox: `${-m} ${-m} ${L + m * 1.2} ${W + m * 1.2}`, role: 'img', 'aria-label': `Levha ${fmt(L)} × ${fmt(W)} mm`});
+  svg.append(sv('defs', null, sv('pattern', {id: 'hatch', width: 36, height: 36, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)'}, sv('line', {x1: 0, y1: 0, x2: 0, y2: 36, class: 'gr'}))));
+  /* levha ölçüleri (dışarıda, oklu) */
+  const arrow = (x1, y1, x2, y2, txt, vert) => {
+    const g = sv('g', {class: 'sdim'}), a = fs * .45;
+    g.append(sv('line', {x1, y1, x2, y2}));
+    const ux = Math.sign(x2 - x1), uy = Math.sign(y2 - y1);
+    g.append(sv('path', {d: `M${x1} ${y1}l${ux * a + uy * a * .45} ${uy * a - ux * a * .45}l${-uy * a * .9} ${ux * a * .9}Z`}));
+    g.append(sv('path', {d: `M${x2} ${y2}l${-ux * a + uy * a * .45} ${-uy * a - ux * a * .45}l${-uy * a * .9} ${ux * a * .9}Z`}));
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    const t = sv('text', vert ? {x: mx - fs * .35, y: my, transform: `rotate(-90 ${mx - fs * .35} ${my})`, 'text-anchor': 'middle', 'font-size': fs * .85, 'font-weight': 700} : {x: mx, y: my - fs * .35, 'text-anchor': 'middle', 'font-size': fs * .85, 'font-weight': 700}, txt);
+    g.append(t); svg.append(g);
+  };
+  arrow(0, -m * .45, L, -m * .45, `${fmt(L)} mm`);
+  arrow(-m * .45, 0, -m * .45, W, `${fmt(W)} mm`, true);
   svg.append(sv('rect', {x: 0, y: 0, width: L, height: W, class: 'pl'}));
   svg.append(sv('rect', {x: trim, y: trim, width: N.PL, height: N.PW, class: 'us'}));
-  if (N.grain) svg.append(sv('path', {d: `M${L - 260} ${W - 30}h200m-40 -18l40 18l-40 18`, fill: 'none', stroke: 'currentColor', 'stroke-width': 6, class: 'gr', style: 'opacity:.7'}));
+  if (N.grain) svg.append(sv('path', {d: `M${L - 300} ${W - 34}h220m-44 -20l44 20l-44 20`, fill: 'none', 'stroke-width': 7, class: 'gr', style: 'opacity:.9'}));
+  const cw = .56; /* yaklaşık harf genişliği (font boyuna oranla) */
   for (const p of sh.parts) {
-    const x = trim + p.x, y = trim + p.y, g = sv('g', {'data-no': p.no});
-    const r = sv('rect', {x, y, width: p.a, height: p.b, class: 'pt' + (opts.sel && opts.sel(p) ? ' on' : '')});
-    if (opts.onPick) r.addEventListener('click', () => opts.onPick(p));
-    r.append(sv('title', null, `${p.no} · ${p.row.name} · ${fmt(p.row.cL)} × ${fmt(p.row.cW)} mm${p.rot ? ' (döndürülmüş)' : ''}`));
+    const x = trim + p.x, y = trim + p.y, grp = partGroup(p.row.kind), g = sv('g', {'data-no': p.no, class: 'pg k-' + grp.k + (opts.sel && opts.sel(p) ? ' on' : '')});
+    const r = sv('rect', {x, y, width: p.a, height: p.b, class: 'pt'});
+    if (opts.onPick) g.addEventListener('click', () => opts.onPick(p));
+    r.append(sv('title', null, `${p.no} · ${p.row.name} · ${fmt(p.row.cL)} × ${fmt(p.row.cW)} mm`));
     g.append(r);
-    const mn = Math.min(p.a, p.b);
-    if (mn > fs * 1.3) {
-      const big = Math.min(fs * 1.25, mn * .4);
-      g.append(sv('text', {x: x + p.a / 2, y: y + p.b / 2 + (p.b > big * 3.2 ? -big * .25 : big * .35), 'font-size': big, 'font-weight': 800, 'text-anchor': 'middle'}, String(p.no)));
-      if (p.b > big * 3.2 && p.a > fs * 5) g.append(sv('text', {x: x + p.a / 2, y: y + p.b / 2 + big * .95, 'font-size': fs * .8, 'text-anchor': 'middle'}, `${fmt(p.rot ? p.b : p.a)} × ${fmt(p.rot ? p.a : p.b)}`));
-    } else if (mn > fs * .95) g.append(sv('text', {x: x + p.a / 2, y: y + p.b / 2 + fs * .3, 'font-size': fs * .8, 'font-weight': 800, 'text-anchor': 'middle'}, String(p.no)));
-    if (p.rot && mn > fs * .95) g.append(sv('text', {x: x + 8, y: y + fs * .8, 'font-size': fs * .6, style: 'opacity:.7'}, '↻'));
+    /* yazı: sığarsa "no · ad" + ölçü; dar parçada dik yazılır; sığmazsa yalnız numara */
+    const vert = p.b > p.a * 1.15, len = vert ? p.b : p.a, thick = vert ? p.a : p.b;
+    const name = `${p.no} · ${p.row.name}`, size = `${fmt(p.row.cL)} × ${fmt(p.row.cW)}`;
+    const cx = x + p.a / 2, cy = y + p.b / 2, rot = vert ? {transform: `rotate(-90 ${cx} ${cy})`} : {};
+    let f = Math.min(fs, thick / 2.6);
+    const fitsName = name.length * f * cw < len * .92, fitsSize = size.length * f * .9 * cw < len * .92;
+    if (f >= fs * .55 && fitsName && fitsSize && thick > f * 2.5) {
+      g.append(sv('text', Object.assign({x: cx, y: cy - f * .15, 'font-size': f, 'font-weight': 750, 'text-anchor': 'middle'}, rot), name));
+      g.append(sv('text', Object.assign({x: cx, y: cy + f * .95, 'font-size': f * .9, 'text-anchor': 'middle', class: 'sz'}, rot), size));
+    } else {
+      f = Math.min(fs, thick * .7, len / (String(p.no).length * cw + .6));
+      if (f > fs * .4) g.append(sv('text', Object.assign({x: cx, y: cy + f * .35, 'font-size': f, 'font-weight': 800, 'text-anchor': 'middle'}, rot), String(p.no)));
+    }
     svg.append(g);
   }
   return svg;
@@ -1860,6 +1953,7 @@ const Wiz = {
     if (mode === 'edit' && cab) { this.d = clone(cab); this.id = cab.id; this.i = 1; this.seen = this.STEPS.length - 1; }
     else { this.d = this.fromPreset('base'); this.id = null; this.i = 0; this.seen = 0; }
     $('#wiz').hidden = false; document.body.classList.add('wiz-on');
+    Tour.auto('wiz', 700);
     this.render();
   },
   fromPreset(k) {
@@ -2019,6 +2113,152 @@ const Wiz = {
         warns.map(w => h('div', {class: 'iss warn'}, w.t))),
     ];
   },
+};
+
+/* =====================================================================
+   Tanıtım (spotlight): her ekranda bir kez, önemli yerleri tek tek gösterir.
+   Ekranın geri kalanı kararır, hedef aydınlanır, yanında kısa açıklama çıkar.
+   Adımlar uygulamaya özel: Tour.S[ekran] = [{el, t, d}]; görünmeyen hedef atlanır.
+   Bu dosya iki uygulamada aynıdır (dolap/src/js/058-tour.js = src/js/068-tour.js).
+   ===================================================================== */
+const Tour = {
+  K: 'tour.v1', S: {}, cur: null, _t: 0,
+  seen() { try { return JSON.parse(localStorage.getItem(this.K) || '{}'); } catch (e) { return {}; } },
+  done(id) { return !!this.seen()[id]; },
+  mark(id) { try { const o = this.seen(); o[id] = 1; localStorage.setItem(this.K, JSON.stringify(o)); } catch (e) {} },
+  reset() { try { localStorage.removeItem(this.K); } catch (e) {} },
+  /* ilk kez gelindiğinde kendiliğinden (otomatik tarayıcı testlerinde kapalı) */
+  auto(id, delay = 700) {
+    if (this.cur || this.done(id) || navigator.webdriver) return;
+    clearTimeout(this._t);
+    this._t = setTimeout(() => { if (!this.cur && !this.done(id) && !document.querySelector('dialog[open]') && !(this.block && this.block(id))) this.start(id); }, delay);
+  },
+  vis(el) {
+    if (!el || !el.isConnected) return null;
+    const r = el.getBoundingClientRect();
+    if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.right < 0 || r.top > innerHeight || r.left > innerWidth) return null;
+    const cs = getComputedStyle(el); if (cs.visibility === 'hidden' || cs.display === 'none') return null;
+    return r;
+  },
+  list(sel) { return typeof sel === 'function' ? [].concat(sel() || []) : [].concat(sel).flatMap(s => [...document.querySelectorAll(s)]); },
+  /* görünür hedef; yoksa kaydırılarak görülebilecek (ekran dışındaki) ilk hedef */
+  find(sel) {
+    const L = this.list(sel).filter(Boolean);
+    for (const el of L) if (this.vis(el)) return el;
+    for (const el of L) { if (!el.isConnected) continue; const cs = getComputedStyle(el), r = el.getBoundingClientRect(); if (r.width >= 4 && r.height >= 4 && cs.visibility !== 'hidden' && el.closest('[hidden]') === null && (r.top > innerHeight || r.bottom < 0)) return el; }
+    return null;
+  },
+  start(id) {
+    const steps = (this.S[id] || []).filter(s => !s.when || s.when());
+    if (!steps.length) return false;
+    this.close(false);
+    const root = document.createElement('div'); root.className = 'tour'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true');
+    root.innerHTML = '<div class="tour-hole"></div><div class="tour-card" tabindex="-1"><b class="tour-t"></b><p class="tour-d"></p><div class="tour-f"><span class="tour-n"></span><button type="button" class="btn ghost sm tour-skip">Geç</button><button type="button" class="btn sm tour-prev">Geri</button><button type="button" class="btn primary sm tour-next">İleri</button></div></div>';
+    document.body.append(root);
+    const T = this.cur = {id, steps, i: 0, root, hole: root.querySelector('.tour-hole'), card: root.querySelector('.tour-card')};
+    root.querySelector('.tour-skip').onclick = () => this.close(true);
+    root.querySelector('.tour-prev').onclick = () => this.go(-1);
+    root.querySelector('.tour-next').onclick = () => this.go(1);
+    root.addEventListener('click', e => { if (e.target === root || e.target === T.hole) e.stopPropagation(); });
+    T.key = e => { if (e.key === 'Escape') { e.preventDefault(); this.close(true); } else if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); this.go(1); } else if (e.key === 'ArrowLeft') { e.preventDefault(); this.go(-1); } };
+    T.re = () => this.place();
+    addEventListener('keydown', T.key, true); addEventListener('resize', T.re);
+    T.dir = 1; this.show();
+    return true;
+  },
+  go(d) {
+    const T = this.cur; if (!T) return;
+    T.dir = d; T.i += d;
+    if (T.i >= T.steps.length) return this.close(true);
+    if (T.i < 0) T.i = 0;
+    this.show();
+  },
+  show() {
+    const T = this.cur; if (!T) return;
+    /* hedefi görünmeyen adımı atla (yön korunur) */
+    while (T.i >= 0 && T.i < T.steps.length && !this.find(T.steps[T.i].el)) T.i += T.dir;
+    if (T.i >= T.steps.length || T.i < 0) {
+      if (T.dir < 0) { T.dir = 1; T.i = 0; while (T.i < T.steps.length && !this.find(T.steps[T.i].el)) T.i++; }
+      if (T.i >= T.steps.length || T.i < 0) return this.close(true);
+    }
+    const s = T.steps[T.i], el = this.find(s.el);
+    if (s.before) s.before(el);
+    if (!this.vis(el)) el.scrollIntoView({block: 'center', behavior: 'instant'});
+    T.el = el;
+    const vis = T.steps.filter(x => this.find(x.el)).length, pos = T.steps.slice(0, T.i + 1).filter(x => this.find(x.el)).length;
+    T.card.querySelector('.tour-t').textContent = s.t;
+    T.card.querySelector('.tour-d').textContent = s.d;
+    T.card.querySelector('.tour-n').textContent = `${pos} / ${vis}`;
+    T.card.querySelector('.tour-prev').hidden = pos <= 1;
+    T.card.querySelector('.tour-next').textContent = pos >= vis ? 'Tamam' : 'İleri';
+    this.place();
+    T.card.querySelector('.tour-next').focus({preventScroll: true});
+  },
+  place() {
+    const T = this.cur; if (!T || !T.el) return;
+    const r = this.vis(T.el) || T.el.getBoundingClientRect(), pad = 6, W = innerWidth, H = innerHeight;
+    const x = Math.max(4, r.left - pad), y = Math.max(4, r.top - pad), w = Math.min(W - 8, r.right + pad) - x, h = Math.min(H - 8, r.bottom + pad) - y;
+    Object.assign(T.hole.style, {left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px'});
+    const c = T.card, cw = Math.min(340, W - 24); c.style.width = cw + 'px';
+    const ch = c.offsetHeight, gap = 12;
+    let cx, cy;
+    if (y + h + gap + ch < H - 8) { cy = y + h + gap; cx = x + w / 2 - cw / 2; }          /* altına */
+    else if (y - gap - ch > 8) { cy = y - gap - ch; cx = x + w / 2 - cw / 2; }           /* üstüne */
+    else if (x + w + gap + cw < W - 8) { cx = x + w + gap; cy = y + h / 2 - ch / 2; }    /* sağına */
+    else if (x - gap - cw > 8) { cx = x - gap - cw; cy = y + h / 2 - ch / 2; }           /* soluna */
+    else { cx = W / 2 - cw / 2; cy = H - ch - 16; }                                      /* hedef büyükse altta */
+    c.style.left = Math.round(Math.max(12, Math.min(W - cw - 12, cx))) + 'px';
+    c.style.top = Math.round(Math.max(12, Math.min(H - ch - 12, cy))) + 'px';
+  },
+  close(markDone) {
+    const T = this.cur; if (!T) return;
+    removeEventListener('keydown', T.key, true); removeEventListener('resize', T.re);
+    T.root.remove(); this.cur = null;
+    if (markDone) this.mark(T.id);
+  },
+};
+
+/* Dolap Tasarımı: ekran ekran tanıtım adımları (Tour, 058-tour.js) */
+Tour.K = 'dolap.v1.tour';
+/* sihirbaz açıkken yalnız sihirbaz tanıtımı */
+Tour.block = id => { const w = document.getElementById('wiz'); return id !== 'wiz' && w && !w.hidden; };
+Tour.screen = () => !document.getElementById('wiz').hidden ? 'wiz' : A.sel ? 'part' : A.view === 'cut' ? 'cut' : A.view === 'nest' ? 'nest' : 'main';
+Tour.S = {
+  wiz: [
+    {el: '#wiz .wiz-steps', t: 'Soru soru ilerle', d: 'Dolabı adım adım soruyoruz. Üstteki adımlara dokunarak istediğin zaman geri dönüp düzeltebilirsin.'},
+    {el: '#wiz .wiz-main .tiles, #wiz .wiz-main', t: 'Seç', d: 'Büyük kartlardan birine dokun. Emin değilsen varsayılanı bırak; her şey sonradan değiştirilebilir.'},
+    {el: '#wiz .wiz-foot .btn.primary', t: 'İleri', d: 'Hazır olunca İleri’ye bas. Son adımda dolap oluşur ve kesim ölçüleri hesaplanır.'},
+  ],
+  main: [
+    {el: '#cabs .cab.on, #cabs', t: 'Dolapların', d: 'Bu işteki dolaplar burada. Birine dokununca onu düzenlersin; “Dolap oluştur” ile yenisini eklersin.'},
+    {el: '#form .btn.steel', t: 'Soru soru düzenle', d: 'Dolabı sihirbazdaki gibi adım adım baştan değiştirmek için buraya bas.'},
+    {el: '#form .grp', t: 'Ölçüler', d: 'Genişlik, yükseklik ve derinliği buradan değiştir. Bütün parçalar kendiliğinden yeniden hesaplanır.'},
+    {el: '#cv', t: '3B görünüm', d: 'Parmağınla ya da fareyle çevir, iki parmakla yakınlaştır. Bir parçaya dokununca yana ayrılır ve kesim ölçüleri üstünde yazar.'},
+    {el: '#tools3d', t: 'Görünüm araçları', d: 'Kapakları aç ya da gizle, parçaları ayrık göster (patlat), ölçüleri aç/kapa.'},
+    {el: '#viewSeg, #mtabs', t: 'Kesim listesi ve levha planı', d: 'Kesimhaneye götüreceğin parça listesi ve parçaların levhaya yerleşimi bu sekmelerde.'},
+    {el: '#btnPrint', t: 'Yazdır', d: 'Kesim listesini yazdır ya da PDF olarak kaydet.'},
+    {el: '#btnUndo', t: 'Geri al', d: 'Yanlış bir değişikliği geri alır.'},
+    {el: '#btnMenu', t: 'Menü', d: 'Yeni iş, kayıtlı işler, tema ve bu tanıtımı yeniden görme buradan.'},
+  ],
+  part: [
+    {el: '#pcard .pc-cut', t: 'Kesim ölçüsü', d: 'Levhadan bu ölçüde kesilir: Boy × En × Kalınlık. Kenar bandı yapışacaksa bant kalınlığı önceden düşülmüştür.'},
+    {el: '#lbls .lbl.dim', t: 'Ölçüler parçanın üstünde', d: 'Kalın çizgi ölçülen kenarı, oklu çizgi ölçüyü gösterir. “Bantlanınca” yazan, bant yapıştıktan sonraki son ölçüdür.'},
+    {el: '#pcard .turnbar', t: 'Parçayı çevir', d: 'Ayrılan parçayı döndürüp kenarından bakabilirsin. Parçayı sürükleyerek de çevirebilirsin.'},
+    {el: '#pcard .pc-sec', t: 'Ölçüyü değiştir', d: 'Parçanın ölçüsünü değiştirirsen ona bağlı dolap ölçüsü değişir; diğer parçalar da kendiliğinden uyar.'},
+  ],
+  cut: [
+    {el: '#vcut .tot', t: 'Özet', d: 'Toplam parça, alan, gereken levha ve kenar bandı metrajı.'},
+    {el: '#vcut table.cl tbody tr', t: 'Parça satırı', d: 'No, parça adı, kesim ölçüsü (Boy × En) ve adet. Satıra dokununca parça 3B’de seçilir.'},
+    {el: '#vcut table.cl td .bsvg, #vcut table.cl tbody tr td:nth-child(6)', t: 'Kenar bandı', d: 'Küçük çizim, hangi kenarlara bant yapışacağını gösterir.'},
+    {el: '#vcut .ptool .seg', t: 'Tüm iş / Bu dolap', d: 'Listeyi bütün dolaplar için ya da yalnız seçili dolap için gör.'},
+    {el: '#vcut .ptool .btn', t: 'Excel’e aktar', d: 'Listeyi Excel’de açılan bir dosya (CSV) olarak indir.'},
+  ],
+  nest: [
+    {el: '#nestBuy', t: 'Alınacak levha', d: 'Bu iş için kaç levha alman gerektiği, malzeme malzeme.'},
+    {el: '#vnest .sheet svg', t: 'Levha çizimi', d: 'Her dikdörtgen bir parça. Renk parçanın türünü, numara listedeki satırı gösterir. Taralı alan artan parçadır (fire).'},
+    {el: '#vnest .sleg', t: 'Parça listesi', d: 'Satıra dokununca o parça levhada sarıyla işaretlenir. Küp simgesi parçayı 3B’de gösterir.'},
+    {el: '#vnest .pays', t: 'Kesim payları', d: 'Testere izi ve kenar temizleme payı. Kesimhanenin değerlerine göre ayarlayabilirsin.'},
+  ],
 };
 
 /* =====================================================================
@@ -2307,6 +2547,7 @@ const UI = {
         h('p', {class: 'tip'}, 'Dolabı değiştirmeden yalnız kesim listesindeki ölçüyü değiştirir; “elle” etiketiyle işaretlenir.')),
     );
     el.hidden = false;
+    Tour.auto('part', 1600);
     for (const d of el.querySelectorAll('details')) d.addEventListener('toggle', () => UI.cardInset());
     UI.cardInset();
   },
@@ -2396,20 +2637,47 @@ const UI = {
   nest() {
     const el = $('#vnest'), J = A.job, cabs = UI.scopeCabs(), G = cutRows(J, cabs), sc = el.scrollTop;
     el.innerHTML = '';
-    const inner = h('div', {class: 'pane-in'});
-    const jn = (label, key) => { const inp = h('input', {class: 'inp', inputmode: 'decimal', value: fmt(J[key]), style: 'width:90px'}); inp.addEventListener('change', () => { const x = evalNum(inp.value); if (x >= 0 && x <= 50) A.change(() => { A.job[key] = x; }, {full: true}); else inp.value = fmt(J[key]); }); return h('label', {class: 'fld', style: 'flex-direction:row;align-items:center;gap:6px'}, h('span', null, label), h('div', {class: 'inpw'}, inp, h('i', null, 'mm'))); };
-    inner.append(h('div', {class: 'ptool'}, h('h2', null, 'Levha planı'), UI.scopeSeg(() => UI.nest()), jn('Testere', 'kerf'), jn('Traş', 'trim'), h('button', {class: 'btn sm primary', type: 'button', onclick: () => UI.print()}, icon(IC.print), 'Yazdır')),
-      h('p', {class: 'pnote'}, 'Giyotin (uçtan uca düz) kesime uygun yerleşim. Numaralar kesim listesindeki “No” sütunudur. ↻ işaretli parça levhada döndürülmüştür. Levha ölçüsü, desen ve paylar “Malzeme ve levha” bölümünden değişir.'));
-    for (const g of G) {
-      const N = nestGroup(g, J), col = (FINISHES[g.m.color] || FINISHES.beyaz)[1];
-      const box = h('div', {class: 'sheets'});
-      N.sheets.forEach((sh, i) => box.append(h('div', {class: 'sheet'}, h('div', {class: 'sheet-t'}, h('b', null, `Levha ${i + 1}`), h('span', null, `${sh.parts.length} parça · %${Math.round(sh.use * 100)} dolu`)),
-        sheetSVG(N, sh, {onPick: p => A.pickRef(p.row.refs), sel: p => A.sel && A.cab && p.row.refs.some(x => x.cab === A.cab.id && x.id === A.sel)}))));
-      inner.append(h('section', {class: 'card mgrp'},
-        h('div', {class: 'mgrp-h'}, h('i', {class: 'chipx', style: `background:${col}`}), h('b', null, g.label), h('small', null, `${N.sheets.length} levha ${g.m.L}×${g.m.W} · ortalama doluluk %${Math.round(N.use * 100)}${g.m.grain ? ' · desenli: döndürme yok' : ''}`)),
-        N.bad.length ? h('div', {class: 'iss', style: 'margin:10px 16px 0'}, `Sığmayan parça: ${[...new Set(N.bad.map(b => '#' + b.no))].join(', ')}`) : null,
-        N.sheets.length ? box : h('p', {class: 'pnote', style: 'padding:14px 16px'}, 'Bu malzemede parça yok.')));
+    const inner = h('div', {class: 'pane-in nest'});
+    const NS = G.map(g => ({g, N: nestGroup(g, J)})).filter(x => x.N.sheets.length || x.N.bad.length);
+    const total = NS.reduce((a, x) => a + x.N.sheets.length, 0);
+    inner.append(h('div', {class: 'ptool'}, h('h2', null, 'Levha planı'), UI.scopeSeg(() => UI.nest()), h('button', {class: 'btn sm', type: 'button', onclick: () => UI.print()}, icon(IC.print), 'Yazdır')),
+      h('p', {class: 'nest-what'}, 'Kesimhaneye kaç levha götüreceğini ve her parçanın levhanın neresinden kesileceğini gösterir. Bir parçaya ya da listedeki satıra dokun: aynı parçalar levhada işaretlenir.'));
+    /* alışveriş listesi */
+    const buy = h('section', {class: 'card buy', id: 'nestBuy'}, h('div', {class: 'buy-h'}, h('span', null, 'Alınacak levha'), h('b', null, String(total))));
+    for (const {g, N} of NS) {
+      const col = (FINISHES[g.m.color] || FINISHES.beyaz)[1];
+      buy.append(h('div', {class: 'buy-r'}, h('i', {class: 'chipx', style: `background:${col}`}), h('div', {class: 'tx'}, h('b', null, g.label), h('small', null, `${fmt(g.m.L)} × ${fmt(g.m.W)} mm levha · parçalar levhanın %${Math.round(N.use * 100)}’ini kullanıyor, %${100 - Math.round(N.use * 100)} artıyor`)), h('strong', null, `${N.sheets.length} levha`)));
     }
+    inner.append(buy);
+    /* kesim payları (sade dil) */
+    const pay = (label, help, key) => { const inp = h('input', {class: 'inp', inputmode: 'decimal', value: fmt(J[key]), 'aria-label': label}); inp.addEventListener('change', () => { const x = evalNum(inp.value); if (x >= 0 && x <= 50) A.change(() => { A.job[key] = x; }, {full: true}); else inp.value = fmt(J[key]); }); return h('label', {class: 'fld'}, h('span', null, label), h('div', {class: 'inpw'}, inp, h('i', null, 'mm')), h('small', null, help)); };
+    inner.append(h('details', {class: 'card pays'}, h('summary', null, h('b', null, 'Kesim payları'), h('small', null, `testere izi ${fmt(J.kerf)} mm · kenar temizleme ${fmt(J.trim)} mm`)),
+      h('div', {class: 'row'}, pay('Testere izi', 'Her kesimde testere ağzının yiyip yok ettiği pay. Parçalar arasına bu kadar boşluk bırakılır.', 'kerf'),
+        pay('Kenar temizleme', 'Levhanın fabrika kenarı genelde düzgün değildir; her kenardan bu kadar kesilip atılır.', 'trim')),
+      h('p', {class: 'pnote'}, 'Levha ölçüsü ve desen (damar) yönü soldaki “Malzeme ve levha” bölümünden değişir. Parçalar düz, uçtan uca kesimlerle (panel ebatlama makinesine uygun) yerleştirilir.')));
+    /* açıklama: renkler ve taralı alan */
+    const used = new Set(NS.flatMap(({N}) => N.sheets.flatMap(sh => sh.parts.map(p => partGroup(p.row.kind).k))));
+    inner.append(h('div', {class: 'nest-key'}, ...PART_GROUPS.filter(pg => used.has(pg.k)).map(pg => h('span', null, h('i', {class: 'kc k-' + pg.k}), pg.n)),
+      h('span', null, h('i', {class: 'kc waste'}), 'Taralı: artan parça (fire)')));
+    for (const {g, N} of NS) {
+      const col = (FINISHES[g.m.color] || FINISHES.beyaz)[1], sec = h('section', {class: 'card mgrp'});
+      let cur = null;
+      const mark = no => { cur = cur === no ? null : no; for (const e of sec.querySelectorAll('[data-no]')) e.classList.toggle('hl', cur != null && e.dataset.no === String(cur)); };
+      const box = h('div', {class: 'sheets'});
+      N.sheets.forEach((sh, i) => {
+        const cnt = new Map(); for (const p of sh.parts) cnt.set(p.no, (cnt.get(p.no) || {row: p.row, n: 0})), cnt.get(p.no).n++;
+        const leg = h('ul', {class: 'sleg'}, ...[...cnt.entries()].sort((a, b) => a[0] - b[0]).map(([no, {row, n}]) => h('li', {'data-no': no, class: 'k-' + partGroup(row.kind).k, onclick: () => mark(no)},
+          h('i', {class: 'kc'}), h('b', null, String(no)), h('span', {class: 'nm'}, row.name), h('span', {class: 'sz'}, `${fmt(row.cL)} × ${fmt(row.cW)}`), h('em', null, `× ${n}`),
+          h('button', {type: 'button', class: 'icon-btn sm', title: '3B’de göster', 'aria-label': `${row.name} parçasını 3B’de göster`, onclick: e => { e.stopPropagation(); A.pickRef(row.refs); A.show('3d'); }}, icon(IC.cube)))));
+        box.append(h('div', {class: 'sheet'}, h('div', {class: 'sheet-t'}, h('b', null, `${i + 1}. levha`), h('span', null, `${sh.parts.length} parça · %${Math.round(sh.use * 100)} kullanılıyor`)),
+          sheetSVG(N, sh, {onPick: p => mark(p.no), sel: p => A.sel && A.cab && p.row.refs.some(x => x.cab === A.cab.id && x.id === A.sel)}), leg));
+      });
+      sec.append(h('div', {class: 'mgrp-h'}, h('i', {class: 'chipx', style: `background:${col}`}), h('b', null, g.label), h('small', null, `${N.sheets.length} levha · ${fmt(g.m.L)} × ${fmt(g.m.W)} mm${g.m.grain ? ' · desenli: parçalar damar yönünde yerleştirildi' : ''}`)),
+        ...(N.bad.length ? [h('div', {class: 'iss', style: 'margin:10px 16px 0'}, `Levhaya sığmayan parça: ${[...new Set(N.bad.map(b => b.no + ' (' + b.row.name + ')'))].join(', ')}. Levha ölçüsünü ya da parçayı kontrol et.`)] : []),
+        box);
+      inner.append(sec);
+    }
+    if (!NS.length) inner.append(h('p', {class: 'pnote'}, 'Kesilecek parça yok.'));
     el.append(inner); el.scrollTop = sc;
   },
 
@@ -2579,6 +2847,7 @@ const A = {
     }
     if (v === 'cut') UI.cut();
     if (v === 'nest') UI.nest();
+    if (v === 'cut' || v === 'nest') Tour.auto(v); else if (v === '3d' || v === 'form') Tour.auto('main', 1200);
   },
 
   /* ---------- işler ---------- */
@@ -2627,6 +2896,7 @@ const A = {
       '-',
       {el: h('div', {class: 'mseg'}, seg)},
       {t: 'Nasıl kullanılır?', ic: IC.help, fn: () => this.help()},
+      {t: 'Tanıtımı yeniden göster', ic: IC.help, fn: () => { Tour.reset(); setTimeout(() => Tour.start(Tour.screen()), 200); }},
     ]);
   },
   help() {

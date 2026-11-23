@@ -365,7 +365,7 @@ function helpDialog() {
     for (const [k, v] of rows) dl.append(h('dt', null, k), h('dd', null, v));
     b.append(dl);
     b.append(h('p', {class: 'tip'}, 'Kapı ve pencereler duvara kendiliğinden oturur; sürükleyince duvar boyunca kayar, başka duvara yaklaşınca oraya geçer. Açılış yönünü bağlam çubuğundaki “Yönü çevir” ya da özelliklerdeki resimli seçiciyle değiştir.'));
-  }, [{v: null, t: 'Anladım', primary: 1}]);
+  }, [{v: 'tour', t: 'Tanıtımı göster'}, {v: null, t: 'Anladım', primary: 1}]).then(v => { if (v === 'tour') { Tour.reset(); setTimeout(() => Tour.start(Tour.screen()), 250); } });
 }
 
 /* ---------- Ana ekran ---------- */
@@ -455,10 +455,11 @@ const Router = {
       if (!ok) { history.pushState(null, '', '#/p/' + Ed.P.id); return; }
     }
     this.cur = id;
-    if (id) { if (!Ed.open(id)) this.cur = null; }
+    if (id) { if (!Ed.open(id)) this.cur = null; else Tour.auto(Ed.view === '3d' ? '3d' : 'plan', 1200); }
     else {
       $('#editor').hidden = true; $('#home').hidden = false; document.title = 'Eczane Plan';
       Home.render();
+      Tour.auto('home', 900);
     }
   },
 };
@@ -535,6 +536,7 @@ function bindEditor() {
     {t: 'Dükkân ölçüleri', icon: ICONS.grid, fn: () => { Ed.select(null); Ed.openProps(); if (!isMobile()) setTimeout(() => $('#props .num input')?.focus(), 30); }},
     {t: 'Görünüm ve tema', icon: ICONS.theme, fn: () => Theme.dialog()},
     {t: 'Kısayollar ve yardım', icon: ICONS.help, fn: () => helpDialog()},
+    {t: 'Tanıtımı yeniden göster', icon: ICONS.help, fn: () => { Tour.reset(); setTimeout(() => Tour.start(Tour.screen()), 200); }},
   ]);
 }
 

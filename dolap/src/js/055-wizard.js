@@ -98,6 +98,7 @@ const Wiz = {
     if (mode === 'edit' && cab) { this.d = clone(cab); this.id = cab.id; this.i = 1; this.seen = this.STEPS.length - 1; }
     else { this.d = this.fromPreset('base'); this.id = null; this.i = 0; this.seen = 0; }
     $('#wiz').hidden = false; document.body.classList.add('wiz-on');
+    Tour.auto('wiz', 700);
     this.render();
   },
   fromPreset(k) {

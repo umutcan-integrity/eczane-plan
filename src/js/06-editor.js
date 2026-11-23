@@ -266,6 +266,7 @@ const Ed = {
     this.view = v;
     $$('#viewSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
     const is3 = v === '3d';
+    if (is3 && !quiet) Tour.auto('3d', 1600);
     $('#plan').hidden = is3; $('#tools2d').hidden = is3; $('#tools3d').hidden = !is3;
     $('#dock').style.display = is3 ? 'none' : '';
     this.updatePill();

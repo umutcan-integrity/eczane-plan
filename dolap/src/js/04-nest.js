@@ -59,26 +59,57 @@ function nestGroup(G, job) {
 }
 
 /* Levha çizimi (SVG, mm ölçekli) */
+/* parça grupları: levha planında renk ve açıklama */
+const PART_GROUPS = [
+  {k: 'g', n: 'Gövde', kinds: ['side', 'top', 'bottom', 'rail', 'divider', 'sep']},
+  {k: 's', n: 'Raf', kinds: ['shelf']},
+  {k: 'd', n: 'Kapak', kinds: ['door']},
+  {k: 'c', n: 'Çekmece', kinds: ['dfront', 'dside', 'dfb', 'dbottom']},
+  {k: 'b', n: 'Arkalık', kinds: ['back']},
+  {k: 'p', n: 'Baza', kinds: ['plinth']},
+];
+const partGroup = kind => PART_GROUPS.find(g => g.kinds.includes(kind)) || PART_GROUPS[0];
+
 function sheetSVG(N, sh, opts = {}) {
-  const {L, W, trim} = N, fs = Math.max(40, Math.min(L, W) / 18);
-  const svg = sv('svg', {viewBox: `0 0 ${L} ${W}`, role: 'img', 'aria-label': `Levha ${L} × ${W}`});
-  svg.append(sv('defs', null, sv('pattern', {id: 'hatch', width: 40, height: 40, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)'}, sv('rect', {width: 40, height: 40, class: 'pl', style: 'fill:transparent'}), sv('line', {x1: 0, y1: 0, x2: 0, y2: 40, class: 'gr'}))));
+  const {L, W, trim} = N, fs = Math.max(42, Math.min(L, W) / 17), m = fs * 1.9;
+  const svg = sv('svg', {viewBox: `${-m} ${-m} ${L + m * 1.2} ${W + m * 1.2}`, role: 'img', 'aria-label': `Levha ${fmt(L)} × ${fmt(W)} mm`});
+  svg.append(sv('defs', null, sv('pattern', {id: 'hatch', width: 36, height: 36, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)'}, sv('line', {x1: 0, y1: 0, x2: 0, y2: 36, class: 'gr'}))));
+  /* levha ölçüleri (dışarıda, oklu) */
+  const arrow = (x1, y1, x2, y2, txt, vert) => {
+    const g = sv('g', {class: 'sdim'}), a = fs * .45;
+    g.append(sv('line', {x1, y1, x2, y2}));
+    const ux = Math.sign(x2 - x1), uy = Math.sign(y2 - y1);
+    g.append(sv('path', {d: `M${x1} ${y1}l${ux * a + uy * a * .45} ${uy * a - ux * a * .45}l${-uy * a * .9} ${ux * a * .9}Z`}));
+    g.append(sv('path', {d: `M${x2} ${y2}l${-ux * a + uy * a * .45} ${-uy * a - ux * a * .45}l${-uy * a * .9} ${ux * a * .9}Z`}));
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    const t = sv('text', vert ? {x: mx - fs * .35, y: my, transform: `rotate(-90 ${mx - fs * .35} ${my})`, 'text-anchor': 'middle', 'font-size': fs * .85, 'font-weight': 700} : {x: mx, y: my - fs * .35, 'text-anchor': 'middle', 'font-size': fs * .85, 'font-weight': 700}, txt);
+    g.append(t); svg.append(g);
+  };
+  arrow(0, -m * .45, L, -m * .45, `${fmt(L)} mm`);
+  arrow(-m * .45, 0, -m * .45, W, `${fmt(W)} mm`, true);
   svg.append(sv('rect', {x: 0, y: 0, width: L, height: W, class: 'pl'}));
   svg.append(sv('rect', {x: trim, y: trim, width: N.PL, height: N.PW, class: 'us'}));
-  if (N.grain) svg.append(sv('path', {d: `M${L - 260} ${W - 30}h200m-40 -18l40 18l-40 18`, fill: 'none', stroke: 'currentColor', 'stroke-width': 6, class: 'gr', style: 'opacity:.7'}));
+  if (N.grain) svg.append(sv('path', {d: `M${L - 300} ${W - 34}h220m-44 -20l44 20l-44 20`, fill: 'none', 'stroke-width': 7, class: 'gr', style: 'opacity:.9'}));
+  const cw = .56; /* yaklaşık harf genişliği (font boyuna oranla) */
   for (const p of sh.parts) {
-    const x = trim + p.x, y = trim + p.y, g = sv('g', {'data-no': p.no});
-    const r = sv('rect', {x, y, width: p.a, height: p.b, class: 'pt' + (opts.sel && opts.sel(p) ? ' on' : '')});
-    if (opts.onPick) r.addEventListener('click', () => opts.onPick(p));
-    r.append(sv('title', null, `${p.no} · ${p.row.name} · ${fmt(p.row.cL)} × ${fmt(p.row.cW)} mm${p.rot ? ' (döndürülmüş)' : ''}`));
+    const x = trim + p.x, y = trim + p.y, grp = partGroup(p.row.kind), g = sv('g', {'data-no': p.no, class: 'pg k-' + grp.k + (opts.sel && opts.sel(p) ? ' on' : '')});
+    const r = sv('rect', {x, y, width: p.a, height: p.b, class: 'pt'});
+    if (opts.onPick) g.addEventListener('click', () => opts.onPick(p));
+    r.append(sv('title', null, `${p.no} · ${p.row.name} · ${fmt(p.row.cL)} × ${fmt(p.row.cW)} mm`));
     g.append(r);
-    const mn = Math.min(p.a, p.b);
-    if (mn > fs * 1.3) {
-      const big = Math.min(fs * 1.25, mn * .4);
-      g.append(sv('text', {x: x + p.a / 2, y: y + p.b / 2 + (p.b > big * 3.2 ? -big * .25 : big * .35), 'font-size': big, 'font-weight': 800, 'text-anchor': 'middle'}, String(p.no)));
-      if (p.b > big * 3.2 && p.a > fs * 5) g.append(sv('text', {x: x + p.a / 2, y: y + p.b / 2 + big * .95, 'font-size': fs * .8, 'text-anchor': 'middle'}, `${fmt(p.rot ? p.b : p.a)} × ${fmt(p.rot ? p.a : p.b)}`));
-    } else if (mn > fs * .95) g.append(sv('text', {x: x + p.a / 2, y: y + p.b / 2 + fs * .3, 'font-size': fs * .8, 'font-weight': 800, 'text-anchor': 'middle'}, String(p.no)));
-    if (p.rot && mn > fs * .95) g.append(sv('text', {x: x + 8, y: y + fs * .8, 'font-size': fs * .6, style: 'opacity:.7'}, '↻'));
+    /* yazı: sığarsa "no · ad" + ölçü; dar parçada dik yazılır; sığmazsa yalnız numara */
+    const vert = p.b > p.a * 1.15, len = vert ? p.b : p.a, thick = vert ? p.a : p.b;
+    const name = `${p.no} · ${p.row.name}`, size = `${fmt(p.row.cL)} × ${fmt(p.row.cW)}`;
+    const cx = x + p.a / 2, cy = y + p.b / 2, rot = vert ? {transform: `rotate(-90 ${cx} ${cy})`} : {};
+    let f = Math.min(fs, thick / 2.6);
+    const fitsName = name.length * f * cw < len * .92, fitsSize = size.length * f * .9 * cw < len * .92;
+    if (f >= fs * .55 && fitsName && fitsSize && thick > f * 2.5) {
+      g.append(sv('text', Object.assign({x: cx, y: cy - f * .15, 'font-size': f, 'font-weight': 750, 'text-anchor': 'middle'}, rot), name));
+      g.append(sv('text', Object.assign({x: cx, y: cy + f * .95, 'font-size': f * .9, 'text-anchor': 'middle', class: 'sz'}, rot), size));
+    } else {
+      f = Math.min(fs, thick * .7, len / (String(p.no).length * cw + .6));
+      if (f > fs * .4) g.append(sv('text', Object.assign({x: cx, y: cy + f * .35, 'font-size': f, 'font-weight': 800, 'text-anchor': 'middle'}, rot), String(p.no)));
+    }
     svg.append(g);
   }
   return svg;
