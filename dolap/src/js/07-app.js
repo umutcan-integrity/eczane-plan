@@ -86,6 +86,7 @@ const A = {
     }
     if (v === 'cut') UI.cut();
     if (v === 'nest') UI.nest();
+    if (v === 'cut' || v === 'nest') Tour.auto(v); else if (v === '3d' || v === 'form') Tour.auto('main', 1200);
   },
 
   /* ---------- işler ---------- */
@@ -134,6 +135,7 @@ const A = {
       '-',
       {el: h('div', {class: 'mseg'}, seg)},
       {t: 'Nasıl kullanılır?', ic: IC.help, fn: () => this.help()},
+      {t: 'Tanıtımı yeniden göster', ic: IC.help, fn: () => { Tour.reset(); setTimeout(() => Tour.start(Tour.screen()), 200); }},
     ]);
   },
   help() {

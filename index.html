@@ -445,6 +445,18 @@ dialog.modal.wide{width:min(960px,calc(100vw - 28px))}
 @media (max-width:520px){.apptabs a{font-size:11.5px;letter-spacing:.02em;padding:6px 8px}}
 .home-band .logo i{background:var(--steel-2);color:var(--steel-ink);box-shadow:inset 0 0 0 1px var(--steel-line)}
 
+/* ---------- tanıtım (spotlight) ---------- */
+.tour{position:fixed;inset:0;z-index:400}
+.tour-hole{position:fixed;border-radius:var(--r);box-shadow:0 0 0 200vmax rgba(8,10,13,.66);outline:3px solid var(--accent);outline-offset:0;transition:left .28s cubic-bezier(.2,.8,.2,1),top .28s cubic-bezier(.2,.8,.2,1),width .28s cubic-bezier(.2,.8,.2,1),height .28s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+.tour-card{position:fixed;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:14px 14px 12px;display:flex;flex-direction:column;gap:6px;transition:left .28s cubic-bezier(.2,.8,.2,1),top .28s cubic-bezier(.2,.8,.2,1)}
+.tour-card:focus{outline:none}
+.tour-t{font-size:17px;font-weight:750;font-stretch:80%;text-transform:uppercase;letter-spacing:.03em}
+.tour-d{margin:0;font-size:14px;line-height:1.45;color:var(--ink)}
+.tour-f{display:flex;align-items:center;gap:6px;margin-top:6px}
+.tour-n{margin-right:auto;font-size:12.5px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.tour .btn{min-height:36px;padding:0 12px;font-size:13.5px}
+@media (prefers-reduced-motion:reduce){.tour-hole,.tour-card{transition:none}}
+
 </style>
 </head>
 <body>
@@ -5503,6 +5515,7 @@ const Ed = {
     this.view = v;
     $$('#viewSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
     const is3 = v === '3d';
+    if (is3 && !quiet) Tour.auto('3d', 1600);
     $('#plan').hidden = is3; $('#tools2d').hidden = is3; $('#tools3d').hidden = !is3;
     $('#dock').style.display = is3 ? 'none' : '';
     this.updatePill();
@@ -7066,6 +7079,143 @@ function makePdf(pages, title) {
 }
 
 /* =====================================================================
+   Tanıtım (spotlight): her ekranda bir kez, önemli yerleri tek tek gösterir.
+   Ekranın geri kalanı kararır, hedef aydınlanır, yanında kısa açıklama çıkar.
+   Adımlar uygulamaya özel: Tour.S[ekran] = [{el, t, d}]; görünmeyen hedef atlanır.
+   Bu dosya iki uygulamada aynıdır (dolap/src/js/058-tour.js = src/js/068-tour.js).
+   ===================================================================== */
+const Tour = {
+  K: 'tour.v1', S: {}, cur: null, _t: 0,
+  seen() { try { return JSON.parse(localStorage.getItem(this.K) || '{}'); } catch (e) { return {}; } },
+  done(id) { return !!this.seen()[id]; },
+  mark(id) { try { const o = this.seen(); o[id] = 1; localStorage.setItem(this.K, JSON.stringify(o)); } catch (e) {} },
+  reset() { try { localStorage.removeItem(this.K); } catch (e) {} },
+  /* ilk kez gelindiğinde kendiliğinden (otomatik tarayıcı testlerinde kapalı) */
+  auto(id, delay = 700) {
+    if (this.cur || this.done(id) || navigator.webdriver) return;
+    clearTimeout(this._t);
+    this._t = setTimeout(() => { if (!this.cur && !this.done(id) && !document.querySelector('dialog[open]') && !(this.block && this.block(id))) this.start(id); }, delay);
+  },
+  vis(el) {
+    if (!el || !el.isConnected) return null;
+    const r = el.getBoundingClientRect();
+    if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.right < 0 || r.top > innerHeight || r.left > innerWidth) return null;
+    const cs = getComputedStyle(el); if (cs.visibility === 'hidden' || cs.display === 'none') return null;
+    return r;
+  },
+  list(sel) { return typeof sel === 'function' ? [].concat(sel() || []) : [].concat(sel).flatMap(s => [...document.querySelectorAll(s)]); },
+  /* görünür hedef; yoksa kaydırılarak görülebilecek (ekran dışındaki) ilk hedef */
+  find(sel) {
+    const L = this.list(sel).filter(Boolean);
+    for (const el of L) if (this.vis(el)) return el;
+    for (const el of L) { if (!el.isConnected) continue; const cs = getComputedStyle(el), r = el.getBoundingClientRect(); if (r.width >= 4 && r.height >= 4 && cs.visibility !== 'hidden' && el.closest('[hidden]') === null && (r.top > innerHeight || r.bottom < 0)) return el; }
+    return null;
+  },
+  start(id) {
+    const steps = (this.S[id] || []).filter(s => !s.when || s.when());
+    if (!steps.length) return false;
+    this.close(false);
+    const root = document.createElement('div'); root.className = 'tour'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true');
+    root.innerHTML = '<div class="tour-hole"></div><div class="tour-card" tabindex="-1"><b class="tour-t"></b><p class="tour-d"></p><div class="tour-f"><span class="tour-n"></span><button type="button" class="btn ghost sm tour-skip">Geç</button><button type="button" class="btn sm tour-prev">Geri</button><button type="button" class="btn primary sm tour-next">İleri</button></div></div>';
+    document.body.append(root);
+    const T = this.cur = {id, steps, i: 0, root, hole: root.querySelector('.tour-hole'), card: root.querySelector('.tour-card')};
+    root.querySelector('.tour-skip').onclick = () => this.close(true);
+    root.querySelector('.tour-prev').onclick = () => this.go(-1);
+    root.querySelector('.tour-next').onclick = () => this.go(1);
+    root.addEventListener('click', e => { if (e.target === root || e.target === T.hole) e.stopPropagation(); });
+    T.key = e => { if (e.key === 'Escape') { e.preventDefault(); this.close(true); } else if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); this.go(1); } else if (e.key === 'ArrowLeft') { e.preventDefault(); this.go(-1); } };
+    T.re = () => this.place();
+    addEventListener('keydown', T.key, true); addEventListener('resize', T.re);
+    T.dir = 1; this.show();
+    return true;
+  },
+  go(d) {
+    const T = this.cur; if (!T) return;
+    T.dir = d; T.i += d;
+    if (T.i >= T.steps.length) return this.close(true);
+    if (T.i < 0) T.i = 0;
+    this.show();
+  },
+  show() {
+    const T = this.cur; if (!T) return;
+    /* hedefi görünmeyen adımı atla (yön korunur) */
+    while (T.i >= 0 && T.i < T.steps.length && !this.find(T.steps[T.i].el)) T.i += T.dir;
+    if (T.i >= T.steps.length || T.i < 0) {
+      if (T.dir < 0) { T.dir = 1; T.i = 0; while (T.i < T.steps.length && !this.find(T.steps[T.i].el)) T.i++; }
+      if (T.i >= T.steps.length || T.i < 0) return this.close(true);
+    }
+    const s = T.steps[T.i], el = this.find(s.el);
+    if (s.before) s.before(el);
+    if (!this.vis(el)) el.scrollIntoView({block: 'center', behavior: 'instant'});
+    T.el = el;
+    const vis = T.steps.filter(x => this.find(x.el)).length, pos = T.steps.slice(0, T.i + 1).filter(x => this.find(x.el)).length;
+    T.card.querySelector('.tour-t').textContent = s.t;
+    T.card.querySelector('.tour-d').textContent = s.d;
+    T.card.querySelector('.tour-n').textContent = `${pos} / ${vis}`;
+    T.card.querySelector('.tour-prev').hidden = pos <= 1;
+    T.card.querySelector('.tour-next').textContent = pos >= vis ? 'Tamam' : 'İleri';
+    this.place();
+    T.card.querySelector('.tour-next').focus({preventScroll: true});
+  },
+  place() {
+    const T = this.cur; if (!T || !T.el) return;
+    const r = this.vis(T.el) || T.el.getBoundingClientRect(), pad = 6, W = innerWidth, H = innerHeight;
+    const x = Math.max(4, r.left - pad), y = Math.max(4, r.top - pad), w = Math.min(W - 8, r.right + pad) - x, h = Math.min(H - 8, r.bottom + pad) - y;
+    Object.assign(T.hole.style, {left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px'});
+    const c = T.card, cw = Math.min(340, W - 24); c.style.width = cw + 'px';
+    const ch = c.offsetHeight, gap = 12;
+    let cx, cy;
+    if (y + h + gap + ch < H - 8) { cy = y + h + gap; cx = x + w / 2 - cw / 2; }          /* altına */
+    else if (y - gap - ch > 8) { cy = y - gap - ch; cx = x + w / 2 - cw / 2; }           /* üstüne */
+    else if (x + w + gap + cw < W - 8) { cx = x + w + gap; cy = y + h / 2 - ch / 2; }    /* sağına */
+    else if (x - gap - cw > 8) { cx = x - gap - cw; cy = y + h / 2 - ch / 2; }           /* soluna */
+    else { cx = W / 2 - cw / 2; cy = H - ch - 16; }                                      /* hedef büyükse altta */
+    c.style.left = Math.round(Math.max(12, Math.min(W - cw - 12, cx))) + 'px';
+    c.style.top = Math.round(Math.max(12, Math.min(H - ch - 12, cy))) + 'px';
+  },
+  close(markDone) {
+    const T = this.cur; if (!T) return;
+    removeEventListener('keydown', T.key, true); removeEventListener('resize', T.re);
+    T.root.remove(); this.cur = null;
+    if (markDone) this.mark(T.id);
+  },
+};
+
+/* Eczane Plan: ekran ekran tanıtım adımları (Tour, 068-tour.js) */
+Tour.K = 'eczplan.v2.tour';
+Tour.screen = () => !$('#home').hidden ? 'home' : Ed.view === '3d' ? '3d' : 'plan';
+Tour.S = {
+  home: [
+    {el: '#newName', t: 'Yeni proje', d: 'Projene bir isim ver ve dükkânın genişliğini ve derinliğini metre olarak gir.'},
+    {el: '#newTpl', t: 'Boş dükkân ya da örnek eczane', d: '“Örnek eczane” ile odaları, bankosu ve dolapları hazır bir planla başlayıp nasıl çalıştığını görebilirsin.'},
+    {el: '#newForm .btn.primary', t: 'Başla', d: 'Bilgileri girince Başla’ya bas; çizim ekranı açılır.'},
+    {el: '#projList .proj, #projList', t: 'Projelerin', d: 'Kaydettiğin projeler burada. Projeler yalnız bu cihazda saklanır; menüden yedek (JSON) alabilirsin.'},
+    {el: '.home .apptabs a:not(.on)', t: 'Dolap Tasarımı', d: 'Ustalar için dolap kesim ölçüsü aracı bu sekmede.'},
+    {el: '#homeSettings', t: 'Görünüm', d: 'Açık ya da koyu tema ve otomatik kayıt ayarı.'},
+  ],
+  plan: [
+    {el: '#sheetAdd .pal, #sheetAdd', t: 'Ekle', d: 'Oda, kapı, pencere, dolap, banko… Birine dokun, plana eklensin; sonra sürükleyip yerleştir.'},
+    {el: '#dock', t: 'Alt çubuk', d: 'Ekle: kapı, dolap, banko… Oda çiz ve Ölç araçları, Proje ayarları buradan.'},
+    {el: '#tools2d', t: 'Çizim araçları', d: 'Seç, oda çiz, duvar, silgi, alan ekle, ölç. Kullandığın araç sarı görünür.'},
+    {el: '#plan', t: 'Plan', d: 'Bir öğeye dokununca seçilir: sürükleyerek taşı, köşelerinden boyutlandır. Etrafındaki boşluklar cm olarak yazar.'},
+    {el: '#sheetProps', t: 'Özellikler', d: 'Seçili öğenin ölçüsü, rengi ve yönü burada. Hiçbir şey seçili değilken dükkân ve kat ayarları görünür.'},
+    {el: '#floorBar', t: 'Katlar', d: 'Bodrum, asma kat ya da üst kat ekle; katlar arasında buradan geç.'},
+    {el: '#viewSeg', t: '2B / 3B', d: 'Planı üç boyutlu görmek ve içinde gezmek için 3B’ye geç.'},
+    {el: '#btnKroki', t: 'Kroki', d: 'Sağlık müdürlüğü başvurusu için ölçekli A4 kroki (PDF) çıkarır.'},
+    {el: '#btnSave', t: 'Kaydet', d: 'Değişiklikleri bu cihaza kaydeder. Otomatik kayıt açıksa kendiliğinden kaydeder.'},
+    {el: '#btnMenu', t: 'Menü', d: 'Render, video, PNG/JSON dışa aktarma, tema, yardım ve bu tanıtımı yeniden görme.'},
+  ],
+  '3d': [
+    {el: '#scene', t: '3B görünüm', d: 'Sürükleyerek etrafına bak, tekerlek ya da iki parmakla yakınlaş. Bir öğeye tıklayınca seçilir.'},
+    {el: '#modeSeg', t: 'Döndür / Gez', d: '“Gez”e geçince dükkânın içinde insan gözü hizasında yürürsün (bilgisayarda W A S D, telefonda joystick).'},
+    {el: '#camRender', t: 'Render', d: 'Sunum için yüksek çözünürlüklü görsel alır.'},
+    {el: '#camVideo', t: 'Video', d: 'İçeride yürüyüş ya da dışarıdan tur videosu kaydeder.'},
+    {el: '#camNight', t: 'Akşam', d: 'Yalnız armatür ışıklarıyla, akşam görünümü.'},
+    {el: '#camWalls', t: 'Duvarlar', d: 'Duvarları tam, yarım ya da gizli göster; içeriyi rahat görmek için.'},
+  ],
+};
+
+/* =====================================================================
    Diyaloglar, menüler, dışa aktarma, tema, ana ekran, yönlendirme
    ===================================================================== */
 
@@ -7432,7 +7582,7 @@ function helpDialog() {
     for (const [k, v] of rows) dl.append(h('dt', null, k), h('dd', null, v));
     b.append(dl);
     b.append(h('p', {class: 'tip'}, 'Kapı ve pencereler duvara kendiliğinden oturur; sürükleyince duvar boyunca kayar, başka duvara yaklaşınca oraya geçer. Açılış yönünü bağlam çubuğundaki “Yönü çevir” ya da özelliklerdeki resimli seçiciyle değiştir.'));
-  }, [{v: null, t: 'Anladım', primary: 1}]);
+  }, [{v: 'tour', t: 'Tanıtımı göster'}, {v: null, t: 'Anladım', primary: 1}]).then(v => { if (v === 'tour') { Tour.reset(); setTimeout(() => Tour.start(Tour.screen()), 250); } });
 }
 
 /* ---------- Ana ekran ---------- */
@@ -7522,10 +7672,11 @@ const Router = {
       if (!ok) { history.pushState(null, '', '#/p/' + Ed.P.id); return; }
     }
     this.cur = id;
-    if (id) { if (!Ed.open(id)) this.cur = null; }
+    if (id) { if (!Ed.open(id)) this.cur = null; else Tour.auto(Ed.view === '3d' ? '3d' : 'plan', 1200); }
     else {
       $('#editor').hidden = true; $('#home').hidden = false; document.title = 'Eczane Plan';
       Home.render();
+      Tour.auto('home', 900);
     }
   },
 };
@@ -7602,6 +7753,7 @@ function bindEditor() {
     {t: 'Dükkân ölçüleri', icon: ICONS.grid, fn: () => { Ed.select(null); Ed.openProps(); if (!isMobile()) setTimeout(() => $('#props .num input')?.focus(), 30); }},
     {t: 'Görünüm ve tema', icon: ICONS.theme, fn: () => Theme.dialog()},
     {t: 'Kısayollar ve yardım', icon: ICONS.help, fn: () => helpDialog()},
+    {t: 'Tanıtımı yeniden göster', icon: ICONS.help, fn: () => { Tour.reset(); setTimeout(() => Tour.start(Tour.screen()), 200); }},
   ]);
 }
 
